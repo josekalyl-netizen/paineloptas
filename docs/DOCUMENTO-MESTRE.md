@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 1.3  
+**Versão:** 1.4  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -308,7 +308,9 @@ Considera agenciamento previsto, vitalício previsto, impostos e comissões dos 
 
 ROI = [(retorno líquido atribuído − investimento) ÷ investimento] × 100. Distinguir receita gerada, retorno líquido atribuído, valor investido, resultado após investimento e percentual de ROI.
 
-## 11.6. Inteligência para recomendar investimentos
+## 11.6. Inteligência para recomendar investimentos — REMOVIDO (v1.4)
+
+> Decisão do usuário (v1.4): o sistema não exibe recomendações nem justificativas ("por quê"). Mostra apenas os dados. O texto abaixo fica só como histórico.
 
 Analisar reserva, investimento realizado, contratos gerados, retorno projetado e recebido, evolução do ROI e capacidade financeira. Recomendar se o investimento está baixo, adequado ou elevado, se há oportunidade de expansão, se o retorno está negativo ou se é necessário reduzir/suspender. Toda recomendação deve ter justificativa e indicadores. Não recomendar aumento apenas porque existe saldo.
 

@@ -102,8 +102,6 @@ td.neg{color:var(--red)}td.pos{color:var(--green)}
 .al .kv b{color:var(--ink)}
 .al .act{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
 /* recommendation */
-.rec{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start}
-@media(max-width:720px){.rec{grid-template-columns:1fr}}
 .badge{font-family:var(--head);font-weight:800;font-size:18px;border-radius:12px;padding:14px 18px;text-align:center;min-width:180px}
 .badge small{display:block;font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.8;margin-bottom:2px}
 .badge.ok{background:var(--green-t);color:var(--green)}
@@ -111,8 +109,6 @@ td.neg{color:var(--red)}td.pos{color:var(--green)}
 .badge.er{background:var(--red-t);color:var(--red)}
 .badge.in{background:var(--blue-t);color:var(--blue)}
 .badge.up{background:var(--peach);color:var(--or-d)}
-.rec ul{padding-left:18px;margin-top:6px}
-.rec li{margin:4px 0;color:var(--ink-2)}
 .ind{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .ind span{background:var(--tint-2);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:12px;color:var(--ink-2)}
 .ind b{color:var(--ink)}
@@ -218,7 +214,7 @@ details.rules summary{cursor:pointer;font-weight:600;color:var(--or-d)}
    Alterar aqui apenas quando o usuário confirmar novas regras.
    ===================================================================== */
 var REGRAS = {
-  versao: 'v1.3 · 23/11/2026',
+  versao: 'v1.4 · 23/11/2026',
   unidades: ['Consolação', 'Mogi'],
   // 3. Custos fixos (salários brutos JÁ incluem o PJ das sócias — não somar de novo)
   custos: {
@@ -265,8 +261,6 @@ var REGRAS = {
   reservaAcumula: null,                                        // Pendência 3 (null = não decidido)
   baseROIDefinida: false,                                      // Pendência 4
   categoriasInvestimento: ['Tráfego pago', 'Compra de leads', 'Campanhas comerciais', 'Outras ações de captação'], // Pendência 5 (para validação)
-  // Critérios do motor de recomendação (parâmetros do painel, ajustáveis — não são regras da Optas)
-  criterios: { consumoElevado: 1.00, consumoBaixo: 0.50, roiExpansao: 1.00, roiMinimo: 0 }
 };
 
 /* =====================================================================
@@ -566,54 +560,11 @@ function calcularROI(R) {
     reserva: reserva, saldo: saldo, consumo: reserva ? total / reserva : null,
     atrib: atrib, semAtrib: semAtrib, invAtrib: invAtrib, retReal: retReal, roiReal: roiReal, temReal: temReal,
     pctEf: pctEf, liqPorReal: liqPorReal, diasRest: Math.max(0, dias - diaRef) };
-  if (total > 0 && invAtrib === 0) R.alertas.push({ sev: 'er', cod: 'ROI_ATRIB', titulo: 'Investimentos sem contratos atribuídos', texto: brl(total) + ' investidos em ' + mesLabel(mes) + ' sem contrato com origem/campanha correspondente.', impacto: 'O ROI não pode ser calculado; a recomendação não pode indicar aumento de verba.', acao: 'Lançar a campanha em cada investimento e garantir origem/campanha nos contratos.', irPara: 'roi' });
+  if (total > 0 && invAtrib === 0) R.alertas.push({ sev: 'er', cod: 'ROI_ATRIB', titulo: 'Investimentos sem contratos atribuídos', texto: brl(total) + ' investidos em ' + mesLabel(mes) + ' sem contrato com origem/campanha correspondente.', impacto: 'O ROI não pode ser calculado.', acao: 'Lançar a campanha em cada investimento e garantir origem/campanha nos contratos.', irPara: 'roi' });
   if (inv.some(function (i) { return !i.campanha; })) R.alertas.push({ sev: 'in', cod: 'INV_CAMP', titulo: inv.filter(function (i) { return !i.campanha; }).length + ' lançamento(s) de investimento sem campanha', texto: 'Sem campanha, o valor não pode ser cruzado com os contratos gerados.', impacto: 'Atribuição de retorno', acao: 'Editar o lançamento e informar a campanha/origem.', irPara: 'roi' });
-  o.rec = recomendar(o, R);
   return o;
 }
 
-/* =====================================================================
-   5. INTELIGÊNCIA DE RECOMENDAÇÃO DE INVESTIMENTO (seção 11.6)
-   ===================================================================== */
-function recomendar(o, R) {
-  var C = REGRAS.criterios, j = [], ind = [], st, cls, acao = null;
-  ind.push(['Reserva formada', o.reserva != null ? brl(o.reserva) : 'sem recebidas']);
-  ind.push(['Investido no mês', brl(o.total)]);
-  if (o.saldo != null) ind.push(['Saldo', brl(o.saldo)]);
-  ind.push(['ROI', o.roiReal != null ? pct(o.roiReal) : 'sem retorno recebido atribuído']);
-  if (R.res) ind.push(['Resultado operacional', brl(R.res.operacional)]);
-  if (o.reserva == null) {
-    st = 'Dados insuficientes'; cls = 'in';
-    j.push('As comissões efetivamente recebidas do mês não foram lançadas; sem elas, a reserva de marketing não existe.');
-    if (o.total > 0) j.push('Investidos ' + brl(o.total) + ' sem reserva formada.');
-    acao = 'Lançar as comissões recebidas.';
-  } else if (o.reserva <= 0) {
-    st = 'Sem reserva'; cls = 'er';
-    j.push('O lucro bruto operacional do mês é ' + brl(R.res.lbo) + ': não há reserva de marketing formada.');
-  } else if (o.roiReal != null && o.roiReal < C.roiMinimo) {
-    st = 'Retorno negativo'; cls = 'er';
-    j.push('ROI de ' + pct(o.roiReal) + ': retorno líquido recebido de ' + brl(o.retReal) + ' para ' + brl(o.invAtrib) + ' investidos.');
-  } else if (o.consumo > C.consumoElevado) {
-    st = 'Acima da reserva'; cls = 'er';
-    j.push('Investido ' + brl(o.total) + ', ' + brl(o.total - o.reserva) + ' acima da reserva de ' + brl(o.reserva) + ' (' + pct(o.consumo) + ').');
-  } else if (o.roiReal == null) {
-    st = 'Sem retorno comprovado'; cls = 'wa';
-    j.push(pct(o.consumo) + ' da reserva consumido. Nenhum valor recebido atribuído aos investimentos.');
-  } else if (R.res && R.res.operacional < 0) {
-    st = 'Resultado operacional negativo'; cls = 'wa';
-    j.push('ROI de ' + pct(o.roiReal) + ', com resultado operacional do mês de ' + brl(R.res.operacional) + '.');
-  } else if (o.roiReal >= C.roiExpansao && o.consumo < 0.8) {
-    st = 'Retorno alto, reserva disponível'; cls = 'up';
-    j.push('ROI de ' + pct(o.roiReal) + ' e ' + pct(1 - o.consumo) + ' da reserva livre (' + brl(o.saldo) + ').');
-  } else if (o.consumo < C.consumoBaixo) {
-    st = 'Reserva pouco utilizada'; cls = 'up';
-    j.push(pct(o.consumo) + ' da reserva consumido, com ROI de ' + pct(o.roiReal) + '.');
-  } else {
-    st = 'Dentro da reserva'; cls = 'ok';
-    j.push(pct(o.consumo) + ' da reserva consumido, ROI de ' + pct(o.roiReal) + '.');
-  }
-  return { status: st, cls: cls, justificativa: j, indicadores: ind, acao: acao };
-}
 
 /* =====================================================================
    6. RENDERIZAÇÃO
@@ -634,7 +585,7 @@ function card(lbl, v, m, opt) { opt = opt || {}; return '<div class="box ' + (op
 var T = { rec: '<span class="tag info">A receber</span>', real: '<span class="tag real">Realizado</span>', pend: '<span class="tag pend">Pendente</span>', prov: '<span class="tag proj">Provisório</span>', info: '<span class="tag info">Referência</span>' };
 
 function vGeral() {
-  var ro = R.roi, rec = ro.rec, res = R.res;
+  var ro = R.roi, res = R.res;
   var q = [
     ['Produção do mês', brl(R.producao), 'Mensalidades de contratos efetivos no mês (em contrato + implantado)', T.real, ''],
     ['A receber das operadoras', R.ag.base ? brl(R.ag.valor) : '—', (R.ag.base ? 'Agenciamento dos contratos efetivos' : 'Agenciamento ainda não calculável') + (R.ag.naoCalc ? ' · <b>' + brl(R.ag.naoCalc) + '</b> de mensalidade sem regra de comissão (Projeto Hapvida pendente) ou sem operadora' : '') + (R.ag.base ? ' · vitalício ' + brl(R.ag.vit) + '/mês a partir da ' + REGRAS.vitalicio.inicioParcela + 'ª parcela' : ''), R.ag.base ? (R.ag.provisorio ? T.prov : T.rec) : T.pend, R.ag.base ? 'or' : 'mu'],
@@ -667,17 +618,6 @@ function vGeral() {
   });
   h += '</div>';
   document.getElementById('v-geral').innerHTML = h;
-}
-function limiteTexto(o) {
-  if (o.saldo == null) return '—';
-  if (o.saldo <= 0) return '<span class="rd">Reduzir</span>';
-  return brl(o.diasRest ? o.saldo / o.diasRest : o.saldo) + '<small style="font-size:14px;color:var(--mute)">/dia</small>';
-}
-function limiteSub(o) {
-  if (o.saldo == null) return 'Teto depende da reserva formada (comissões recebidas).';
-  if (o.saldo <= 0) return 'A reserva do mês foi consumida (' + pct(o.consumo) + ').';
-  var dif = (o.diasRest ? o.saldo / o.diasRest : o.saldo) - o.media;
-  return 'Teto diário para usar o saldo de ' + brl(o.saldo) + ' até o fim do mês (' + (dif >= 0 ? '+' : '') + brl(dif) + '/dia vs. média atual). Aumento só com retorno comprovado.';
 }
 
 // Mínimos de comissões recebidas no mês (receita bruta, antes do imposto de 15%)
@@ -826,7 +766,7 @@ function vCom() {
 }
 
 function vRoi() {
-  var o = R.roi, rec = o.rec;
+  var o = R.roi;
   var h = '<div class="grid g5">'
     + card('Lucro bruto operacional', R.res ? brl(R.res.lbo) : '—', R.res ? 'recebidas − comissões vendedores' : 'aguarda comissões recebidas', { tag: R.res ? T.real : T.pend })
     + card('Reserva de marketing', o.reserva != null ? brl(o.reserva) : '—', o.reserva != null ? '15% do lucro bruto operacional' : 'aguarda comissões recebidas', { tag: o.reserva != null ? T.real : T.pend, cls: 'or' })
@@ -834,7 +774,6 @@ function vRoi() {
     + card('Saldo disponível', o.saldo != null ? brl(o.saldo) : '—', o.consumo != null ? pct(o.consumo) + ' da reserva consumido' : 'sem reserva confirmada', { cls: o.saldo != null ? (o.saldo >= 0 ? 'gr' : 'rd') : 'mu', extra: o.consumo != null ? '<div class="mt">' + bar(o.consumo, o.consumo > 1 ? 'r' : (o.consumo > .8 ? '' : 'g')) + '</div>' : '' })
     + card('Teto diário restante', o.saldo != null && o.saldo > 0 && o.diasRest ? brl(o.saldo / o.diasRest) : '—', o.saldo != null ? 'saldo ÷ ' + o.diasRest + ' dias restantes' : 'sem reserva formada')
     + '</div>';
-  h += '<div class="box dk mt"><div class="rec"><div class="badge ' + rec.cls + '"><small>Recomendação</small>' + esc(rec.status) + '</div><div><ul>' + rec.justificativa.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul><div class="ind">' + rec.indicadores.map(function (i) { return '<span>' + i[0] + ': <b>' + i[1] + '</b></span>'; }).join('') + '</div></div></div></div>';
   if (REGRAS.reservaAcumula == null) h += '<div class="note">' + T.pend + ' Acúmulo da reserva entre meses ainda não definido (Pendência 3): o saldo considera somente ' + mesLabel(R.mes) + '.</div>';
 
   // Lançamento
@@ -968,7 +907,6 @@ function vReg() {
     + regra('Qual comissão se aplica a cada venda', '1º tabela gravada na data da venda → 2º regra do projeto (Projeto Hapvida) → 3º tabela da operadora', 'Hapvida fora do projeto usa 350% + 2%. Mudanças futuras de tabela não alteram vendas antigas.')
     + regra('Comissão do vendedor', 'Comissão = produção do mês × percentual da faixa atingida', 'O percentual incide sobre toda a produção. Sem médias históricas.')
     + '</div>';
-  h += '<div class="box mt"><div class="lbl">Critérios do motor de recomendação <span class="tag cfg">parâmetros do painel</span></div><p class="m">Não são regras da Optas — são limites usados para classificar o investimento e podem ser ajustados: gasto acima de ' + pct(REGRAS.criterios.consumoElevado) + ' da reserva; reserva pouco utilizada abaixo de ' + pct(REGRAS.criterios.consumoBaixo) + '; retorno alto com ROI ≥ ' + pct(REGRAS.criterios.roiExpansao) + '. Somente valores efetivos: nenhuma projeção é usada.</p></div>';
   document.getElementById('v-reg').innerHTML = h;
 }
 

@@ -8,13 +8,14 @@ As regras de negócio seguem o [documento-mestre](docs/DOCUMENTO-MESTRE.md). Pri
 
 | Aba | Conteúdo |
 |---|---|
-| **Visão geral** | Recomendação de investimento com justificativa, as 10 perguntas da gestão respondidas, comparação Consolação × Mogi |
-| **Financeiro** | Lançamento das comissões efetivamente recebidas, fechamento do mês por unidade (impostos, comissões, custos, provisão, resultado operacional, LBO, reserva, resultado financeiro), cenário projetado, ponto de equilíbrio, estrutura de custos e provisões |
+| **Visão geral** | Lucro ou prejuízo consolidado, mínimo para empatar e mínimo sustentável, resultado de cada unidade, indicadores do mês e comparativo |
+| **Consolação / Mogi** | Lucro ou prejuízo da unidade, mínimos, demonstrativo, custos e vendedores |
+| **Financeiro** | Lançamento das comissões efetivamente recebidas, fechamento do mês por unidade (impostos, comissões, custos, provisão, resultado operacional, lucro bruto operacional, reserva, resultado financeiro), ponto de equilíbrio, estrutura de custos e provisões |
 | **Comercial** | Produção e comissão por vendedor (faixas por unidade sobre toda a produção), quanto falta para a próxima faixa, produção por operadora, PF × PME, funil Hapvida |
-| **ROI & investimentos** | Reserva de marketing, registro diário de investimento, média diária, projeção até o fechamento, teto diário, ROI projetado e realizado por campanha, importação de contratos linha a linha (CSV) |
+| **ROI & investimentos** | Reserva de marketing, registro diário de investimento, média diária, teto diário, ROI por campanha (só com valor recebido), importação de contratos linha a linha (CSV) |
 | **Alertas** | Verificação de integridade: campo ausente, registros afetados, cálculo comprometido, correção. Botão para copiar o texto e enviar à equipe responsável |
 | **Pendências** | As 7 pendências do documento-mestre, separadas das regras confirmadas |
-| **Regras** | Tabelas vigentes: faixas dos vendedores, operadoras, imposto, reserva, vitalício e critérios do motor de recomendação |
+| **Regras** | Tabelas vigentes e todas as fórmulas do sistema |
 
 ## Estrutura
 
@@ -47,8 +48,10 @@ No Apps Script, os dados vêm de `tvDadosWeb` e são atualizados a cada 5 minuto
 
 ## Limitação da integração atual
 
+O painel considera apenas contratos efetivos (em contrato + implantado) e valores recebidos; não há projeções nem recomendações.
+
 O painel gerencial entrega **totais por vendedor** (Projeto Hapvida / fora do projeto), não vendas individuais. Por isso:
-- o agenciamento previsto só é calculado para a parte Hapvida, e fica marcado como **provisório** porque a modalidade PF/PME não foi informada;
+- a produção do Projeto Hapvida aguarda a regra de comissão do projeto para entrar no agenciamento a receber;
 - as vendas "fora do projeto" não têm operadora, então não entram no cálculo;
 - nenhum contrato tem origem ou campanha, então o ROI não pode ser atribuído.
 
