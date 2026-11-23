@@ -214,7 +214,7 @@ details.rules summary{cursor:pointer;font-weight:600;color:var(--or-d)}
    Alterar aqui apenas quando o usuário confirmar novas regras.
    ===================================================================== */
 var REGRAS = {
-  versao: 'v1.4 · 23/11/2026',
+  versao: 'v1.5 · 23/11/2026',
   unidades: ['Consolação', 'Mogi'],
   // 3. Custos fixos (salários brutos JÁ incluem o PJ das sócias — não somar de novo)
   custos: {
@@ -586,14 +586,19 @@ var T = { rec: '<span class="tag info">A receber</span>', real: '<span class="ta
 
 function vGeral() {
   var ro = R.roi, res = R.res;
+  // Resultado financeiro do mês (definição do usuário, v1.5):
+  // a receber das operadoras − (comissões dos vendedores + custo fixo + provisão) − reserva de marketing
+  // reserva = 15% × (a receber − comissões dos vendedores)
+  var custoTotal = R.comissoes + R.custoFixo + R.provisao;
+  var rf = R.ag.base ? (function () { var res15 = Math.max(0, R.ag.valor - R.comissoes) * REGRAS.reservaMarketing; return { reserva: res15, resultado: R.ag.valor - custoTotal - res15 }; })() : null;
   var q = [
     ['Produção do mês', brl(R.producao), 'Mensalidades de contratos efetivos no mês (em contrato + implantado)', T.real, ''],
     ['A receber das operadoras', R.ag.base ? brl(R.ag.valor) : '—', (R.ag.base ? 'Agenciamento dos contratos efetivos' : 'Agenciamento ainda não calculável') + (R.ag.naoCalc ? ' · <b>' + brl(R.ag.naoCalc) + '</b> de mensalidade sem regra de comissão (Projeto Hapvida pendente) ou sem operadora' : '') + (R.ag.base ? ' · vitalício ' + brl(R.ag.vit) + '/mês a partir da ' + REGRAS.vitalicio.inicioParcela + 'ª parcela' : ''), R.ag.base ? (R.ag.provisorio ? T.prov : T.rec) : T.pend, R.ag.base ? 'or' : 'mu'],
     ['Comissões dos vendedores', brl(R.comissoes), 'Faixas de cada unidade sobre a produção de contratos efetivos', T.real, ''],
     ['Custo da operação', brl(R.custoFixo + R.provisao), 'Custo fixo ' + brl(R.custoFixo) + ' + provisão 13º/férias ' + brl(R.provisao), '', ''],
     ['Custo total da Optas no mês', brl(R.comissoes + R.custoFixo + R.provisao), 'Comissões dos vendedores + custo da operação', '', 'rd'],
-    ['Resultado financeiro', res ? brl(res.financeiro) : '—', res ? 'Resultado após impostos, comissões, custos, provisão e reserva de marketing' : 'Depende das comissões <b>efetivamente recebidas</b>.', res ? T.real : T.pend, res ? (res.financeiro >= 0 ? 'gr' : 'rd') : 'mu'],
-    ['Reserva de marketing', ro.reserva != null ? brl(ro.reserva) : '—', ro.reserva != null ? 'Reserva de marketing = 15% do lucro bruto operacional (' + brl(res.lbo) + ')' : 'Reserva exige comissões recebidas.', ro.reserva != null ? T.real : T.pend, ro.reserva != null ? 'or' : 'mu'],
+    ['Reserva de marketing', rf ? brl(rf.reserva) : '—', '15% × (a receber das operadoras − comissões dos vendedores)', '', rf ? 'or' : 'mu'],
+    ['Resultado financeiro', rf ? brl(rf.resultado) : '—', 'A receber − custo total da Optas − reserva de marketing', '', rf ? (rf.resultado >= 0 ? 'gr' : 'rd') : 'mu'],
     ['ROI', ro.roiReal != null ? pct(ro.roiReal) : '—', ro.roiReal != null ? 'Sobre ' + brl(ro.invAtrib) + ' investidos com retorno recebido atribuído' : 'Sem retorno recebido atribuído a investimentos', ro.roiReal != null ? T.real : T.pend, '']
   ];
   var h = blocoResultado('Optas consolidado · Consolação + Mogi', R.res, R.recebidas, R.comissoes, R.custoFixo, R.provisao, R.recebidasInformadas && R.recebidas == null ? 'Falta lançar: ' + REGRAS.unidades.filter(function (u) { return R.unidades[u].recebidas == null; }).join(', ') : null);
@@ -897,6 +902,7 @@ function vReg() {
     + regra('Mínimo sustentável', 'Recebidas mínimas = (0,85 × comissões dos vendedores + custo fixo + provisão) ÷ 0,70', 'Não fecha no vermelho e ainda forma a reserva de marketing de 15% do lucro bruto operacional.')
     + regra('Resultado financeiro', 'Resultado financeiro = resultado operacional − reserva de marketing', 'Reserva = 15% × (recebidas − comissões dos vendedores). É destinação do resultado, não despesa.')
     + regra('Qual comissão se aplica a cada venda', '1º tabela gravada na data da venda → 2º regra do projeto (Projeto Hapvida) → 3º tabela da operadora', 'Hapvida fora do projeto usa 350% + 2%. Mudanças futuras de tabela não alteram vendas antigas.')
+    + regra('Resultado financeiro do mês', 'Resultado financeiro = a receber das operadoras − custo total da Optas no mês − reserva de marketing', 'Reserva de marketing = 15% × (a receber das operadoras − comissões dos vendedores). Positivo = verde; negativo = vermelho. Para fechar no verde, o a receber precisa superar custo total + reserva.')
     + regra('Custo total da Optas no mês', 'Custo total = comissões dos vendedores + custo fixo + provisão 13º/férias', 'Soma de tudo que a Optas paga no mês para operar, sem impostos e sem reserva de marketing.')
     + regra('Comissão do vendedor', 'Comissão = produção do mês × percentual da faixa atingida', 'O percentual incide sobre toda a produção. Sem médias históricas.')
     + '</div>';

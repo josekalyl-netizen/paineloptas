@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 1.4  
+**Versão:** 1.5  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -337,6 +337,15 @@ Exibido de forma direta, sem sugestões: uma aba para Consolação, uma para Mog
 - Agenciamento e vitalício "a receber": valor que a Optas receberá das operadoras pelos contratos efetivos, conforme a comissão de cada operadora. Não é chamado de "previsto".
 - ROI: somente com valor efetivamente recebido.
 - Indicadores da visão geral exibem apenas título e número, sem textos explicativos.
+
+## 12.6. Resultado financeiro do mês (v1.5)
+
+Indicador da visão geral, definido pelo usuário:
+
+- Custo total da Optas no mês = comissões dos vendedores + custo fixo + provisão 13º/férias.
+- Reserva de marketing = 15% × (a receber das operadoras − comissões dos vendedores).
+- **Resultado financeiro = a receber das operadoras − custo total da Optas no mês − reserva de marketing.**
+- Para fechar no verde, o valor a receber das operadoras precisa ser maior que custo total + reserva de marketing.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
