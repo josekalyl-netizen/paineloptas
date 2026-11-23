@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 1.5  
+**Versão:** 1.6  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -251,6 +251,8 @@ Ainda é necessário confirmar: se a quarta parcela é a regra de todas as opera
 
 # 9. RESERVA DE MARKETING
 
+> **Substituído na v1.6:** a reserva passou a ser 15% da produção mensal (ver 12.7). O texto abaixo fica como histórico.
+
 Reservar 15% do lucro bruto operacional para reinvestimento em marketing e geração de leads.
 
 ## 9.1. Fórmula
@@ -326,7 +328,7 @@ Exibido de forma direta, sem sugestões: uma aba para Consolação, uma para Mog
 
 - Resultado operacional = comissões efetivamente recebidas − 15% de imposto − comissões dos vendedores − custo fixo − provisão 13º/férias. Positivo = LUCRO; negativo = PREJUÍZO.
 - Mínimo para não fechar no vermelho = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85.
-- Mínimo sustentável (forma também a reserva de 15% do lucro bruto operacional) = (0,85 × comissões dos vendedores + custo fixo + provisão) ÷ 0,70.
+- Mínimo sustentável: ver 12.7 (v1.6).
 - Resultado financeiro = resultado operacional − reserva de marketing.
 - Custo total da Optas no mês = comissões dos vendedores + custo fixo + provisão 13º/férias (sem impostos e sem reserva de marketing).
 
@@ -338,14 +340,21 @@ Exibido de forma direta, sem sugestões: uma aba para Consolação, uma para Mog
 - ROI: somente com valor efetivamente recebido.
 - Indicadores da visão geral exibem apenas título e número, sem textos explicativos.
 
-## 12.6. Resultado financeiro do mês (v1.5)
+## 12.6. Resultado financeiro do mês (v1.6)
 
 Indicador da visão geral, definido pelo usuário:
 
 - Custo total da Optas no mês = comissões dos vendedores + custo fixo + provisão 13º/férias.
-- Reserva de marketing = 15% × (a receber das operadoras − comissões dos vendedores).
-- **Resultado financeiro = a receber das operadoras − custo total da Optas no mês − reserva de marketing.**
-- Para fechar no verde, o valor a receber das operadoras precisa ser maior que custo total + reserva de marketing.
+- Impostos = 15% × a receber das operadoras.
+- Reserva de marketing = 15% × produção mensal (soma das mensalidades dos contratos efetivos).
+- **Resultado financeiro = a receber das operadoras − impostos − custo total da Optas no mês − reserva de marketing.**
+- Para fechar no verde, o valor a receber precisa cobrir impostos, custo total e reserva de marketing.
+
+## 12.7. Mudança da base da reserva de marketing (v1.6)
+
+Decisão do usuário: a reserva de marketing passa a ser **15% da produção mensal**, substituindo a regra anterior (15% do lucro bruto operacional, seção 9). Vale para todo o painel: resultado das unidades, consolidado, mínimo sustentável e saldo de investimento.
+
+- Mínimo sustentável = (comissões dos vendedores + custo fixo + provisão + reserva de marketing) ÷ 0,85.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
