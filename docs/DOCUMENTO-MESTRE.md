@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 1.1  
+**Versão:** 1.2  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -317,6 +317,15 @@ Analisar reserva, investimento realizado, contratos gerados, retorno projetado e
 - **Financeiro:** comissões previstas e recebidas, impostos, comissões dos vendedores, custos fixos, provisão, resultado operacional, reserva de marketing, resultado financeiro.
 - **Comercial:** produção total, por unidade, vendedor, operadora, PF/PME; agenciamento e vitalício gerados; comissões dos vendedores.
 - **Investimentos:** reserva, investimento diário e acumulado, saldo, contratos gerados, retorno projetado e realizado, ROI, recomendação para o próximo período.
+
+## 12.4. Lucro ou prejuízo por unidade (v1.2)
+
+Exibido de forma direta, sem sugestões: uma aba para Consolação, uma para Mogi e o consolidado no topo da visão geral.
+
+- Resultado operacional = comissões efetivamente recebidas − 15% de imposto − comissões dos vendedores − custo fixo − provisão 13º/férias. Positivo = LUCRO; negativo = PREJUÍZO.
+- Mínimo para empatar = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85.
+- Mínimo sustentável (forma também a reserva de 15% do LBO) = (0,85 × comissões dos vendedores + custo fixo + provisão) ÷ 0,70.
+- Resultado financeiro = resultado operacional − reserva de marketing.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
