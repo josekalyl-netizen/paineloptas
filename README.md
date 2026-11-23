@@ -12,7 +12,7 @@ As regras de negócio seguem o [documento-mestre](docs/DOCUMENTO-MESTRE.md). Pri
 | **Consolação / Mogi** | Lucro ou prejuízo da unidade, mínimos, demonstrativo, custos e vendedores |
 | **Financeiro** | Lançamento das comissões efetivamente recebidas, fechamento do mês por unidade (impostos, comissões, custos, provisão, resultado operacional, lucro bruto operacional, reserva, resultado financeiro), ponto de equilíbrio, estrutura de custos e provisões |
 | **Comercial** | Produção e comissão por vendedor (faixas por unidade sobre toda a produção), quanto falta para a próxima faixa, produção por operadora, PF × PME, funil Hapvida |
-| **ROI & investimentos** | Reserva de marketing, registro diário de investimento, média diária, teto diário, ROI por campanha (só com valor recebido), importação de contratos linha a linha (CSV) |
+| **ROI & investimentos** | Registro de investimentos escrevendo em português, investimento × limite de 15% da produção (dentro / passou), ROI sobre as vendas, importação de contratos linha a linha (CSV) |
 | **Alertas** | Verificação de integridade: campo ausente, registros afetados, cálculo comprometido, correção. Botão para copiar o texto e enviar à equipe responsável |
 | **Pendências** | As 7 pendências do documento-mestre, separadas das regras confirmadas |
 | **Regras** | Tabelas vigentes e todas as fórmulas do sistema |

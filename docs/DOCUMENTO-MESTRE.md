@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 1.6  
+**Versão:** 1.7  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -355,6 +355,13 @@ Indicador da visão geral, definido pelo usuário:
 Decisão do usuário: a reserva de marketing passa a ser **15% da produção mensal**, substituindo a regra anterior (15% do lucro bruto operacional, seção 9). Vale para todo o painel: resultado das unidades, consolidado, mínimo sustentável e saldo de investimento.
 
 - Mínimo sustentável = (comissões dos vendedores + custo fixo + provisão + reserva de marketing) ÷ 0,85.
+
+## 12.8. Investimentos e ROI (v1.7)
+
+- O usuário registra os investimentos escrevendo em português (ex.: "gastei 1.500 em tráfego pago no Facebook dia 10", "investimos 3 mil em leads em novembro"). O sistema identifica valor, data (ou mês), tipo e campanha, mostra como entendeu e só registra após confirmação.
+- Limite de investimento = 15% da produção do mês (reserva de marketing). O painel mostra **dentro dos 15%** ou **passou dos 15%**, quanto foi usado e quanto sobra ou excedeu.
+- **ROI sobre as vendas = (vendido no mês − investido no mês) ÷ investido no mês**, em que vendido = produção dos contratos efetivos. Também mostra o valor vendido para cada R$ 1,00 investido.
+- A tabela de retorno por campanha só aparece quando houver contratos com campanha informada.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
