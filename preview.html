@@ -12,7 +12,7 @@
 html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
 button,input,select,textarea{resize:vertical;font:inherit;color:inherit}
-.wrap{max-width:1440px;margin:0 auto;padding:20px 24px 48px}
+.wrap{width:100%;margin:0;padding:20px clamp(16px,2.2vw,40px) 48px}
 /* header */
 .hd{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
 .hd img{height:58px;width:auto}
@@ -145,7 +145,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--peach);border-co
 @media(max-width:900px){.resv{grid-template-columns:1fr}}
 .big{display:inline-block;font-family:var(--head);font-weight:800;font-size:15px;letter-spacing:.12em;border-radius:8px;padding:6px 12px}
 .big.lucro{background:var(--green-t);color:var(--green)}.big.prej{background:var(--red-t);color:var(--red)}.big.nd{background:var(--tint);color:var(--mute)}
-.bigv{font-family:var(--head);font-weight:800;font-size:52px;line-height:1.1;margin:8px 0 4px}
+.bigv{font-family:var(--head);font-weight:800;font-size:52px;line-height:1.1;margin:8px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:720px){.bigv{font-size:36px}}
 .bigv.lucro{color:var(--green)}.bigv.prej{color:var(--red)}.bigv.nd{color:var(--mute)}
 .mins .mrow{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink-2);margin:6px 0}
@@ -212,6 +212,44 @@ details.rules summary{cursor:pointer;font-weight:600;color:var(--or-d)}
 .kpirow{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}
 .kpirow div{font-size:12px;color:var(--mute)}
 .kpirow b{display:block;font-family:var(--head);font-weight:800;font-size:16px;color:var(--ink)}
+/* ===== Responsivo ===== */
+html,body{overflow-x:hidden}
+/* tablet */
+@media(max-width:1024px){
+  .bigv{font-size:clamp(28px,4.6vw,44px)}.eqv{font-size:clamp(20px,2.8vw,26px)}.eqv.big2{font-size:clamp(24px,3.4vw,32px)}
+  .hd .meta{margin-left:0;width:100%}
+  .g5{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fl{grid-template-columns:minmax(130px,220px) 1fr 120px}
+  .fl em{display:none}
+}
+/* celular */
+@media(max-width:600px){
+  body{font-size:13.5px}
+  .wrap{padding:12px 12px 32px}
+  .hd{gap:10px}.hd img{height:40px}.hd .k{font-size:10px;letter-spacing:.1em}.hd h1{font-size:20px}
+  .hd .meta{gap:6px}.pill{font-size:11px;padding:5px 9px}
+  .tabs{margin:12px -12px 14px;padding:0 12px;gap:0}.tab{padding:10px 10px;font-size:13px}
+  .box{padding:14px 14px;border-radius:12px}
+  .sec{font-size:17px;margin:20px 0 8px}
+  .v{font-size:22px}.v.sm{font-size:18px}
+  .eq{gap:8px;margin-top:12px}.eqc{padding:12px 14px}.eqv{font-size:22px}.eqv.big2{font-size:28px}
+  .bigv{font-size:30px}
+  .mleg{flex-direction:column;gap:6px}
+  .fl{grid-template-columns:1fr auto;gap:8px;font-size:13px}.fl .fb{display:none}
+  .g2,.g3,.g4,.g5{grid-template-columns:minmax(0,1fr)}
+  .grid.g4 .q,.grid.g3 .q{padding:12px 14px}
+  .kpirow{gap:12px}
+  .tli{grid-template-columns:1fr auto;gap:8px}.tli .x{grid-column:2;grid-row:1}.tlv{grid-column:1/-1;font-size:15px}
+  .tl{margin-left:4px;padding-left:14px}.tld::before{left:-21px}
+  .split{gap:8px}
+  .ych{gap:2px}.yc span{font-size:9px}
+  textarea{font-size:16px}input{font-size:16px}
+  table{font-size:12px}th,td{padding:7px 8px}
+  .al{grid-template-columns:24px 1fr}.al .kv{flex-direction:column;gap:2px}
+}
+/* indicadores do mês: 2 por linha no celular grande */
+@media(min-width:420px) and (max-width:600px){.grid.g4:has(.q),.grid.g3:has(.q){grid-template-columns:repeat(2,minmax(0,1fr))}.q .v{font-size:18px}}
+/* telas grandes: o painel acompanha a tela (ver ajustarTela) */
 </style>
 </head>
 <body>
@@ -343,7 +381,7 @@ var ESTADO_DEMO = {
     { id: 'd3', data: '2026-11-10', valor: 250, categoria: 'Compra de leads', campanha: 'Leads Amil PF' },
     { id: 'd4', data: '2026-11-14', valor: 500, categoria: 'Tráfego pago', campanha: 'Meta Ads Bradesco PME' },
     { id: 'd5', data: '2026-11-19', valor: 400, categoria: 'Compra de leads', campanha: 'Leads Amil PF' },
-    { id: 'd6', data: '2026-11-21', valor: 350, categoria: 'Campanhas comerciais', campanha: '' }
+    { id: 'd6', data: '2026-11-21', valor: 350, categoria: 'Campanhas comerciais', campanha: 'Panfletagem Mogi' }
   ],
   contratos: [
     { id_venda: 'EX1', contrato: 'C-EX1', projeto: '', operadora: 'Bradesco', modalidade: 'PME', valor_mensal: 1800, vendedor: 'Wanderleia G.', unidade: 'Mogi', data_venda: '2026-11-08', origem: 'Meta', campanha: 'Meta Ads Bradesco PME', valor_recebido: 3600 },
@@ -1145,6 +1183,15 @@ function show(v) {
 }
 document.getElementById('tabs').addEventListener('click', function (e) { var b = e.target.closest('.tab'); if (b) show(b.dataset.v); });
 
+/* Adapta a escala à tela: até 1600px o layout é fluido; acima disso (monitores grandes, TVs)
+   o painel inteiro aumenta na proporção da largura, ocupando a tela toda. */
+function ajustarTela() {
+  var w = window.innerWidth || document.documentElement.clientWidth, z = w > 1600 ? Math.min(w / 1600, 2.6) : 1;
+  document.documentElement.style.zoom = z === 1 ? '' : String(Math.round(z * 100) / 100);
+}
+ajustarTela();
+window.addEventListener('resize', ajustarTela);
+window.addEventListener('orientationchange', ajustarTela);
 function iniciar() {
   var tab = location.hash.slice(1); if (!tab) { try { tab = localStorage.getItem('optas_tab'); } catch (e) {} }
   if (GAS) {
