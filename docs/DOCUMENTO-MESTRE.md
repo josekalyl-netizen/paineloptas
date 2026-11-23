@@ -400,6 +400,15 @@ Decisão do usuário: a reserva de marketing passa a ser **15% da produção men
 - A visão geral mostra "De onde vem o a receber" (por operadora: mensalidades × % = a receber) e a aba Comercial lista cada proposta com %, a receber, imposto e líquido.
 - Proposta sem regra de comissão (ex.: Projeto Hapvida pendente) aparece como "fora da conta" e o valor de mensalidade excluído é mostrado.
 
+## 12.13. Arredondamento em centavos (v2.2)
+
+- Todo valor é arredondado em centavos no momento do cálculo (meio centavo para cima), e cada total é a soma exata das linhas exibidas.
+- Comissão do vendedor: arredondada por vendedor (ex.: 30% × R$ 3.590,75 = R$ 1.077,225 → R$ 1.077,23).
+- A receber: arredondado por proposta.
+- Imposto: 15% do total a receber da unidade, rateado entre as propostas pelo método dos maiores restos (a soma das propostas bate com o total).
+- Reserva de marketing: 15% da produção de cada unidade; consolidado = soma das unidades.
+- Consolidado = soma das unidades, campo a campo.
+
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
 Distribuição de lucros entre W3G e sócias; média de comissões para provisionamento da folha; controle individual de salários fixos; CPL e ROI avançado sem atribuição confiável; conciliação detalhada de cada pagamento das operadoras; controle avançado de estornos, cancelamentos, descontos e recebimentos parciais.
