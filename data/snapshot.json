@@ -1,0 +1,153 @@
+{
+ "rotulo": "Novembro 2026 (início do projeto → 04/12)",
+ "atualizado": "18:53",
+ "geral": {
+  "hap": {
+   "qtd": 87,
+   "valor": 36673.58,
+   "vidas": 109,
+   "meta": 60000,
+   "leads": 2757,
+   "leadsT": 2757,
+   "convT": 87,
+   "proj": 75656.97,
+   "vidImp": 72,
+   "vidImpT": 72
+  },
+  "fora": {
+   "qtd": 15,
+   "valor": 18213.059999999998,
+   "rec": 300,
+   "aberto": 87,
+   "man": 15
+  }
+ },
+ "equipes": [
+  {
+   "nome": "Mogi",
+   "hap": {
+    "mais5": 5,
+    "qtd": 51,
+    "valor": 21842.59,
+    "vidas": 65,
+    "meta": 30000,
+    "imp": 37,
+    "prev": 2066.49,
+    "proj": 44941.25,
+    "leads": 1807,
+    "leadsT": 1807,
+    "convT": 51,
+    "vidImp": 47,
+    "vidImpT": 47,
+    "parados": 1
+   },
+   "fora": {
+    "qtd": 10,
+    "valor": 10450.15,
+    "rec": 80,
+    "aberto": 19,
+    "man": 10
+   }
+  },
+  {
+   "nome": "Consolação",
+   "hap": {
+    "mais5": 5,
+    "qtd": 36,
+    "valor": 14830.99,
+    "vidas": 44,
+    "meta": 30000,
+    "imp": 19,
+    "prev": 2412.78,
+    "proj": 30715.72,
+    "leads": 950,
+    "leadsT": 950,
+    "convT": 36,
+    "vidImp": 25,
+    "vidImpT": 25,
+    "parados": 2
+   },
+   "fora": {
+    "qtd": 5,
+    "valor": 7762.91,
+    "rec": 220,
+    "aberto": 68,
+    "man": 5
+   }
+  }
+ ],
+ "vendedores": [
+  {
+   "nome": "Wanderleia G.",
+   "equipe": "Mogi",
+   "hap": 10204.18,
+   "proj": 20749.15,
+   "fora": 4534,
+   "meta": 10000
+  },
+  {
+   "nome": "Elaine A.",
+   "equipe": "Mogi",
+   "hap": 4486.19,
+   "proj": 9088.7,
+   "fora": 1079.57,
+   "meta": 10000
+  },
+  {
+   "nome": "Kevelin D.",
+   "equipe": "Mogi",
+   "hap": 4342,
+   "proj": 5794.23,
+   "fora": 3648.68,
+   "meta": 5000
+  },
+  {
+   "nome": "Isabela A.",
+   "equipe": "Mogi",
+   "hap": 2810.22,
+   "proj": 9309.17,
+   "fora": 1187.9,
+   "meta": 5000
+  },
+  {
+   "nome": "Gabrielly d.",
+   "equipe": "Consolação",
+   "hap": 4038.99,
+   "proj": 7493.09,
+   "fora": 3463.48,
+   "meta": 6000
+  },
+  {
+   "nome": "Samia P.",
+   "equipe": "Consolação",
+   "hap": 3237.15,
+   "proj": 3907.65,
+   "fora": 353.6,
+   "meta": 6000
+  },
+  {
+   "nome": "Karoline S.",
+   "equipe": "Consolação",
+   "hap": 3164.86,
+   "proj": 5478.98,
+   "fora": 1605.71,
+   "meta": 6000
+  },
+  {
+   "nome": "Vitor H.",
+   "equipe": "Consolação",
+   "hap": 2805.24,
+   "proj": 6702.86,
+   "fora": 2340.12,
+   "meta": 6000
+  },
+  {
+   "nome": "Victor B.",
+   "equipe": "Consolação",
+   "hap": 1584.75,
+   "proj": 7133.14,
+   "fora": 0,
+   "meta": 6000
+  }
+ ]
+}
