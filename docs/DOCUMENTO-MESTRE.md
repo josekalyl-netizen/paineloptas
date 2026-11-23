@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 1.9  
+**Versão:** 2.0  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -383,6 +383,14 @@ Decisão do usuário: a reserva de marketing passa a ser **15% da produção men
 - Pendência 4 (base do ROI): ROI sobre as vendas.
 - Pendência 5 (categorias de investimento): registro por nome de campanha.
 - Pendência 6 (origem dos contratos): não é mais necessária para o ROI.
+
+## 12.11. VR e VT por dia útil (v2.0)
+
+- Os valores de VR e VT informados (seção 3.3) são os totais de **outubro/2026**, que teve **21 dias úteis** (22 dias de segunda a sexta − 12/10).
+- Valor por dia útil: Consolação VR R$ 197,16 e VT R$ 75,06 (por pessoa, 5 CLT: VR R$ 39,43 e VT R$ 15,01); Mogi VR R$ 173,35 e VT R$ 80,54 (por pessoa, 4 CLT: VR R$ 43,34 e VT R$ 20,13).
+- **VR/VT do mês = valor por dia útil × dias úteis do mês.** Dias úteis = segunda a sexta − feriados nacionais (inclui Sexta-feira Santa).
+- O custo fixo de cada mês passa a variar com os dias úteis; outubro reproduz exatamente R$ 39.185,43.
+- Pendência 10: feriados municipais (São Paulo e Mogi das Cruzes), Carnaval, Corpus Christi e recesso de fim de ano.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
