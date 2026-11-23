@@ -1226,8 +1226,8 @@ function vReg() {
     h += '<div class="m mt" style="font-weight:700;color:var(--ink)">' + u + '</div><div class="tw"><table><tbody>' + fx.map(function (f, i) { return '<tr><td>' + (fx[i + 1] ? brl(f.de || 1) + ' a ' + brl(fx[i + 1].de - 0.01) : 'A partir de ' + brl(f.de)) + '</td><td class="r"><span class="tier">' + pct(f.pct) + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
   });
   h += '</div><div class="box"><div class="lbl">Comissões das operadoras <em>tabela ' + REGRAS.versao + '</em></div><div class="tw"><table><thead><tr><th>Operadora</th><th class="r">Agenciamento</th><th class="r">Vitalício</th><th>PF/PME</th></tr></thead><tbody>';
-  REGRAS.projetos.forEach(function (o) { h += '<tr style="background:var(--peach)"><td><b>' + o.nome + '</b> <span class="m">regra própria</span></td><td class="r">' + (o.ag != null ? pct(o.ag) : '<span class="tag pend">pendente</span>') + '</td><td class="r">' + (o.vit != null ? pct(o.vit) : '<span class="tag pend">pendente</span>') + '</td><td>—</td></tr>'; });
-  REGRAS.operadoras.forEach(function (o) { h += '<tr><td>' + (o.nome === 'Hapvida' ? 'Hapvida <span class="m">fora do projeto</span>' : o.nome) + '</td><td class="r">' + (o.ag != null ? pct(o.ag) : '<span class="tag pend">pendente</span>') + '</td><td class="r">' + (o.vit != null ? pct(o.vit) : '<span class="tag pend">pendente</span>') + '</td><td>' + (o.modalidades ? Object.keys(o.modalidades).join(' / ') : '<span class="tag pend">não informado</span>') + '</td></tr>'; });
+  REGRAS.projetos.forEach(function (o) { h += '<tr style="background:var(--peach)"><td><b>' + o.nome + '</b> <span class="m">regra própria</span></td><td class="r">' + (o.ag != null ? pct(o.ag) + (o.demo ? ' <span class="tag proj">fictício</span>' : '') : '<span class="tag pend">pendente</span>') + '</td><td class="r">' + (o.vit != null ? pct(o.vit) : '<span class="tag pend">pendente</span>') + '</td><td>—</td></tr>'; });
+  REGRAS.operadoras.forEach(function (o) { h += '<tr><td>' + (o.nome === 'Hapvida' ? 'Hapvida <span class="m">fora do projeto</span>' : o.nome) + '</td><td class="r">' + (o.ag != null ? pct(o.ag) + (o.demo ? ' <span class="tag proj">fictício</span>' : '') : '<span class="tag pend">pendente</span>') + '</td><td class="r">' + (o.vit != null ? pct(o.vit) : '<span class="tag pend">pendente</span>') + '</td><td>' + (o.modalidades ? Object.keys(o.modalidades).join(' / ') + (o.demoMod ? ' <span class="tag proj">fictício</span>' : '') : '<span class="tag pend">não informado</span>') + '</td></tr>'; });
   h += '</tbody></table></div></div></div>';
   h += '<div class="grid g3 mt">' + card('Imposto', '15%', 'Sobre agenciamento e vitalício, todas as operadoras. Não é descontado do vendedor.', { box: 'dk' })
     + card('Reserva de marketing', '15%', 'Sobre a produção mensal (soma das mensalidades dos contratos efetivos). Destinação do resultado, não despesa.', { box: 'dk' })
@@ -1274,14 +1274,25 @@ window.addEventListener('orientationchange', ajustarTela);
 // Modo exemplo: contratos fictícios que somam EXATAMENTE a produção real de cada vendedor.
 // Parte "Projeto Hapvida" = produção hap do vendedor; parte "fora do projeto" = produção fora com operadora fictícia.
 function contratosDemo(D) {
-  var ops = [['Bradesco', 'PME', 'Meta Ads Bradesco PME', 0.7], ['Amil', 'PF', 'Leads Amil PF', 0], ['SulAmérica', 'PME', 'Indicação', 0], ['Porto', 'PF', 'Google Ads Porto', 0], ['Hapvida', 'PF', 'Carteira ativa', 0]];
+  // Modo exemplo: TODAS as propostas como Amil PF (300% + 2%), somando exatamente a produção real de cada vendedor
   var out = [], mes = (D.rotulo && mesReferenciaDe(D.rotulo)) || hojeISO().slice(0, 7);
+  var camp = ['Meta Ads Bradesco PME', 'Leads Amil PF', 'Indicação', 'Carteira ativa'];
   D.vendedores.forEach(function (v, i) {
     var dia = String(3 + (i * 2) % 24).padStart(2, '0');
-    if (v.hap > 0) out.push({ id_venda: 'EX-H' + i, contrato: 'C-H' + i, projeto: 'Projeto Hapvida', operadora: 'Hapvida', modalidade: 'PF', valor_mensal: r2(v.hap), vendedor: v.nome, unidade: v.equipe, data_venda: mes + '-' + dia, origem: 'Projeto Hapvida', campanha: 'Projeto Hapvida', valor_recebido: '' });
-    if (v.fora > 0) { var o = ops[i % ops.length]; out.push({ id_venda: 'EX-F' + i, contrato: 'C-F' + i, projeto: '', operadora: o[0], modalidade: o[1], valor_mensal: r2(v.fora), vendedor: v.nome, unidade: v.equipe, data_venda: mes + '-' + dia, origem: o[2], campanha: o[2], valor_recebido: o[3] ? r2(v.fora * 4 * o[3]) : '' }); }
+    [['H', +v.hap || 0], ['F', +v.fora || 0]].forEach(function (x, k) {
+      if (x[1] <= 0) return;
+      out.push({ id_venda: 'EX-' + x[0] + i, contrato: 'C-' + x[0] + i, projeto: '', operadora: 'Amil', modalidade: 'PF', valor_mensal: r2(x[1]), vendedor: v.nome, unidade: v.equipe, data_venda: mes + '-' + dia, origem: camp[(i + k) % camp.length], campanha: camp[(i + k) % camp.length], valor_recebido: '' });
+    });
   });
   return out;
+}
+// Modo exemplo: percentuais FICTÍCIOS para o que ainda está pendente, só para conferir se as contas rodam
+function regrasDemo() {
+  REGRAS.projetos.forEach(function (p) { if (p.ag == null) { p.ag = 1.00; p.vit = 0.01; p.demo = true; } });
+  REGRAS.operadoras.forEach(function (o) {
+    if (o.ag == null) { o.ag = 3.00; o.vit = 0.02; o.demo = true; }
+    if (!o.modalidades) { o.modalidades = { PF: true, PME: true }; o.demoMod = true; }
+  });
 }
 function mesReferenciaDe(rot) { var n = norm(rot); for (var i = 0; i < 12; i++) if (n.indexOf(norm(MESES[i])) === 0) return ((rot.match(/(20\d\d)/) || [])[1] || new Date().getFullYear()) + '-' + String(i + 1).padStart(2, '0'); return null; }
 function iniciar() {
@@ -1297,8 +1308,8 @@ function iniciar() {
   } else {
     FONTE = SNAPSHOT; FONTE_DESC = SNAPSHOT_ORIGEM;
     ESTADO = normEstado(DEMO ? JSON.parse(JSON.stringify(ESTADO_DEMO)) : carregarEstadoLocal());
-    if (DEMO) ESTADO.contratos = contratosDemo(SNAPSHOT);
-    if (DEMO) { var bn = document.createElement('div'); bn.className = 'demo'; bn.innerHTML = '<b>MODO EXEMPLO</b> · produção e comissões dos vendedores são reais (painel de 23/11 18:53). Investimentos, a operadora/campanha das vendas fora do projeto e os meses de janeiro a outubro são <b>fictícios</b>, só para visualizar o layout.'; document.querySelector('.wrap').insertBefore(bn, document.getElementById('tabs')); }
+    if (DEMO) { regrasDemo(); ESTADO.contratos = contratosDemo(SNAPSHOT); }
+    if (DEMO) { var bn = document.createElement('div'); bn.className = 'demo'; bn.innerHTML = '<b>MODO EXEMPLO</b> · produção e comissões dos vendedores são reais (painel de 23/11 18:53). Todas as propostas estão como <b>Amil PF (300% + 2%)</b>; percentuais marcados como fictício na aba Regras, investimentos e os meses de janeiro a outubro são <b>fictícios</b>, só para visualizar o layout.'; document.querySelector('.wrap').insertBefore(bn, document.getElementById('tabs')); }
     render(); if (tab && document.getElementById('v-' + tab)) show(tab);
   }
 }
