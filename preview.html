@@ -205,6 +205,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--peach);border-co
 .tlp{display:none}
 .tlc b{font-size:14px}.tlc .m{margin-top:2px;font-size:12px}
 .tlv{font-family:var(--head);font-weight:800;font-size:16px}
+.plan{font-size:12px;font-weight:600;color:var(--mute);margin-top:2px}.plan.ok{color:var(--green)}.plan.no{color:var(--red)}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;transition:transform .3s,opacity .3s;z-index:9;opacity:0;pointer-events:none}
 .toast.on{transform:translateX(-50%) translateY(0);opacity:1}
 details.rules{margin-top:10px}
@@ -697,7 +698,7 @@ function vGeral() {
     ['Reserva de marketing (15% da produção)', brl(R.producao * REGRAS.reservaMarketing), '', '', 'or'],
     ['Resultado financeiro', rf ? brl(rf.resultado) : '—', 'A receber − impostos − custo total da Optas − reserva de marketing', '', rf ? (rf.resultado >= 0 ? 'gr' : 'rd') : 'mu'],
     ['ROI sobre as vendas', ro.total > 0 ? pct((R.producao - ro.total) / ro.total) : '—', '', '', ro.total > 0 ? ((R.producao - ro.total) >= 0 ? 'gr' : 'rd') : 'mu'],
-    ['Investimento × limite 15%', ro.total > 0 ? (ro.total <= ro.reserva ? 'Dentro' : 'Passou') : '—', '', '', ro.total > 0 ? (ro.total <= ro.reserva ? 'gr' : 'rd') : 'mu'],
+    ['Investimento em marketing', brl(ro.total), '', '', ro.total > ro.reserva ? 'rd' : '', statusPlan(ro.total, ro.reserva)],
   ];
   var h = blocoResultado('Optas consolidado · Consolação + Mogi', R.res, R.recebidas, R.comissoes, R.custoFixo, R.provisao, null, R.producao);
   h += '<div class="grid g2 mt">';
@@ -710,7 +711,7 @@ function vGeral() {
   h += '</div>';
   h += faixaAno();
   var q8 = q;
-  var cardQ = function (x) { return '<div class="box q"><div class="qn">' + x[0] + '</div><div class="v ' + x[4] + '">' + x[1] + '</div></div>'; };
+  var cardQ = function (x) { return '<div class="box q"><div class="qn">' + x[0] + '</div><div class="v ' + x[4] + '">' + x[1] + '</div>' + (x[5] || '') + '</div>'; };
   h += '<div class="sec">Indicadores do mês</div><div class="grid g4">' + q8.slice(0, 4).map(cardQ).join('') + '</div>';
   h += '<div class="grid g3 mt">' + q8.slice(4, 7).map(cardQ).join('') + '</div>';
   h += '<div class="grid g3 mt">' + q8.slice(7).map(cardQ).join('') + '</div>';
@@ -972,14 +973,19 @@ function vCom() {
   document.getElementById('v-com').innerHTML = h;
 }
 
+// Situação do investimento frente ao planejamento (15% da produção): texto pequeno abaixo do valor
+function statusPlan(total, lim) {
+  if (!total) return '<div class="plan">sem investimentos no mês</div>';
+  return total <= lim ? '<div class="plan ok">dentro do planejamento</div>' : '<div class="plan no">fora do planejamento · passou ' + brl(total - lim) + '</div>';
+}
 function vRoi() {
   var o = R.roi, lim = o.reserva, dentro = o.total <= lim, usado = lim ? o.total / lim : 0;
-  var st = o.total === 0 ? 'nd' : (dentro ? 'lucro' : 'prej');
+  var st = o.total === 0 || dentro ? 'nd' : 'prej';
   // Limite de 15%
   var h = '<div class="grid g2">';
-  h += '<div class="box res ' + st + '"><div class="lbl">Investimento × limite de 15% <em>' + mesLabel(R.mes) + '</em></div>'
-    + '<div class="big ' + st + '" style="margin-top:12px">' + (o.total === 0 ? 'SEM INVESTIMENTOS' : (dentro ? 'DENTRO DOS 15%' : 'PASSOU DOS 15%')) + '</div>'
-    + '<div class="bigv ' + st + '">' + brl(o.total) + '</div>'
+  h += '<div class="box res ' + st + '"><div class="lbl">Investimento em marketing <em>' + mesLabel(R.mes) + '</em></div>'
+    + '<div class="bigv ' + (dentro ? '' : 'prej') + '" style="margin-top:12px">' + brl(o.total) + '</div>'
+    + statusPlan(o.total, lim)
     + '<div class="mins"><div class="mrow"><span>Limite (15% da produção de ' + brl(R.producao) + ')</span><b>' + brl(lim) + '</b></div>' + bar(usado, dentro ? 'g' : 'r')
     + '<div class="mrow"><span>Usado do limite</span><b>' + pct(usado, 1) + '</b></div>'
     + '<div class="mrow"><span>' + (dentro ? 'Ainda disponível' : 'Passou do limite em') + '</span><b class="' + (dentro ? 'gr' : 'rd') + '">' + brl(Math.abs(lim - o.total)) + '</b></div></div></div>';
