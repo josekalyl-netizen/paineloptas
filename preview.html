@@ -593,7 +593,6 @@ function vGeral() {
     ['Custo da operação', brl(R.custoFixo + R.provisao), 'Custo fixo ' + brl(R.custoFixo) + ' + provisão 13º/férias ' + brl(R.provisao), '', ''],
     ['Resultado financeiro', res ? brl(res.financeiro) : '—', res ? 'Resultado após impostos, comissões, custos, provisão e reserva de marketing' : 'Depende das comissões <b>efetivamente recebidas</b>.', res ? T.real : T.pend, res ? (res.financeiro >= 0 ? 'gr' : 'rd') : 'mu'],
     ['Reserva de marketing', ro.reserva != null ? brl(ro.reserva) : '—', ro.reserva != null ? 'Reserva de marketing = 15% do lucro bruto operacional (' + brl(res.lbo) + ')' : 'Reserva exige comissões recebidas.', ro.reserva != null ? T.real : T.pend, ro.reserva != null ? 'or' : 'mu'],
-    ['Investimento diário', brl(ro.media) + '<small style="font-size:14px;color:var(--mute)">/dia</small>', 'Acumulado no mês ' + brl(ro.total), '', ''],
     ['ROI', ro.roiReal != null ? pct(ro.roiReal) : '—', ro.roiReal != null ? 'Sobre ' + brl(ro.invAtrib) + ' investidos com retorno recebido atribuído' : 'Sem retorno recebido atribuído a investimentos', ro.roiReal != null ? T.real : T.pend, '']
   ];
   var h = blocoResultado('Optas consolidado · Consolação + Mogi', R.res, R.recebidas, R.comissoes, R.custoFixo, R.provisao, R.recebidasInformadas && R.recebidas == null ? 'Falta lançar: ' + REGRAS.unidades.filter(function (u) { return R.unidades[u].recebidas == null; }).join(', ') : null);
@@ -605,10 +604,10 @@ function vGeral() {
       + '<div class="m">Recebidas <b>' + brl(U.recebidas) + '</b> · mínimo para não fechar no vermelho <b>' + brl(minimos(U.comissao, U.custos.fixo + U.custos.provisao).empate) + '</b></div></button>';
   });
   h += '</div>';
-  var q8 = q.slice(0, 8);
-  h += '<div class="sec">Indicadores do mês</div><div class="grid g4">';
-  q8.forEach(function (x, i) { h += '<div class="box q"><div class="qn">' + x[0] + '</div><div class="v ' + x[4] + '">' + x[1] + '</div></div>'; });
-  h += '</div>';
+  var q8 = q;
+  var cardQ = function (x) { return '<div class="box q"><div class="qn">' + x[0] + '</div><div class="v ' + x[4] + '">' + x[1] + '</div></div>'; };
+  h += '<div class="sec">Indicadores do mês</div><div class="grid g4">' + q8.slice(0, 4).map(cardQ).join('') + '</div>';
+  h += '<div class="grid g3 mt">' + q8.slice(4).map(cardQ).join('') + '</div>';
   h += '<div class="box mt"><div class="lbl">Comparativo · contratos efetivos</div>';
   [['Produção', 'producao'], ['Comissões dos vendedores', 'comissao'], ['Custo + provisão', null]].forEach(function (m) {
     var val = function (u) { var U = R.unidades[u]; return m[1] ? U[m[1]] : U.custos.fixo + U.custos.provisao; };
