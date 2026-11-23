@@ -591,6 +591,7 @@ function vGeral() {
     ['A receber das operadoras', R.ag.base ? brl(R.ag.valor) : '—', (R.ag.base ? 'Agenciamento dos contratos efetivos' : 'Agenciamento ainda não calculável') + (R.ag.naoCalc ? ' · <b>' + brl(R.ag.naoCalc) + '</b> de mensalidade sem regra de comissão (Projeto Hapvida pendente) ou sem operadora' : '') + (R.ag.base ? ' · vitalício ' + brl(R.ag.vit) + '/mês a partir da ' + REGRAS.vitalicio.inicioParcela + 'ª parcela' : ''), R.ag.base ? (R.ag.provisorio ? T.prov : T.rec) : T.pend, R.ag.base ? 'or' : 'mu'],
     ['Comissões dos vendedores', brl(R.comissoes), 'Faixas de cada unidade sobre a produção de contratos efetivos', T.real, ''],
     ['Custo da operação', brl(R.custoFixo + R.provisao), 'Custo fixo ' + brl(R.custoFixo) + ' + provisão 13º/férias ' + brl(R.provisao), '', ''],
+    ['Custo total da Optas no mês', brl(R.comissoes + R.custoFixo + R.provisao), 'Comissões dos vendedores + custo da operação', '', 'rd'],
     ['Resultado financeiro', res ? brl(res.financeiro) : '—', res ? 'Resultado após impostos, comissões, custos, provisão e reserva de marketing' : 'Depende das comissões <b>efetivamente recebidas</b>.', res ? T.real : T.pend, res ? (res.financeiro >= 0 ? 'gr' : 'rd') : 'mu'],
     ['Reserva de marketing', ro.reserva != null ? brl(ro.reserva) : '—', ro.reserva != null ? 'Reserva de marketing = 15% do lucro bruto operacional (' + brl(res.lbo) + ')' : 'Reserva exige comissões recebidas.', ro.reserva != null ? T.real : T.pend, ro.reserva != null ? 'or' : 'mu'],
     ['ROI', ro.roiReal != null ? pct(ro.roiReal) : '—', ro.roiReal != null ? 'Sobre ' + brl(ro.invAtrib) + ' investidos com retorno recebido atribuído' : 'Sem retorno recebido atribuído a investimentos', ro.roiReal != null ? T.real : T.pend, '']
@@ -607,7 +608,7 @@ function vGeral() {
   var q8 = q;
   var cardQ = function (x) { return '<div class="box q"><div class="qn">' + x[0] + '</div><div class="v ' + x[4] + '">' + x[1] + '</div></div>'; };
   h += '<div class="sec">Indicadores do mês</div><div class="grid g4">' + q8.slice(0, 4).map(cardQ).join('') + '</div>';
-  h += '<div class="grid g3 mt">' + q8.slice(4).map(cardQ).join('') + '</div>';
+  h += '<div class="grid g4 mt">' + q8.slice(4).map(cardQ).join('') + '</div>';
   h += '<div class="box mt"><div class="lbl">Comparativo · contratos efetivos</div>';
   [['Produção', 'producao'], ['Comissões dos vendedores', 'comissao'], ['Custo + provisão', null]].forEach(function (m) {
     var val = function (u) { var U = R.unidades[u]; return m[1] ? U[m[1]] : U.custos.fixo + U.custos.provisao; };
@@ -904,6 +905,7 @@ function vReg() {
     + regra('Mínimo sustentável', 'Recebidas mínimas = (0,85 × comissões dos vendedores + custo fixo + provisão) ÷ 0,70', 'Não fecha no vermelho e ainda forma a reserva de marketing de 15% do lucro bruto operacional.')
     + regra('Resultado financeiro', 'Resultado financeiro = resultado operacional − reserva de marketing', 'Reserva = 15% × (recebidas − comissões dos vendedores). É destinação do resultado, não despesa.')
     + regra('Qual comissão se aplica a cada venda', '1º tabela gravada na data da venda → 2º regra do projeto (Projeto Hapvida) → 3º tabela da operadora', 'Hapvida fora do projeto usa 350% + 2%. Mudanças futuras de tabela não alteram vendas antigas.')
+    + regra('Custo total da Optas no mês', 'Custo total = comissões dos vendedores + custo fixo + provisão 13º/férias', 'Soma de tudo que a Optas paga no mês para operar, sem impostos e sem reserva de marketing.')
     + regra('Comissão do vendedor', 'Comissão = produção do mês × percentual da faixa atingida', 'O percentual incide sobre toda a produção. Sem médias históricas.')
     + '</div>';
   document.getElementById('v-reg').innerHTML = h;

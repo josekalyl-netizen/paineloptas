@@ -328,6 +328,7 @@ Exibido de forma direta, sem sugestões: uma aba para Consolação, uma para Mog
 - Mínimo para não fechar no vermelho = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85.
 - Mínimo sustentável (forma também a reserva de 15% do lucro bruto operacional) = (0,85 × comissões dos vendedores + custo fixo + provisão) ÷ 0,70.
 - Resultado financeiro = resultado operacional − reserva de marketing.
+- Custo total da Optas no mês = comissões dos vendedores + custo fixo + provisão 13º/férias (sem impostos e sem reserva de marketing).
 
 ## 12.5. Somente valores efetivos (v1.3)
 
