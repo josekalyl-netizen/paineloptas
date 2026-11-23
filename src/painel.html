@@ -158,6 +158,37 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--peach);border-co
 .st{font-family:var(--head);font-weight:800;font-size:12px;letter-spacing:.1em;border-radius:6px;padding:3px 8px}
 .st.lucro{background:var(--green-t);color:var(--green)}.st.prej{background:var(--red-t);color:var(--red)}.st.nd{background:var(--tint);color:var(--mute)}
 .fx{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--tint-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:8px;color:var(--ink)}
+.eq{display:grid;grid-template-columns:1fr auto 1fr auto 1.2fr;gap:14px;align-items:stretch;margin-top:16px}
+@media(max-width:900px){.eq{grid-template-columns:1fr}.eqo{display:none}}
+.eqc{background:var(--tint-2);border-radius:12px;padding:14px 16px;min-width:0}
+.eqc.res-lucro{background:var(--green-t)}.eqc.res-prej{background:var(--red-t)}
+.eqk{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+.res-lucro .eqk,.res-lucro .eqv{color:var(--green)}.res-prej .eqk,.res-prej .eqv{color:var(--red)}
+.eqv{font-family:var(--head);font-weight:800;font-size:28px;line-height:1.15;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eqv small{font-size:13px;color:var(--mute);font-weight:600}
+.eqv.big2{font-size:34px}
+.eqd{font-size:12.5px;color:var(--mute);margin-top:2px}
+.eqo{align-self:center;font-family:var(--head);font-weight:800;font-size:28px;color:var(--mute)}
+.meta,.flow{margin-top:22px}
+.metat{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--or-d);margin-bottom:10px}
+.mtrack{position:relative;height:18px;background:var(--tint);border-radius:999px}
+.mfill{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
+.mfill.ok{background:var(--green)}.mfill.no{background:var(--red)}
+.mk{position:absolute;top:-5px;bottom:-5px;width:3px;margin-left:-1px;background:var(--ink);border-radius:2px}
+.mk2{background:var(--gold-d)}
+.mleg{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:10px;font-size:13px;color:var(--ink-2)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.sw1{background:var(--ink)}.sw2{background:var(--gold-d)}
+.fl{display:grid;grid-template-columns:minmax(150px,280px) 1fr 140px 150px;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid var(--tint);font-size:13.5px}
+@media(max-width:720px){.fl{grid-template-columns:1fr auto}.fl .fb,.fl em{display:none}}
+.fl b{text-align:right;font-family:var(--head);font-weight:800}
+.fl em{font-style:normal;color:var(--mute);font-size:12px}
+.fb{height:10px;background:var(--tint);border-radius:999px;overflow:hidden}
+.fb i{display:block;height:100%;background:var(--or);border-radius:999px}
+.fb i.dash{background:repeating-linear-gradient(135deg,var(--or) 0 6px,#FFC48F 6px 12px)}
+.fl.tot{border-bottom:0;background:var(--tint-2);border-radius:8px;padding:9px 10px;margin:4px 0;font-weight:700}
+.fl.tot.lucro b,.fl.tot.lucro span{color:var(--green)}.fl.tot.prej b,.fl.tot.prej span{color:var(--red)}
+.fl.res2{border-bottom:0}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;transition:transform .3s,opacity .3s;z-index:9;opacity:0;pointer-events:none}
 .toast.on{transform:translateX(-50%) translateY(0);opacity:1}
 details.rules{margin-top:10px}
@@ -625,28 +656,39 @@ function minimos(comissoes, estrutura, reserva) {
   return { empate: (comissoes + estrutura) / (1 - i), sustentavel: (comissoes + estrutura + (reserva || 0)) / (1 - i) };
 }
 function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, producao) {
-  var mn = minimos(comissoes, fixo + prov, (producao || 0) * REGRAS.reservaMarketing), st = res ? (res.operacional >= 0 ? 'lucro' : 'prej') : 'nd';
-  var h = '<div class="box res ' + st + '"><div class="split"><div class="lbl">' + titulo + ' <em>' + mesLabel(R.mes) + '</em></div><span class="pill ln">comissões efetivamente recebidas</span></div>';
-  h += '<div class="resv"><div><div class="big ' + st + '">' + (res ? (res.operacional >= 0 ? 'LUCRO' : 'PREJUÍZO') : 'SEM RECEBIDAS LANÇADAS') + '</div>'
-    + '<div class="bigv ' + st + '">' + (res ? brl(res.operacional) : '—') + '</div>'
-    + '<div class="m">' + (res ? 'Resultado operacional · margem ' + pct(recebidas ? res.operacional / recebidas : null, 1) + ' · após reserva de marketing <b class="' + (res.financeiro >= 0 ? 'gr' : 'rd') + '">' + brl(res.financeiro) + '</b>' : (aviso || 'Comissões recebidas do mês não lançadas.')) + '</div></div>';
-  var p1 = recebidas != null ? recebidas / mn.empate : 0, p2 = recebidas != null ? recebidas / mn.sustentavel : 0;
-  h += '<div class="mins"><div class="mrow"><span>Recebidas</span><b>' + brl(recebidas) + '</b></div>'
-    + '<div class="mrow"><span>Mínimo para não fechar no vermelho</span><b>' + brl(mn.empate) + '</b></div>' + bar(p1, p1 >= 1 ? 'g' : 'r')
-    + '<div class="mrow"><span>' + (recebidas != null ? (recebidas >= mn.empate ? 'Acima do mínimo' : 'Abaixo do mínimo') : 'Diferença') + '</span><b class="' + (recebidas != null ? (recebidas >= mn.empate ? 'gr' : 'rd') : '') + '">' + (recebidas != null ? brl(recebidas - mn.empate) : '—') + '</b></div>'
-    + '<div class="mrow" style="margin-top:10px"><span>Mínimo sustentável <small>(inclui reserva de 15%)</small></span><b>' + brl(mn.sustentavel) + '</b></div>' + bar(p2, p2 >= 1 ? 'g' : 'y')
-    + '<div class="mrow"><span>' + (recebidas != null ? (recebidas >= mn.sustentavel ? 'Acima do sustentável' : 'Abaixo do sustentável') : 'Diferença') + '</span><b class="' + (recebidas != null ? (recebidas >= mn.sustentavel ? 'gr' : 'rd') : '') + '">' + (recebidas != null ? brl(recebidas - mn.sustentavel) : '—') + '</b></div></div></div>';
-  var imp = recebidas != null ? recebidas * REGRAS.imposto : null;
-  h += '<div class="tw"><table class="dre"><tbody>'
-    + '<tr class="h"><td>Comissões efetivamente recebidas</td><td class="r">' + brl(recebidas) + '</td></tr>'
-    + '<tr class="ded"><td>(−) Impostos 15%</td><td class="r">' + brl(imp != null ? -imp : null) + '</td></tr>'
-    + '<tr class="ded"><td>(−) Comissões dos vendedores</td><td class="r">' + brl(-comissoes) + '</td></tr>'
-    + '<tr class="ded"><td>(−) Custos fixos e operacionais</td><td class="r">' + brl(-fixo) + '</td></tr>'
-    + '<tr class="ded"><td>(−) Provisão 13º e férias</td><td class="r">' + brl(-prov) + '</td></tr>'
-    + '<tr class="tot"><td>Resultado operacional</td><td class="r ' + (res ? (res.operacional >= 0 ? 'pos' : 'neg') : '') + '">' + (res ? brl(res.operacional) : '—') + '</td></tr>'
-    + '<tr class="ded"><td>(−) Reserva de marketing (15% da produção)</td><td class="r">' + (res ? brl(-res.reserva) : '—') + '</td></tr>'
-    + '<tr class="tot"><td>Resultado financeiro</td><td class="r ' + (res ? (res.financeiro >= 0 ? 'pos' : 'neg') : '') + '">' + (res ? brl(res.financeiro) : '—') + '</td></tr>'
-    + '</tbody></table></div></div>';
+  var reserva = (producao || 0) * REGRAS.reservaMarketing;
+  var mn = minimos(comissoes, fixo + prov, reserva), tem = recebidas != null;
+  var imp = tem ? recebidas * REGRAS.imposto : null;
+  var saiu = tem ? imp + comissoes + fixo + prov : null;
+  var st = res ? (res.operacional >= 0 ? 'lucro' : 'prej') : 'nd';
+  var h = '<div class="box res ' + st + '"><div class="split"><div class="lbl">' + titulo + ' <em>' + mesLabel(R.mes) + '</em></div></div>';
+  // 1. Entrou − Saiu = Resultado
+  h += '<div class="eq">'
+    + '<div class="eqc"><div class="eqk">Entrou</div><div class="eqv">' + (tem ? brl(recebidas) : '—') + '</div><div class="eqd">comissões recebidas das operadoras</div></div>'
+    + '<div class="eqo">−</div>'
+    + '<div class="eqc"><div class="eqk">Saiu</div><div class="eqv">' + (tem ? brl(saiu) : brl(comissoes + fixo + prov) + ' <small>+ impostos</small>') + '</div><div class="eqd">impostos, vendedores, custos e provisão</div></div>'
+    + '<div class="eqo">=</div>'
+    + '<div class="eqc res-' + st + '"><div class="eqk">' + (res ? (res.operacional >= 0 ? 'Lucro do mês' : 'Prejuízo do mês') : 'Resultado do mês') + '</div><div class="eqv big2">' + (res ? brl(res.operacional) : '—') + '</div><div class="eqd">' + (res ? 'margem ' + pct(res.operacional / recebidas, 1) : (aviso || 'lançar as comissões recebidas')) + '</div></div>'
+    + '</div>';
+  // 2. Meta
+  var esc0 = Math.max(mn.sustentavel, tem ? recebidas : 0) * 1.08;
+  var w = function (v) { return Math.max(0, Math.min(100, v / esc0 * 100)); };
+  h += '<div class="meta"><div class="metat">Quanto precisava entrar</div>'
+    + '<div class="mtrack"><i class="mfill ' + (tem && recebidas >= mn.empate ? 'ok' : 'no') + '" style="width:' + (tem ? w(recebidas) : 0) + '%"></i>'
+    + '<b class="mk" style="left:' + w(mn.empate) + '%"></b><b class="mk mk2" style="left:' + w(mn.sustentavel) + '%"></b></div>'
+    + '<div class="mleg">'
+    + '<div><span class="sw sw1"></span>Não fechar no vermelho <b>' + brl(mn.empate) + '</b>' + (tem ? ' · <b class="' + (recebidas >= mn.empate ? 'gr' : 'rd') + '">' + (recebidas >= mn.empate ? 'passou ' : 'faltaram ') + brl(Math.abs(recebidas - mn.empate)) + '</b>' : '') + '</div>'
+    + '<div><span class="sw sw2"></span>Cobrir também a reserva de marketing <b>' + brl(mn.sustentavel) + '</b>' + (tem ? ' · <b class="' + (recebidas >= mn.sustentavel ? 'gr' : 'rd') + '">' + (recebidas >= mn.sustentavel ? 'passou ' : 'faltaram ') + brl(Math.abs(recebidas - mn.sustentavel)) + '</b>' : '') + '</div>'
+    + '</div></div>';
+  // 3. Para onde foi o dinheiro
+  var itens = [['Impostos (15%)', imp], ['Comissões dos vendedores', comissoes], ['Custos fixos (salários, VR, VT, operação)', fixo], ['Provisão 13º e férias', prov]];
+  var base = tem && recebidas > 0 ? recebidas : (comissoes + fixo + prov);
+  h += '<div class="flow"><div class="metat">Para onde foi o dinheiro</div>';
+  itens.forEach(function (x) { h += '<div class="fl"><span>' + x[0] + '</span><div class="fb"><i style="width:' + (x[1] != null ? Math.min(100, x[1] / base * 100) : 0) + '%"></i></div><b>' + (x[1] != null ? brl(x[1]) : '—') + '</b><em>' + (x[1] != null && tem ? pct(x[1] / recebidas, 0) + ' do que entrou' : '') + '</em></div>'; });
+  h += '<div class="fl tot ' + st + '"><span>' + (res ? (res.operacional >= 0 ? 'Sobrou' : 'Faltou') : 'Resultado') + '</span><div></div><b>' + (res ? brl(res.operacional) : '—') + '</b><em></em></div>';
+  h += '<div class="fl res2"><span>Reserva de marketing (15% da produção)</span><div class="fb"><i class="dash" style="width:' + Math.min(100, reserva / base * 100) + '%"></i></div><b>' + brl(reserva) + '</b><em>separada para investir</em></div>';
+  h += '<div class="fl tot ' + (res ? (res.financeiro >= 0 ? 'lucro' : 'prej') : 'nd') + '"><span>Depois de separar a reserva</span><div></div><b>' + (res ? brl(res.financeiro) : '—') + '</b><em></em></div>';
+  h += '</div></div>';
   return h;
 }
 
