@@ -46,7 +46,7 @@ button,input,select,textarea{resize:vertical;font:inherit;color:inherit}
 @media(max-width:720px){.wrap{padding:14px 16px 40px}.g2,.g3,.g4,.g5{grid-template-columns:minmax(0,1fr)}.hd h1{font-size:22px}.hd img{height:44px}.hd .meta{margin-left:0}}
 .mt{margin-top:14px}.mt2{margin-top:22px}
 .box{background:var(--card);border-radius:14px;box-shadow:var(--sh);border-top:4px solid var(--or);padding:16px 18px;min-width:0}
-.box.dk{border-top-color:var(--ink)}.box.gr{border-top-color:var(--green)}.box.rd{border-top-color:var(--red)}.box.gd{border-top-color:var(--gold)}.box.bl{border-top-color:var(--blue)}
+.box.dk{border-top-color:var(--ink)}.box.bgr{border-top-color:var(--green)}.box.brd{border-top-color:var(--red)}.box.gd{border-top-color:var(--gold)}.box.bl{border-top-color:var(--blue)}
 .lbl{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--or-d);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .lbl em{font-style:normal;letter-spacing:0;text-transform:none;font-weight:500;color:var(--mute)}
 .sec{font-family:var(--head);font-weight:800;font-size:19px;margin:26px 0 10px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -189,6 +189,22 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--peach);border-co
 .fl.tot{border-bottom:0;background:var(--tint-2);border-radius:8px;padding:9px 10px;margin:4px 0;font-weight:700}
 .fl.tot.lucro b,.fl.tot.lucro span{color:var(--green)}.fl.tot.prej b,.fl.tot.prej span{color:var(--red)}
 .fl.res2{border-bottom:0}
+.ych{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;margin-top:12px}
+.yc{display:flex;flex-direction:column;align-items:center}
+.yp,.yn{height:72px;width:100%;display:flex;justify-content:center}
+.yp{align-items:flex-end;border-bottom:1px solid var(--line)}.yn{align-items:flex-start}
+.yc i{display:block;width:70%;max-width:34px;border-radius:4px}
+.yc i.g{background:var(--green);border-radius:4px 4px 0 0}.yc i.r{background:var(--red);border-radius:0 0 4px 4px}
+.yc span{font-size:11px;color:var(--mute);text-transform:capitalize}
+@media print{.tabs,.hd .meta,.demo,.btn,.ft,.toast,.x{display:none!important}.view{display:none!important}.view.on{display:block!important}body{background:#fff}.box{box-shadow:none;border:1px solid var(--line)}}
+.tl{position:relative;margin-left:8px;border-left:2px solid var(--peach);padding-left:18px}
+.tld{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--or-d);margin:14px 0 6px;position:relative}
+.tld:first-child{margin-top:0}
+.tld::before{content:'';position:absolute;left:-25px;top:3px;width:12px;height:12px;border-radius:50%;background:var(--or);box-shadow:0 0 0 3px var(--card)}
+.tli{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;background:var(--tint-2);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.tlp{display:none}
+.tlc b{font-size:14px}.tlc .m{margin-top:2px;font-size:12px}
+.tlv{font-family:var(--head);font-weight:800;font-size:16px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;transition:transform .3s,opacity .3s;z-index:9;opacity:0;pointer-events:none}
 .toast.on{transform:translateX(-50%) translateY(0);opacity:1}
 details.rules{margin-top:10px}
@@ -217,6 +233,7 @@ details.rules summary{cursor:pointer;font-weight:600;color:var(--or-d)}
     <button class="tab on" data-v="geral">Visão geral</button>
     <button class="tab" data-v="consolacao">Consolação</button>
     <button class="tab" data-v="mogi">Mogi</button>
+    <button class="tab" data-v="ano">Ano</button>
     <button class="tab" data-v="fin">Financeiro</button>
     <button class="tab" data-v="com">Comercial</button>
     <button class="tab" data-v="roi">ROI &amp; investimentos</button>
@@ -228,6 +245,7 @@ details.rules summary{cursor:pointer;font-weight:600;color:var(--or-d)}
   <section class="view on" id="v-geral"></section>
   <section class="view" id="v-consolacao"></section>
   <section class="view" id="v-mogi"></section>
+  <section class="view" id="v-ano"></section>
   <section class="view" id="v-fin"></section>
   <section class="view" id="v-com"></section>
   <section class="view" id="v-roi"></section>
@@ -245,7 +263,7 @@ details.rules summary{cursor:pointer;font-weight:600;color:var(--or-d)}
    Alterar aqui apenas quando o usuário confirmar novas regras.
    ===================================================================== */
 var REGRAS = {
-  versao: 'v1.7 · 23/11/2026',
+  versao: 'v1.9 · 23/11/2026',
   unidades: ['Consolação', 'Mogi'],
   // 3. Custos fixos (salários brutos JÁ incluem o PJ das sócias — não somar de novo)
   custos: {
@@ -307,6 +325,18 @@ var DEMO = false || /[?&]demo=1/.test(location.search);
 // Exemplo ILUSTRATIVO só para visualizar o layout — nunca salvo, nunca usado com dados reais.
 var ESTADO_DEMO = {
   recebidas: { '2026-11': { 'Consolação': 30000, 'Mogi': 38000 } },
+  fechamentos: (function () {
+    // jan–out/2026 FICTÍCIOS: [produção, recebidas, comissões, investido] por unidade [Consolação, Mogi]
+    var b = [[[18e3,26e3,7.1e3,700],[24e3,31e3,8.9e3,900]],[[19e3,27e3,7.4e3,800],[25e3,33e3,9.6e3,900]],[[21e3,29e3,8.6e3,900],[27e3,35e3,10.4e3,1e3]],[[17e3,24e3,6.8e3,700],[23e3,30e3,8.1e3,800]],[[20e3,30e3,8.2e3,900],[29e3,37e3,11.2e3,1.1e3]],[[22e3,31e3,9e3,1e3],[30e3,39e3,11.8e3,1.2e3]],[[19e3,25e3,7.5e3,800],[26e3,32e3,9.9e3,900]],[[23e3,33e3,9.8e3,1.1e3],[31e3,40e3,12.3e3,1.3e3]],[[21e3,28e3,8.5e3,900],[28e3,36e3,10.9e3,1.1e3]],[[22e3,32e3,9.1e3,1e3],[30e3,38e3,11.6e3,1.2e3]]];
+    var f = {};
+    b.forEach(function (m, i) {
+      var mes = '2026-' + String(i + 1).padStart(2, '0'), un = {};
+      ['Consolação', 'Mogi'].forEach(function (u, k) { var c = custosUnidade(u); un[u] = compor({ producao: m[k][0], recebidas: Math.round(m[k][1] * [1.12, 1.2, 1.08, 1.02, 1.25, 1.22, 1.05, 1.3, 1.15, 1.28][i]), comissoes: m[k][2], fixo: c.fixo, provisao: c.provisao, investido: m[k][3] }); });
+      var t = {}; ['producao', 'recebidas', 'comissoes', 'fixo', 'provisao', 'investido'].forEach(function (x) { t[x] = un['Consolação'][x] + un['Mogi'][x]; });
+      f[mes] = Object.assign(compor(t), { mes: mes, unidades: un, fechado: true, fechadoEm: mes + '-28', exemplo: true });
+    });
+    return f;
+  })(),
   investimentos: [
     { id: 'd1', data: '2026-11-03', valor: 300, categoria: 'Tráfego pago', campanha: 'Meta Ads Bradesco PME' },
     { id: 'd2', data: '2026-11-05', valor: 450, categoria: 'Tráfego pago', campanha: 'Meta Ads Bradesco PME' },
@@ -327,20 +357,20 @@ function carregarEstadoLocal() {
   try { var s = localStorage.getItem(LS_KEY); if (s) return JSON.parse(s); } catch (e) {}
   return null;
 }
-function salvarEstado() {
-  if (DEMO) { toast('Modo exemplo: nada é salvo'); return; }
+function salvarEstado(silencioso) {
+  if (DEMO) { if (!silencioso) toast('Modo exemplo: nada é salvo'); return; }
   if (GAS) {
-    google.script.run.withSuccessHandler(function () { toast('Salvo'); })
+    google.script.run.withSuccessHandler(function () { if (!silencioso) toast('Salvo'); })
       .withFailureHandler(function (e) { toast('Falha ao salvar: ' + e.message); })
       .optasEstadoSalvar(JSON.stringify(ESTADO));
   } else {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(ESTADO)); toast('Salvo neste navegador'); }
+    try { localStorage.setItem(LS_KEY, JSON.stringify(ESTADO)); if (!silencioso) toast('Salvo neste navegador'); }
     catch (e) { toast('Não foi possível salvar neste navegador'); }
   }
 }
 function normEstado(e) {
   e = e || {};
-  return { investimentos: e.investimentos || [], recebidas: e.recebidas || {}, contratos: e.contratos || [] };
+  return { investimentos: e.investimentos || [], recebidas: e.recebidas || {}, contratos: e.contratos || [], fechamentos: e.fechamentos || {}, anos: e.anos || {} };
 }
 
 /* =====================================================================
@@ -483,7 +513,7 @@ function calcular() {
     R.alertas.push({ sev: 'er', cod: 'GRAN', titulo: 'A integração entrega produção agregada por vendedor, não por contrato',
       texto: 'O painel gerencial informa totais (Projeto Hapvida / fora do projeto). Não há identificação individual de venda, contrato, operadora, modalidade nem origem.',
       impacto: 'Agenciamento e vitalício por operadora, produção PF/PME, atribuição de contratos a investimentos (ROI) e preservação da tabela vigente por venda.',
-      acao: 'Solicitar à equipe responsável que o painel gerencial exporte as vendas linha a linha (campos da seção 10). Enquanto isso, é possível importar um CSV na aba ROI.' });
+      acao: 'Solicitar à equipe responsável que o painel gerencial exporte as vendas linha a linha (campos da seção 10).' });
     if (vFora > 0) R.alertas.push({ sev: 'er', cod: 'OPERADORA', titulo: D.geral.fora.qtd + ' vendas "fora do projeto" sem operadora identificada', texto: 'Produção de ' + brl(vFora) + ' sem operadora.', impacto: 'Agenciamento a receber, vitalício e impostos dessas vendas não podem ser calculados (' + brl(vFora) + ' de mensalidade fora do cálculo).', acao: 'Incluir a operadora de cada venda na integração (planilha/CRM). Venda Hapvida fora do projeto usa 350% + 2%.', registros: D.geral.fora.qtd });
   }
   if (semMod > 0) R.alertas.push({ sev: 'wa', cod: 'MODALIDADE', titulo: semMod + ' venda(s) sem modalidade PF/PME', texto: 'Não é possível confirmar qual tabela (PF ou PME) se aplica.', impacto: 'O agenciamento calculado usa o percentual informado sem distinção de modalidade e fica marcado como PROVISÓRIO.', acao: 'Corrigir os registros no painel gerencial e informar a modalidade das operadoras (Pendência 1).', registros: semMod });
@@ -492,7 +522,7 @@ function calcular() {
   Object.keys(camposFaltando).forEach(function (f) {
     if (f === 'origem' || f === 'modalidade' || f === 'operadora') return;
     var ids = camposFaltando[f];
-    R.alertas.push({ sev: 'wa', cod: 'CAMPO_' + f, titulo: ids.length + ' contrato(s) sem o campo "' + f + '"', texto: 'Registros: ' + ids.slice(0, 12).join(', ') + (ids.length > 12 ? '…' : ''), impacto: impactoCampo(f), acao: 'Corrigir no painel gerencial e reimportar.', registros: ids.length });
+    R.alertas.push({ sev: 'wa', cod: 'CAMPO_' + f, titulo: ids.length + ' contrato(s) sem o campo "' + f + '"', texto: 'Registros: ' + ids.slice(0, 12).join(', ') + (ids.length > 12 ? '…' : ''), impacto: impactoCampo(f), acao: 'Corrigir no painel gerencial / CRM.', registros: ids.length });
   });
   ag.imposto = ag.valor * REGRAS.imposto; ag.impostoVit = ag.vit * REGRAS.imposto;
   R.ag = ag;
@@ -512,8 +542,8 @@ function calcular() {
     U.agPrev = eq && pjU.ag != null ? (eq.hap.valor || 0) * pjU.ag : null;
     if (usarContratos) U.agPrev = sum(contratosMes.filter(function (c) { return unidadeCanon(c.unidade) === u; }), function (c) { var o = regraVenda(c); return o && o.ag ? (+c.valor_mensal || 0) * o.ag : 0; });
     U.leads = eq ? eq.hap.leads : null; U.vidas = eq ? eq.hap.vidas : null; U.qtd = eq ? (eq.hap.qtd + eq.fora.qtd) : null;
-    var rec = (ESTADO.recebidas[R.mes] || {})[u];
-    U.recebidas = rec != null && rec !== '' ? +rec : null;
+    // Base única (v1.9): a receber das operadoras = contratos efetivos × comissão de cada operadora
+    U.recebidas = R.ag.base ? (U.agPrev || 0) : null;
     U.res = resultado(U.recebidas, U.comissao, U.custos.fixo, U.custos.provisao, U.producao);
     prodTot += U.producao; comTot += U.comissao;
   });
@@ -522,7 +552,6 @@ function calcular() {
   R.recebidasInformadas = recU.filter(function (x) { return x != null; }).length;
   R.recebidas = R.recebidasInformadas === REGRAS.unidades.length ? sum(recU) : null;
   R.res = resultado(R.recebidas, comTot, R.custoFixo, R.provisao, prodTot);
-  if (R.recebidas == null) R.alertas.push({ sev: 'wa', cod: 'RECEBIDAS', titulo: 'Comissões efetivamente recebidas de ' + mesLabel(R.mes) + ' não lançadas' + (R.recebidasInformadas ? ' (falta ' + REGRAS.unidades.filter(function (u) { return R.unidades[u].recebidas == null; }).join(', ') + ')' : ''), texto: 'O lucro ou prejuízo usa apenas comissões efetivamente recebidas.', impacto: 'Lucro ou prejuízo (resultado operacional e financeiro) e ROI.', acao: 'Lançar os valores recebidos na aba Financeiro.', irPara: 'fin' });
 
   // ---------- Investimentos / ROI ----------
   R.roi = calcularROI(R);
@@ -606,7 +635,8 @@ function render() {
   document.getElementById('ftFonte').textContent = 'Fonte: ' + FONTE_DESC;
   var nAl = R.alertas.filter(function (a) { return a.sev !== 'in'; }).length;
   document.getElementById('nAlertas').textContent = nAl; document.getElementById('nAlertas').style.display = nAl ? '' : 'none';
-  vGeral(); REGRAS.unidades.forEach(vUnidade); vFin(); vCom(); vRoi(); vAle(); vPen(); vReg();
+  registrarMesAtual();
+  vGeral(); REGRAS.unidades.forEach(vUnidade); vAno(); vFin(); vCom(); vRoi(); vAle(); vPen(); vReg();
 }
 
 function card(lbl, v, m, opt) { opt = opt || {}; return '<div class="box ' + (opt.box || '') + '"><div class="lbl">' + lbl + (opt.tag || '') + '</div><div class="v ' + (opt.cls || '') + '">' + v + '</div>' + (m ? '<div class="m">' + m + '</div>' : '') + (opt.extra || '') + '</div>'; }
@@ -631,15 +661,16 @@ function vGeral() {
     ['ROI sobre as vendas', ro.total > 0 ? pct((R.producao - ro.total) / ro.total) : '—', '', '', ro.total > 0 ? ((R.producao - ro.total) >= 0 ? 'gr' : 'rd') : 'mu'],
     ['Investimento × limite 15%', ro.total > 0 ? (ro.total <= ro.reserva ? 'Dentro' : 'Passou') : '—', '', '', ro.total > 0 ? (ro.total <= ro.reserva ? 'gr' : 'rd') : 'mu'],
   ];
-  var h = blocoResultado('Optas consolidado · Consolação + Mogi', R.res, R.recebidas, R.comissoes, R.custoFixo, R.provisao, R.recebidasInformadas && R.recebidas == null ? 'Falta lançar: ' + REGRAS.unidades.filter(function (u) { return R.unidades[u].recebidas == null; }).join(', ') : null, R.producao);
+  var h = blocoResultado('Optas consolidado · Consolação + Mogi', R.res, R.recebidas, R.comissoes, R.custoFixo, R.provisao, null, R.producao);
   h += '<div class="grid g2 mt">';
   REGRAS.unidades.forEach(function (u) {
     var U = R.unidades[u], r = U.res, st = r ? (r.operacional >= 0 ? 'lucro' : 'prej') : 'nd';
-    h += '<button class="box unit ' + st + '" onclick="show(\'' + norm(u) + '\')"><div class="split"><div class="lbl">' + u + '</div><span class="st ' + st + '">' + (r ? (r.operacional >= 0 ? 'LUCRO' : 'PREJUÍZO') : 'SEM RECEBIDAS') + '</span></div>'
+    h += '<button class="box unit ' + st + '" onclick="show(\'' + norm(u) + '\')"><div class="split"><div class="lbl">' + u + '</div><span class="st ' + st + '">' + (r ? (r.operacional >= 0 ? 'LUCRO' : 'PREJUÍZO') : 'SEM VALOR A RECEBER') + '</span></div>'
       + '<div class="v ' + (r ? (r.operacional >= 0 ? 'gr' : 'rd') : 'mu') + '">' + (r ? brl(r.operacional) : '—') + '</div>'
-      + '<div class="m">Recebidas <b>' + brl(U.recebidas) + '</b> · mínimo para não fechar no vermelho <b>' + brl(minimos(U.comissao, U.custos.fixo + U.custos.provisao).empate) + '</b></div></button>';
+      + '<div class="m">A receber <b>' + brl(U.recebidas) + '</b> · mínimo para não fechar no vermelho <b>' + brl(minimos(U.comissao, U.custos.fixo + U.custos.provisao).empate) + '</b></div></button>';
   });
   h += '</div>';
+  h += faixaAno();
   var q8 = q;
   var cardQ = function (x) { return '<div class="box q"><div class="qn">' + x[0] + '</div><div class="v ' + x[4] + '">' + x[1] + '</div></div>'; };
   h += '<div class="sec">Indicadores do mês</div><div class="grid g4">' + q8.slice(0, 4).map(cardQ).join('') + '</div>';
@@ -648,7 +679,7 @@ function vGeral() {
   document.getElementById('v-geral').innerHTML = h;
 }
 
-// Mínimos de comissões recebidas no mês (receita bruta, antes do imposto de 15%)
+// Mínimos do valor a receber no mês (receita bruta, antes do imposto de 15%)
 // empate:      R − 15%R − comissões − estrutura = 0
 // sustentável: além disso, cobre a reserva de marketing (15% da produção) → R = (comissões + estrutura + reserva) ÷ 0,85
 function minimos(comissoes, estrutura, reserva) {
@@ -662,29 +693,29 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
   var saiu = tem ? imp + comissoes + fixo + prov : null;
   var st = res ? (res.operacional >= 0 ? 'lucro' : 'prej') : 'nd';
   var h = '<div class="box res ' + st + '"><div class="split"><div class="lbl">' + titulo + ' <em>' + mesLabel(R.mes) + '</em></div></div>';
-  // 1. Entrou − Saiu = Resultado
+  // 1. A receber − Custos = Resultado
   h += '<div class="eq">'
-    + '<div class="eqc"><div class="eqk">Entrou</div><div class="eqv">' + (tem ? brl(recebidas) : '—') + '</div><div class="eqd">comissões recebidas das operadoras</div></div>'
+    + '<div class="eqc"><div class="eqk">A receber</div><div class="eqv">' + (tem ? brl(recebidas) : '—') + '</div><div class="eqd">das operadoras pelos contratos efetivos</div></div>'
     + '<div class="eqo">−</div>'
-    + '<div class="eqc"><div class="eqk">Saiu</div><div class="eqv">' + (tem ? brl(saiu) : brl(comissoes + fixo + prov) + ' <small>+ impostos</small>') + '</div><div class="eqd">impostos, vendedores, custos e provisão</div></div>'
+    + '<div class="eqc"><div class="eqk">Custos do mês</div><div class="eqv">' + (tem ? brl(saiu) : brl(comissoes + fixo + prov) + ' <small>+ impostos</small>') + '</div><div class="eqd">impostos, vendedores, custos e provisão</div></div>'
     + '<div class="eqo">=</div>'
-    + '<div class="eqc res-' + st + '"><div class="eqk">' + (res ? (res.operacional >= 0 ? 'Lucro do mês' : 'Prejuízo do mês') : 'Resultado do mês') + '</div><div class="eqv big2">' + (res ? brl(res.operacional) : '—') + '</div><div class="eqd">' + (res ? 'margem ' + pct(res.operacional / recebidas, 1) : (aviso || 'lançar as comissões recebidas')) + '</div></div>'
+    + '<div class="eqc res-' + st + '"><div class="eqk">' + (res ? (res.operacional >= 0 ? 'Lucro do mês' : 'Prejuízo do mês') : 'Resultado do mês') + '</div><div class="eqv big2">' + (res ? brl(res.operacional) : '—') + '</div><div class="eqd">' + (res ? 'margem ' + pct(res.operacional / recebidas, 1) : (aviso || 'a receber ainda não calculável (ver Alertas)')) + '</div></div>'
     + '</div>';
   // 2. Meta
   var esc0 = Math.max(mn.sustentavel, tem ? recebidas : 0) * 1.08;
   var w = function (v) { return Math.max(0, Math.min(100, v / esc0 * 100)); };
-  h += '<div class="meta"><div class="metat">Quanto precisava entrar</div>'
+  h += '<div class="meta"><div class="metat">Quanto precisa receber das operadoras</div>'
     + '<div class="mtrack"><i class="mfill ' + (tem && recebidas >= mn.empate ? 'ok' : 'no') + '" style="width:' + (tem ? w(recebidas) : 0) + '%"></i>'
     + '<b class="mk" style="left:' + w(mn.empate) + '%"></b><b class="mk mk2" style="left:' + w(mn.sustentavel) + '%"></b></div>'
     + '<div class="mleg">'
-    + '<div><span class="sw sw1"></span>Não fechar no vermelho <b>' + brl(mn.empate) + '</b>' + (tem ? ' · <b class="' + (recebidas >= mn.empate ? 'gr' : 'rd') + '">' + (recebidas >= mn.empate ? 'passou ' : 'faltaram ') + brl(Math.abs(recebidas - mn.empate)) + '</b>' : '') + '</div>'
-    + '<div><span class="sw sw2"></span>Cobrir também a reserva de marketing <b>' + brl(mn.sustentavel) + '</b>' + (tem ? ' · <b class="' + (recebidas >= mn.sustentavel ? 'gr' : 'rd') + '">' + (recebidas >= mn.sustentavel ? 'passou ' : 'faltaram ') + brl(Math.abs(recebidas - mn.sustentavel)) + '</b>' : '') + '</div>'
+    + '<div><span class="sw sw1"></span>Não fechar no vermelho <b>' + brl(mn.empate) + '</b>' + (tem ? ' · <b class="' + (recebidas >= mn.empate ? 'gr' : 'rd') + '">' + (recebidas >= mn.empate ? 'acima em ' : 'faltam ') + brl(Math.abs(recebidas - mn.empate)) + '</b>' : '') + '</div>'
+    + '<div><span class="sw sw2"></span>Cobrir também a reserva de marketing <b>' + brl(mn.sustentavel) + '</b>' + (tem ? ' · <b class="' + (recebidas >= mn.sustentavel ? 'gr' : 'rd') + '">' + (recebidas >= mn.sustentavel ? 'acima em ' : 'faltam ') + brl(Math.abs(recebidas - mn.sustentavel)) + '</b>' : '') + '</div>'
     + '</div></div>';
-  // 3. Para onde foi o dinheiro
+  // 3. Para onde vai o dinheiro
   var itens = [['Impostos (15%)', imp], ['Comissões dos vendedores', comissoes], ['Custos fixos (salários, VR, VT, operação)', fixo], ['Provisão 13º e férias', prov]];
   var base = tem && recebidas > 0 ? recebidas : (comissoes + fixo + prov);
-  h += '<div class="flow"><div class="metat">Para onde foi o dinheiro</div>';
-  itens.forEach(function (x) { h += '<div class="fl"><span>' + x[0] + '</span><div class="fb"><i style="width:' + (x[1] != null ? Math.min(100, x[1] / base * 100) : 0) + '%"></i></div><b>' + (x[1] != null ? brl(x[1]) : '—') + '</b><em>' + (x[1] != null && tem ? pct(x[1] / recebidas, 0) + ' do que entrou' : '') + '</em></div>'; });
+  h += '<div class="flow"><div class="metat">Para onde vai o dinheiro</div>';
+  itens.forEach(function (x) { h += '<div class="fl"><span>' + x[0] + '</span><div class="fb"><i style="width:' + (x[1] != null ? Math.min(100, x[1] / base * 100) : 0) + '%"></i></div><b>' + (x[1] != null ? brl(x[1]) : '—') + '</b><em>' + (x[1] != null && tem ? pct(x[1] / recebidas, 0) + ' do a receber' : '') + '</em></div>'; });
   h += '<div class="fl tot ' + st + '"><span>' + (res ? (res.operacional >= 0 ? 'Sobrou' : 'Faltou') : 'Resultado') + '</span><div></div><b>' + (res ? brl(res.operacional) : '—') + '</b><em></em></div>';
   h += '<div class="fl res2"><span>Reserva de marketing (15% da produção)</span><div class="fb"><i class="dash" style="width:' + Math.min(100, reserva / base * 100) + '%"></i></div><b>' + brl(reserva) + '</b><em>separada para investir</em></div>';
   h += '<div class="fl tot ' + (res ? (res.financeiro >= 0 ? 'lucro' : 'prej') : 'nd') + '"><span>Depois de separar a reserva</span><div></div><b>' + (res ? brl(res.financeiro) : '—') + '</b><em></em></div>';
@@ -695,7 +726,6 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
 function vUnidade(u) {
   var U = R.unidades[u], c = U.custos;
   var h = blocoResultado('Unidade ' + u, U.res, U.recebidas, U.comissao, c.fixo, c.provisao, null, U.producao);
-  h += '<div class="box gd mt"><div class="lbl">Comissões recebidas · ' + u + ' <em>' + mesLabel(R.mes) + '</em></div><div class="form" style="grid-template-columns:1fr auto"><input type="number" step="0.01" min="0" id="recu-' + norm(u) + '" value="' + (U.recebidas != null ? U.recebidas : '') + '" placeholder="R$ recebido"><button class="btn" onclick="salvarRecebidaUnidade(\'' + u + '\')">Salvar</button></div></div>';
   h += '<div class="grid g4 mt">'
     + card('Produção', brl(U.producao), 'Hapvida ' + brl(U.prodHap) + ' · fora ' + brl(U.prodFora), { tag: T.real })
     + card('Comissões dos vendedores', brl(U.comissao), U.vendedores + ' vendedores', { tag: T.real })
@@ -715,22 +745,128 @@ function vUnidade(u) {
   h += '<tr class="tot"><td>Total</td><td class="r">' + brl(U.producao) + '</td><td></td><td class="r">' + brl(U.comissao) + '</td></tr></tbody></table></div></div></div>';
   document.getElementById('v-' + norm(u)).innerHTML = h;
 }
-function salvarRecebidaUnidade(u) {
-  var o = ESTADO.recebidas[R.mes] = ESTADO.recebidas[R.mes] || {}, v = document.getElementById('recu-' + norm(u)).value;
-  if (v === '') delete o[u]; else o[u] = +v;
-  salvarEstado(); render(); show(norm(u));
+
+/* =====================================================================
+   MEMÓRIA MENSAL, SUSTENTABILIDADE E BALANÇO ANUAL
+   ===================================================================== */
+function compor(p) {
+  var o = Object.assign({}, p), tem = p.recebidas != null;
+  o.imposto = tem ? p.recebidas * REGRAS.imposto : null;
+  o.saiu = tem ? o.imposto + p.comissoes + p.fixo + p.provisao : null;
+  o.resultado = tem ? p.recebidas - o.saiu : null;
+  o.reserva = (p.producao || 0) * REGRAS.reservaMarketing;
+  o.depois = tem ? o.resultado - o.reserva : null;
+  return o;
+}
+function fotoMes() {
+  var un = {};
+  REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; un[u] = compor({ producao: r2(U.producao), recebidas: U.recebidas, comissoes: r2(U.comissao), fixo: U.custos.fixo, provisao: U.custos.provisao, investido: 0 }); });
+  return Object.assign(compor({ producao: r2(R.producao), recebidas: R.recebidas, comissoes: r2(R.comissoes), fixo: R.custoFixo, provisao: r2(R.provisao), investido: r2(R.roi.total), aReceber: R.ag.base ? r2(R.ag.valor) : null }),
+    { mes: R.mes, unidades: un, versao: REGRAS.versao, fechado: false });
+}
+// O mês corrente é gravado automaticamente enquanto estiver aberto; mês fechado não muda mais.
+function registrarMesAtual() {
+  var f = ESTADO.fechamentos, atual = f[R.mes];
+  if (atual && atual.fechado) return;
+  var novo = fotoMes();
+  if (atual && JSON.stringify(atual) === JSON.stringify(novo)) return;
+  f[R.mes] = novo; salvarEstado(true);
+}
+function fecharMes(mes) {
+  var f = ESTADO.fechamentos[mes]; if (!f) return;
+  if (f.recebidas == null && !confirm('O valor a receber deste mês não pôde ser calculado. Fechar mesmo assim?')) return;
+  if (!confirm('Fechar ' + mesLabel(mes) + '? Os números deste mês ficam gravados e não mudam mais.')) return;
+  f.fechado = true; f.fechadoEm = hojeISO(); salvarEstado(); render(); show('ano');
+}
+function reabrirMes(mes) { if (!confirm('Reabrir ' + mesLabel(mes) + '? Os números voltam a ser atualizados.')) return; ESTADO.fechamentos[mes].fechado = false; delete ESTADO.fechamentos[mes].fechadoEm; salvarEstado(); render(); show('ano'); }
+function mesesDoAno(ano) { return Object.keys(ESTADO.fechamentos).filter(function (k) { return k.slice(0, 4) === String(ano); }).sort(); }
+function resumoAno(ano) {
+  var ms = mesesDoAno(ano).map(function (k) { return ESTADO.fechamentos[k]; });
+  var comRec = ms.filter(function (m) { return m.recebidas != null; });
+  var t = { meses: ms, n: ms.length, nRec: comRec.length };
+  ['producao', 'recebidas', 'imposto', 'comissoes', 'fixo', 'provisao', 'saiu', 'resultado', 'reserva', 'depois', 'investido'].forEach(function (x) { t[x] = sum(comRec, function (m) { return m[x] || 0; }); });
+  t.producaoTotal = sum(ms, function (m) { return m.producao || 0; });
+  t.investidoTotal = sum(ms, function (m) { return m.investido || 0; });
+  t.provisaoAnual = REGRAS.provisaoReferencia * 12;
+  t.provisaoAcum = sum(ms, function (m) { return m.provisao || 0; });
+  var ant = ESTADO.anos[ano - 1]; t.saldoAnterior = ant ? ant.depois : 0;
+  t.acumulado = t.saldoAnterior + t.depois;
+  t.melhor = comRec.slice().sort(function (a, b) { return b.resultado - a.resultado; })[0];
+  t.pior = comRec.slice().sort(function (a, b) { return a.resultado - b.resultado; })[0];
+  t.mesesLucro = comRec.filter(function (m) { return m.resultado >= 0; }).length;
+  t.unidades = {};
+  REGRAS.unidades.forEach(function (u) { var us = comRec.map(function (m) { return (m.unidades || {})[u]; }).filter(Boolean); t.unidades[u] = { producao: sum(us, function (x) { return x.producao || 0; }), recebidas: sum(us, function (x) { return x.recebidas || 0; }), saiu: sum(us, function (x) { return x.saiu || 0; }), resultado: sum(us, function (x) { return x.resultado || 0; }), depois: sum(us, function (x) { return x.depois || 0; }), n: us.length }; });
+  return t;
+}
+function faixaAno() {
+  var ano = +R.mes.slice(0, 4), t = resumoAno(ano);
+  if (!t.nRec) return '';
+  var ok = t.resultado >= 0;
+  return '<button class="box unit ' + (ok ? 'lucro' : 'prej') + ' mt" onclick="show(\'ano\')" style="display:block"><div class="split"><div class="lbl">' + ano + ' até agora <em>' + t.nRec + ' ' + (t.nRec === 1 ? 'mês' : 'meses') + ' com valores</em></div><span class="st ' + (ok ? 'lucro' : 'prej') + '">' + (ok ? 'SE SUSTENTANDO NO ANO' : 'NÃO SE SUSTENTANDO NO ANO') + '</span></div>'
+    + '<div class="kpirow" style="margin-top:10px"><div>A receber no ano<b>' + brl(t.recebidas) + '</b></div><div>Custos no ano<b>' + brl(t.saiu) + '</b></div><div>Resultado do ano<b class="' + (ok ? 'gr' : 'rd') + '">' + brl(t.resultado) + '</b></div><div>Depois da reserva<b class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</b></div><div>Meses no lucro<b>' + t.mesesLucro + ' de ' + t.nRec + '</b></div></div></button>';
+}
+function vAno() {
+  var anos = {}; Object.keys(ESTADO.fechamentos).forEach(function (k) { anos[k.slice(0, 4)] = 1; }); anos[R.mes.slice(0, 4)] = 1;
+  var lista = Object.keys(anos).sort(), ano = +(vAno.sel || R.mes.slice(0, 4)), t = resumoAno(ano), fechadoAno = ESTADO.anos[ano];
+  var ok = t.resultado >= 0, st = t.nRec ? (ok ? 'lucro' : 'prej') : 'nd';
+  var h = '<div class="split"><div class="tabs" style="margin:0;border:0">' + lista.map(function (a) { return '<button class="tab' + (+a === ano ? ' on' : '') + '" onclick="vAno.sel=' + a + ';vAno()">' + a + (ESTADO.anos[a] ? ' ✓' : '') + '</button>'; }).join('') + '</div>'
+    + '<div><button class="btn gh sm" onclick="window.print()">Imprimir / salvar PDF</button></div></div>';
+  // Sustentação
+  h += '<div class="box res ' + st + ' mt"><div class="lbl">' + (fechadoAno ? 'Balanço geral de ' + ano + ' · ano fechado em ' + fechadoAno.fechadoEm.split('-').reverse().join('/') : (t.n === 12 || R.mes === ano + '-12' ? 'Balanço geral de ' + ano : 'Sustentação de ' + ano + ' até agora')) + ' <em>' + t.nRec + ' de 12 meses com valores</em></div>'
+    + '<div class="eq">'
+    + '<div class="eqc"><div class="eqk">A receber no ano</div><div class="eqv">' + brl(t.recebidas) + '</div><div class="eqd">das operadoras pelos contratos efetivos</div></div><div class="eqo">−</div>'
+    + '<div class="eqc"><div class="eqk">Custos no ano</div><div class="eqv">' + brl(t.saiu) + '</div><div class="eqd">impostos, vendedores, custos e provisão</div></div><div class="eqo">=</div>'
+    + '<div class="eqc res-' + st + '"><div class="eqk">' + (t.nRec ? (ok ? 'Se sustentando no ano' : 'Não se sustentando no ano') : 'Sem meses com valores') + '</div><div class="eqv big2">' + (t.nRec ? brl(t.resultado) : '—') + '</div><div class="eqd">' + (t.nRec ? 'média de ' + brl(t.resultado / t.nRec) + ' por mês · ' + t.mesesLucro + ' de ' + t.nRec + ' meses no lucro' : '') + '</div></div></div>';
+  h += '<div class="grid g4 mt">' + mini('Reserva de marketing no ano', brl(t.reserva), '15% da produção') + mini('Depois de separar a reserva', '<span class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</span>', '') + mini('Saldo do ano anterior', brl(t.saldoAnterior), ESTADO.anos[ano - 1] ? 'balanço de ' + (ano - 1) : 'sem ano anterior fechado') + mini('Acumulado com o ano anterior', '<span class="' + (t.acumulado >= 0 ? 'gr' : 'rd') + '">' + brl(t.acumulado) + '</span>', '') + '</div></div>';
+  // Provisão
+  var pctProv = t.provisaoAcum / t.provisaoAnual, coberta = t.nRec ? t.resultado >= 0 : null;
+  h += '<div class="box dk mt"><div class="lbl">Provisão de 13º e férias em ' + ano + '</div><div class="grid g4 mt">'
+    + mini('Provisionado até agora', brl(t.provisaoAcum), t.n + ' de 12 meses') + mini('Obrigação do ano', brl(t.provisaoAnual), '13º + 1/3 férias + encargos') + mini('Falta provisionar', brl(Math.max(0, t.provisaoAnual - t.provisaoAcum)), '') + mini('Provisão coberta pelo resultado', coberta == null ? '—' : '<span class="' + (coberta ? 'gr' : 'rd') + '">' + (coberta ? 'Sim' : 'Não') + '</span>', coberta == null ? '' : (coberta ? 'o resultado do ano pagou a provisão' : 'faltam ' + brl(-t.resultado) + ' no ano'))
+    + '</div><div class="mt">' + bar(pctProv, 'g') + '</div></div>';
+  // Gráfico mês a mês
+  var mx = Math.max.apply(null, t.meses.map(function (m) { return Math.abs(m.resultado || 0); }).concat([1]));
+  h += '<div class="box mt"><div class="lbl">Resultado mês a mês</div><div class="ych">';
+  for (var i = 1; i <= 12; i++) {
+    var k = ano + '-' + String(i).padStart(2, '0'), m = ESTADO.fechamentos[k], v = m && m.resultado != null ? m.resultado : null, hh = v != null ? Math.abs(v) / mx * 70 : 0;
+    h += '<div class="yc" title="' + mesLabel(k) + ': ' + (v != null ? brl(v) : 'sem dados') + '"><div class="yp">' + (v != null && v >= 0 ? '<i class="g" style="height:' + hh + 'px"></i>' : '') + '</div><div class="yn">' + (v != null && v < 0 ? '<i class="r" style="height:' + hh + 'px"></i>' : '') + '</div><span>' + MESES[i - 1].slice(0, 3) + (m && m.fechado ? '' : (m ? '*' : '')) + '</span></div>';
+  }
+  h += '</div><div class="note">* mês em aberto (ainda atualizando).</div></div>';
+  // Tabela
+  h += '<div class="box mt"><div class="lbl">Meses de ' + ano + '</div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">Produção</th><th class="r">A receber</th><th class="r">Custos</th><th class="r">Resultado</th><th class="r">Reserva mkt</th><th class="r">Depois da reserva</th><th class="r">Investido</th><th>Situação</th><th></th></tr></thead><tbody>';
+  t.meses.forEach(function (m) {
+    h += '<tr><td><b>' + mesLabel(m.mes) + '</b></td><td class="r">' + brl(m.producao) + '</td><td class="r">' + brl(m.recebidas) + '</td><td class="r">' + brl(m.saiu) + '</td><td class="r ' + (m.resultado != null ? (m.resultado >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.resultado) + '</b></td><td class="r">' + brl(m.reserva) + '</td><td class="r ' + (m.depois != null ? (m.depois >= 0 ? 'pos' : 'neg') : '') + '">' + brl(m.depois) + '</td><td class="r">' + brl(m.investido) + '</td><td>' + (m.fechado ? '<span class="tag real">Fechado</span>' : '<span class="tag proj">Em aberto</span>') + '</td><td>'
+      + (fechadoAno || m.exemplo ? '' : (m.fechado ? '<button class="btn gh sm" onclick="reabrirMes(\'' + m.mes + '\')">Reabrir</button>' : '<button class="btn sm" onclick="fecharMes(\'' + m.mes + '\')">Fechar mês</button>')) + '</td></tr>';
+  });
+  h += '<tr class="tot"><td>Total do ano</td><td class="r">' + brl(t.producaoTotal) + '</td><td class="r">' + brl(t.recebidas) + '</td><td class="r">' + brl(t.saiu) + '</td><td class="r ' + (ok ? 'pos' : 'neg') + '">' + brl(t.resultado) + '</td><td class="r">' + brl(t.reserva) + '</td><td class="r ' + (t.depois >= 0 ? 'pos' : 'neg') + '">' + brl(t.depois) + '</td><td class="r">' + brl(t.investidoTotal) + '</td><td></td><td></td></tr></tbody></table></div>'
+    + (t.melhor ? '<div class="kpirow"><div>Melhor mês<b>' + mesLabel(t.melhor.mes) + ' · ' + brl(t.melhor.resultado) + '</b></div><div>Pior mês<b>' + mesLabel(t.pior.mes) + ' · ' + brl(t.pior.resultado) + '</b></div><div>ROI sobre vendas no ano<b>' + (t.investidoTotal ? pct((t.producaoTotal - t.investidoTotal) / t.investidoTotal) : '—') + '</b></div></div>' : '') + '</div>';
+  // Unidades
+  h += '<div class="grid g2 mt">';
+  REGRAS.unidades.forEach(function (u) { var x = t.unidades[u], o2 = x.resultado >= 0; h += '<div class="box ' + (x.n ? (o2 ? 'bgr' : 'brd') : '') + '"><div class="split"><div class="lbl">' + u + ' em ' + ano + '</div>' + (x.n ? '<span class="st ' + (o2 ? 'lucro' : 'prej') + '">' + (o2 ? 'SE SUSTENTANDO' : 'NÃO SE SUSTENTANDO') + '</span>' : '') + '</div><div class="grid g4 mt">' + mini('Produção', brl0(x.producao)) + mini('A receber', brl0(x.recebidas)) + mini('Custos', brl0(x.saiu)) + mini('Resultado', '<span class="' + (o2 ? 'gr' : 'rd') + '">' + brl0(x.resultado) + '</span>') + '</div></div>'; });
+  h += '</div>';
+  // Fechar o ano
+  if (!fechadoAno) {
+    var podeFechar = !!ESTADO.fechamentos[ano + '-12'];
+    h += '<div class="box gd mt"><div class="split"><div><div class="lbl">Fechar o ano de ' + ano + '</div><div class="m">' + (podeFechar ? 'Grava o balanço geral de ' + ano + ', fecha todos os meses e leva o saldo para ' + (ano + 1) + '.' : 'Disponível a partir de dezembro de ' + ano + '.') + '</div></div><button class="btn" onclick="fecharAno(' + ano + ')"' + (podeFechar ? '' : ' disabled style="opacity:.5;cursor:not-allowed"') + '>Fechar ' + ano + '</button></div></div>';
+  }
+  document.getElementById('v-ano').innerHTML = h;
+}
+function fecharAno(ano) {
+  if (!ESTADO.fechamentos[ano + '-12']) return;
+  if (!confirm('Fechar o ano de ' + ano + '? Todos os meses ficam gravados e o saldo passa para ' + (ano + 1) + '.')) return;
+  mesesDoAno(ano).forEach(function (k) { var m = ESTADO.fechamentos[k]; if (!m.fechado) { m.fechado = true; m.fechadoEm = hojeISO(); } });
+  var t = resumoAno(ano);
+  ESTADO.anos[ano] = { fechadoEm: hojeISO(), producao: t.producaoTotal, recebidas: t.recebidas, saiu: t.saiu, resultado: t.resultado, reserva: t.reserva, depois: t.depois, investido: t.investidoTotal, meses: t.n };
+  salvarEstado(); render(); show('ano');
 }
 
 function vFin() {
-  var h = '<div class="box gd"><div class="lbl">Lançar comissões efetivamente recebidas <em>' + mesLabel(R.mes) + ' · base da reserva de marketing</em></div><div class="form" style="grid-template-columns:1fr 1fr auto">';
-  REGRAS.unidades.forEach(function (u) { var v = R.unidades[u].recebidas; h += '<label class="f">' + u + '<input type="number" step="0.01" min="0" id="rec-' + norm(u) + '" value="' + (v != null ? v : '') + '" placeholder="R$ recebido"></label>'; });
-  h += '<button class="btn" onclick="salvarRecebidas()">Salvar</button></div><div class="note">Somente valores que já entraram no caixa (agenciamento + vitalício). Valores a receber não entram no resultado.</div></div>';
+  var h = '';
 
   function dre(res, titulo, tag, U) {
     var cols = REGRAS.unidades.map(function (u) { return R.unidades[u].res; });
     var x = '<div class="box mt"><div class="lbl">' + titulo + tag + '</div><div class="tw"><table class="dre"><thead><tr><th></th>' + REGRAS.unidades.map(function (u) { return '<th class="r">' + u + '</th>'; }).join('') + '<th class="r">Consolidado</th></tr></thead><tbody>';
     function row(l, f, cls) { x += '<tr class="' + (cls || '') + '"><td>' + l + '</td>' + cols.map(function (c) { return '<td class="r">' + (c ? f(c) : '—') + '</td>'; }).join('') + '<td class="r">' + (res ? f(res) : '—') + '</td></tr>'; }
-    row('Comissões efetivamente recebidas', function (c) { return brl(c.recebidas); }, 'h');
+    row('A receber das operadoras', function (c) { return brl(c.recebidas); }, 'h');
     row('(−) Impostos 15%', function (c) { return brl(-c.imposto); }, 'ded');
     row('(−) Comissões dos vendedores', function (c) { return brl(-c.comissoes); }, 'ded');
     row('(−) Custos fixos e operacionais', function (c) { return brl(-c.fixo); }, 'ded');
@@ -740,8 +876,8 @@ function vFin() {
     row('Resultado financeiro da Optas', function (c) { return '<b class="' + (c.financeiro >= 0 ? 'gr' : 'rd') + '">' + brl(c.financeiro) + '</b>'; }, 'tot');
     return x + '</tbody></table></div></div>';
   }
-  if (R.res || R.recebidasInformadas) h += dre(R.res, 'Fechamento do mês ', T.real);
-  else h += '<div class="box mt rd"><div class="lbl">Fechamento realizado ' + T.pend + '</div><div class="empty">Aguardando o lançamento das comissões efetivamente recebidas de ' + mesLabel(R.mes) + '.</div></div>';
+  if (R.res) h += dre(R.res, 'Fechamento do mês ', '');
+  else h += '<div class="box brd"><div class="lbl">Fechamento do mês ' + T.pend + '</div><div class="empty">O valor a receber das operadoras ainda não pode ser calculado (veja Alertas).</div></div>';
 
   // Ponto de equilíbrio
   var ro = R.roi, est = R.custoFixo + R.provisao;
@@ -767,11 +903,6 @@ function vFin() {
   document.getElementById('v-fin').innerHTML = h;
 }
 function mini(l, v, m) { return '<div><div class="m">' + l + '</div><div class="v sm">' + v + '</div>' + (m ? '<div class="m">' + m + '</div>' : '') + '</div>'; }
-function salvarRecebidas() {
-  var o = ESTADO.recebidas[R.mes] = ESTADO.recebidas[R.mes] || {};
-  REGRAS.unidades.forEach(function (u) { var v = document.getElementById('rec-' + norm(u)).value; if (v === '') delete o[u]; else o[u] = +v; });
-  salvarEstado(); render(); show('fin');
-}
 
 function vCom() {
   var h = '<div class="grid g4">'
@@ -827,19 +958,25 @@ function vRoi() {
   if (REGRAS.reservaAcumula == null) h += '<div class="note">' + T.pend + ' Acúmulo do limite entre meses ainda não definido (Pendência 3): considera somente ' + mesLabel(R.mes) + '.</div>';
 
   // Lançamento por texto
-  h += '<div class="sec">Registrar investimento <small>escreva do seu jeito e envie</small></div><div class="box">'
-    + '<textarea id="invTexto" rows="3" placeholder="Ex.: gastei 1.500 em tráfego pago no Facebook dia 10&#10;investimos 3 mil em compra de leads em novembro&#10;R$ 450 Google Ads campanha Hapvida PME ontem"></textarea>'
-    + '<div class="split mt"><span class="m">Uma linha por investimento. Entendo valor (R$, reais, mil), data (hoje, ontem, dia 10, 10/11, novembro), tipo e campanha.</span><button class="btn" onclick="interpretarTexto()">Enviar</button></div>'
-    + '<div id="invPrev">' + previaInv() + '</div>';
-  if (o.inv.length) {
-    h += '<div class="tw mt"><table><thead><tr><th>Data</th><th>Tipo</th><th>Campanha</th><th>Como foi escrito</th><th class="r">Valor</th><th class="r">Acumulado</th><th></th></tr></thead><tbody>';
-    var ac = 0; o.inv.forEach(function (i) { ac += +i.valor; h += '<tr><td>' + (i.mensal ? mesLabel(i.data.slice(0, 7)) : i.data.split('-').reverse().join('/')) + '</td><td>' + esc(i.categoria) + '</td><td>' + (i.campanha ? esc(i.campanha) : '<span class="m">—</span>') + '</td><td class="m" style="white-space:normal;max-width:320px">' + esc(i.texto || '') + '</td><td class="r">' + brl(+i.valor) + '</td><td class="r">' + brl(ac) + '</td><td><button class="x" title="Excluir" onclick="delInv(\'' + i.id + '\')">×</button></td></tr>'; });
-    h += '<tr class="tot"><td colspan="4">Total investido em ' + mesLabel(R.mes) + '</td><td class="r">' + brl(o.total) + '</td><td></td><td></td></tr></tbody></table></div>';
-    var cats = Object.keys(o.porCat); if (cats.length) h += '<div class="kpirow">' + cats.map(function (c) { return '<div>' + esc(c) + '<b>' + brl(o.porCat[c]) + '</b></div>'; }).join('') + '</div>';
+  h += '<div class="sec">Registrar investimento em marketing <small>campanha, valor e data</small></div><div class="box">'
+    + '<textarea id="invTexto" rows="3" placeholder="Ex.: Meta Ads Hapvida PME 1.500 ontem&#10;Leads Bradesco 3 mil dia 10&#10;Google Ads Amil R$ 450 hoje"></textarea>'
+    + '<div class="split mt"><span class="m">Uma linha por investimento: nome da campanha, valor e data (hoje, ontem, dia 10, 10/11 ou o mês).</span><button class="btn" onclick="interpretarTexto()">Enviar</button></div>'
+    + '<div id="invPrev">' + previaInv() + '</div></div>';
+  // Linha do tempo (mais recente primeiro)
+  var ord = o.inv.slice().sort(function (a, b) { return a.data === b.data ? (a.id < b.id ? 1 : -1) : (a.data < b.data ? 1 : -1); });
+  h += '<div class="sec">Linha do tempo <small>' + mesLabel(R.mes) + ' · ' + o.inv.length + ' investimento(s) · ' + brl(o.total) + '</small></div><div class="box">';
+  if (ord.length) {
+    h += '<div class="tl">'; var ult = null;
+    ord.forEach(function (i) {
+      if (i.data !== ult) { h += '<div class="tld">' + dataLonga(i) + '</div>'; ult = i.data; }
+      h += '<div class="tli"><span class="tlp"></span><div class="tlc"><b>' + esc(i.campanha || 'Sem nome') + '</b>' + (i.texto ? '<div class="m">“' + esc(i.texto) + '”</div>' : '') + '</div><div class="tlv">' + brl(+i.valor) + '</div><button class="x" title="Excluir" onclick="delInv(\'' + i.id + '\')">×</button></div>';
+    });
+    h += '</div>';
+    var pc = {}; o.inv.forEach(function (i) { var k = i.campanha || 'Sem nome'; pc[k] = (pc[k] || 0) + (+i.valor || 0); });
+    h += '<div class="metat" style="margin-top:18px">Total por campanha</div><div class="kpirow">' + Object.keys(pc).sort(function (a, b) { return pc[b] - pc[a]; }).map(function (c) { return '<div>' + esc(c) + '<b>' + brl(pc[c]) + '</b></div>'; }).join('') + '</div>';
   } else h += '<div class="empty">Nenhum investimento registrado em ' + mesLabel(R.mes) + '.</div>';
   h += '</div>';
 
-  // ROI por campanha
   var camps = Object.keys(o.porCamp).filter(function (k) { return o.porCamp[k].contratos.length; });
   if (camps.length) {
   h += '<div class="sec">Retorno por campanha <small>contratos com campanha informada</small></div><div class="box">';
@@ -855,11 +992,6 @@ function vRoi() {
   h += '<div class="note">Retorno líquido recebido = valor recebido − 15% de imposto − comissão do vendedor.</div></div>';
   }
 
-  // Importação
-  h += '<div class="sec">Contratos linha a linha <small>enquanto a integração não envia as vendas individualizadas</small></div><div class="box bl"><div class="split"><div class="lbl">Importar CSV ' + T.info + '</div><div><button class="btn gh sm" onclick="modeloCSV()">Baixar modelo</button> ' + (ESTADO.contratos.length ? '<button class="btn gh sm" onclick="limparContratos()">Remover ' + ESTADO.contratos.length + ' contratos</button>' : '') + '</div></div>'
-    + '<p class="m">Colunas: id_venda; contrato; projeto ("Projeto Hapvida" ou vazio); operadora; modalidade (PF/PME); valor_mensal; vendedor; unidade; data_venda (AAAA-MM-DD); origem; campanha; valor_recebido. Separador ; ou ,. Cada contrato grava a tabela de comissão vigente na importação — mudanças futuras não alteram o histórico.</p>'
-    + '<div class="form" style="grid-template-columns:1fr auto"><input type="file" id="csvFile" accept=".csv,text/csv"><button class="btn" onclick="importarCSV()">Importar</button></div>'
-    + (ESTADO.contratos.length ? '<div class="m mt">' + ESTADO.contratos.length + ' contratos carregados · ' + ESTADO.contratos.filter(function (c) { return (c.data_venda || '').slice(0, 7) === R.mes; }).length + ' em ' + mesLabel(R.mes) + '. Com contratos no mês, eles substituem os agregados no cálculo de agenciamento.</div>' : '') + '</div>';
   document.getElementById('v-roi').innerHTML = h;
 }
 /* ---------- Registro de investimento por texto em português ---------- */
@@ -886,18 +1018,37 @@ function interpretarLinha(frase) {
   while ((x = re.exec(resto))) {
     var n = x[2]; if (/\.\d{3}/.test(n)) n = n.replace(/\./g, ''); n = parseFloat(n.replace(',', '.'));
     if (x[3]) n *= 1000;
-    cands.push({ v: n, forte: !!(x[1] || x[3] || x[4]) });
+    cands.push({ v: n, forte: !!(x[1] || x[3] || x[4]), txt: x[0].trim() });
   }
   var forte = cands.filter(function (c) { return c.forte; });
+  var escolhido = forte.length ? forte[0] : (cands.length === 1 ? cands[0] : null);
   if (forte.length) valor = forte[0].v; else if (cands.length === 1) valor = cands[0].v; else if (cands.length > 1) erro = 'mais de um número; escreva o valor com R$ ou "reais"';
   if (valor == null && !erro) erro = 'não encontrei o valor';
   // tipo
   var cat = /lead/.test(t) ? 'Compra de leads' : /(tr[aá]fego|ads\b|an[uú]ncio|facebook|instagram|meta\b|google|tiktok|linkedin|impulsion)/.test(t) ? 'Tráfego pago' : /(campanha comercial|a[cç][aã]o comercial|evento|panflet|brinde|feira)/.test(t) ? 'Campanhas comerciais' : 'Outras ações de captação';
-  // campanha
-  var camp = '', mc = frase.match(/campanha\s+([^,;.\n]+)/i);
-  if (mc) camp = mc[1].replace(new RegExp('\\b(hoje|ontem|anteontem|dia \\d{1,2}|\\d{1,2}/\\d{1,2}(/\\d{2,4})?|em ' + MES_RE + ')\\b.*$', 'i'), '').trim();
-  else { var mp = t.match(/\b(facebook|instagram|meta|google|tiktok|linkedin)\b/); if (mp) camp = mp[1].charAt(0).toUpperCase() + mp[1].slice(1) + (/ads\b/.test(t) ? ' Ads' : ''); }
+  // campanha = o que sobra do texto depois de tirar valor, data e palavras de ligação
+  var camp = ' ' + frase.replace(/\s+/g, ' ') + ' ';
+  var tira = function (re) { camp = camp.replace(re, ' '); };
+  tira(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g);
+  tira(/\b(anteontem|ontem|hoje)\b/gi);
+  tira(/\b(?:no )?dia \d{1,2}\b/gi);
+  tira(new RegExp('\\b(?:em |de |no mês de |mês de )?' + MES_RE + '(?: de \\d{4})?\\b', 'gi'));
+  if (escolhido) { var ix = camp.toLowerCase().indexOf(escolhido.txt); if (ix >= 0) camp = camp.slice(0, ix) + ' ' + camp.slice(ix + escolhido.txt.length); }
+  tira(/r\$/gi); tira(/\breais\b/gi);
+  tira(/\b(gastei|gastamos|gasto|investi|investimos|investimento|investido|paguei|pagamos|coloquei|colocamos|foi|foram|valor|campanha)\b/gi);
+  camp = camp.replace(/[,;:.\-–]+/g, ' ').replace(/\s+/g, ' ').trim();
+  var lig = /^(em|no|na|nos|nas|de|do|da|dos|das|com|para|pra|pro|e|a|o)\s+|\s+(em|no|na|nos|nas|de|do|da|dos|das|com|para|pra|pro|e|a|o)$/i;
+  for (var g = 0; g < 6 && lig.test(camp); g++) camp = camp.replace(lig, '').trim();
+  if (camp) camp = camp.charAt(0).toUpperCase() + camp.slice(1);
+  if (!camp && !erro) erro = 'faltou o nome da campanha';
   return { texto: frase.trim(), data: data, mensal: mensal, valor: valor != null ? r2(valor) : null, categoria: cat, campanha: camp, erro: erro };
+}
+var DIAS_SEM = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+function dataLonga(p) {
+  if (p.mensal) return 'Mês de ' + mesLabel(p.data.slice(0, 7)).toLowerCase();
+  var d = new Date(+p.data.slice(0, 4), +p.data.slice(5, 7) - 1, +p.data.slice(8, 10)), h = new Date(); h.setHours(0, 0, 0, 0);
+  var dif = Math.round((h - d) / 864e5), rel = dif === 0 ? 'Hoje · ' : dif === 1 ? 'Ontem · ' : '';
+  return rel + DIAS_SEM[d.getDay()] + ', ' + p.data.slice(8, 10) + '/' + p.data.slice(5, 7) + '/' + p.data.slice(0, 4);
 }
 function interpretarTexto() {
   var txt = document.getElementById('invTexto').value;
@@ -908,8 +1059,8 @@ function interpretarTexto() {
 function previaInv() {
   if (!PEND_INV.length) return '';
   var ok = PEND_INV.filter(function (p) { return !p.erro; }).length;
-  var h = '<div class="tw mt"><table><thead><tr><th>Entendi assim</th><th>Data</th><th>Tipo</th><th>Campanha</th><th class="r">Valor</th></tr></thead><tbody>';
-  PEND_INV.forEach(function (p) { h += '<tr' + (p.erro ? ' style="background:var(--red-t)"' : '') + '><td class="m" style="white-space:normal">' + esc(p.texto) + '</td><td>' + (p.mensal ? mesLabel(p.data.slice(0, 7)) : p.data.split('-').reverse().join('/')) + '</td><td>' + p.categoria + '</td><td>' + (esc(p.campanha) || '—') + '</td><td class="r">' + (p.erro ? '<span class="rd">' + p.erro + '</span>' : '<b>' + brl(p.valor) + '</b>') + '</td></tr>'; });
+  var h = '<div class="tw mt"><table><thead><tr><th>Você escreveu</th><th>Campanha</th><th class="r">Valor</th><th>Data</th></tr></thead><tbody>';
+  PEND_INV.forEach(function (p) { h += '<tr' + (p.erro ? ' style="background:var(--red-t)"' : '') + '><td class="m" style="white-space:normal">' + esc(p.texto) + '</td><td><b>' + (esc(p.campanha) || '—') + '</b></td><td class="r">' + (p.valor != null ? '<b>' + brl(p.valor) + '</b>' : '—') + '</td><td>' + (p.erro ? '<span class="rd">' + p.erro + '</span>' : dataLonga(p)) + '</td></tr>'; });
   h += '</tbody></table></div><div class="split mt"><span class="m">' + ok + ' de ' + PEND_INV.length + ' prontos para registrar' + (ok < PEND_INV.length ? ' — corrija o texto das linhas em vermelho e envie de novo' : '') + '</span><div><button class="btn gh" onclick="PEND_INV=[];document.getElementById(\'invPrev\').innerHTML=\'\'">Cancelar</button> <button class="btn" onclick="confirmarInv()"' + (ok ? '' : ' disabled') + '>Registrar</button></div></div>';
   return h;
 }
@@ -919,36 +1070,6 @@ function confirmarInv() {
   PEND_INV = []; salvarEstado(); render(); show('roi'); toast(n + ' investimento(s) registrado(s)');
 }
 function delInv(id) { if (!confirm('Excluir este lançamento?')) return; ESTADO.investimentos = ESTADO.investimentos.filter(function (i) { return i.id !== id; }); salvarEstado(); render(); show('roi'); }
-function limparContratos() { if (!confirm('Remover todos os contratos importados?')) return; ESTADO.contratos = []; salvarEstado(); render(); show('roi'); }
-function modeloCSV() {
-  var csv = 'id_venda;contrato;projeto;operadora;modalidade;valor_mensal;vendedor;unidade;data_venda;origem;campanha;valor_recebido\n';
-  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })); a.download = 'optas-contratos-modelo.csv'; a.click();
-}
-function importarCSV() {
-  var f = document.getElementById('csvFile').files[0]; if (!f) { toast('Escolha um arquivo'); return; }
-  var rd = new FileReader();
-  rd.onload = function () {
-    var txt = String(rd.result).replace(/^﻿/, ''), linhas = txt.split(/\r?\n/).filter(function (l) { return l.trim(); });
-    if (linhas.length < 2) { toast('Arquivo vazio'); return; }
-    var sep = linhas[0].indexOf(';') >= 0 ? ';' : ',';
-    var cab = parseLinha(linhas[0], sep).map(function (c) { return norm(c).replace(/\s+/g, '_'); });
-    var n = 0;
-    linhas.slice(1).forEach(function (l) {
-      var cols = parseLinha(l, sep), o = {};
-      cab.forEach(function (c, i) { o[c] = (cols[i] || '').trim(); });
-      ['valor_mensal', 'valor_recebido'].forEach(function (k) { if (o[k]) o[k] = parseNum(o[k]); });
-      if (o.data_venda && /^\d{2}\/\d{2}\/\d{4}$/.test(o.data_venda)) o.data_venda = o.data_venda.split('/').reverse().join('-');
-      if (o.modalidade) o.modalidade = o.modalidade.toUpperCase();
-      var rg = regraVenda(o);
-      if (rg && rg.ag != null) o.tabela = { nome: rg.nome, ag: rg.ag, vit: rg.vit, projeto: !!rg.projeto, versao: REGRAS.versao };
-      ESTADO.contratos.push(o); n++;
-    });
-    salvarEstado(); render(); show('roi'); toast(n + ' contratos importados');
-  };
-  rd.readAsText(f, 'utf-8');
-}
-function parseLinha(l, sep) { var out = [], cur = '', q = false; for (var i = 0; i < l.length; i++) { var ch = l[i]; if (ch === '"') { if (q && l[i + 1] === '"') { cur += '"'; i++; } else q = !q; } else if (ch === sep && !q) { out.push(cur); cur = ''; } else cur += ch; } out.push(cur); return out; }
-function parseNum(s) { s = String(s).replace(/[R$\s]/g, ''); if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0; }
 
 function vAle() {
   var ord = { er: 0, wa: 1, in: 2 }, al = R.alertas.slice().sort(function (a, b) { return ord[a.sev] - ord[b.sev]; });
@@ -969,17 +1090,14 @@ var PENDENCIAS = [
   ['1', 'Tabelas das operadoras', 'Percentuais de agenciamento/vitalício de MedSênior, Prevent, Santa Helena, Sobam, Supermed, Qualicorp, Ana Costa, São Cristóvão e Trasmontano; modalidade PF/PME de todas as 16 operadoras (inclusive as 7 já informadas).', 'Agenciamento e vitalício ficam provisórios ou não calculados.'],
   ['2', 'Regras definitivas do vitalício', 'Início na 4ª parcela para todas as operadoras/modalidades? Base: valor original ou atualizado? Continuidade igual para todas as modalidades?', 'Vitalício exibido por parcela e fora do ROI.'],
   ['3', 'Acúmulo da reserva de marketing', 'A verba não utilizada acumula para o mês seguinte ou expira no fechamento?', 'Saldo calculado só dentro do mês.'],
-  ['4', 'Base definitiva do ROI', 'Quais componentes formam o retorno líquido atribuído (recebidas, 15% de imposto, comissões dos vendedores, outros custos)?', 'ROI usa base provisória: agenciamento − imposto − comissão do vendedor.'],
-  ['5', 'Categorias de investimento', 'Validar: tráfego pago, compra de leads, campanhas comerciais, outras ações de captação.', 'Categorias disponíveis para lançamento, marcadas "a validar".'],
-  ['6', 'Origem dos contratos na integração', 'A integração disponibilizará origem, campanha e identificação do investimento?', 'Nenhum contrato atribuível hoje — ROI sem base.'],
+  ['7', 'Validação contábil dos encargos', 'FPAS/terceiros, RAT, incidências efetivas e encargos já incluídos nos R$ 39.185,43.', 'Provisão de R$ 1.623,15 é estimativa gerencial.'],
   ['8', 'Comissão do Projeto Hapvida', 'Agenciamento e vitalício do Projeto Hapvida (comissão inferior à Hapvida comum). Venda Hapvida fora do projeto já usa 350% + 2%.', 'Produção do projeto fica fora do agenciamento a receber até a regra ser informada.'],
   ['9', 'Vínculo com planilha e CRM', 'Link da planilha e campos do CRM (PipeRun) com venda a venda: projeto, operadora, modalidade, valor, vendedor, unidade, data, origem/campanha.', 'Painel usa os totais por vendedor do painel atual.'],
-  ['7', 'Validação contábil dos encargos', 'FPAS/terceiros, RAT, incidências efetivas e encargos já incluídos nos R$ 39.185,43.', 'Provisão de R$ 1.623,15 é estimativa gerencial.']
 ];
 function vPen() {
-  var h = '<div class="box rd"><div class="lbl">Pendências para finalizar a modelagem <em>mantidas separadas das regras confirmadas</em></div><div class="tw"><table><thead><tr><th>#</th><th>Pendência</th><th>O que falta</th><th>Como o painel trata hoje</th></tr></thead><tbody>';
+  var h = '<div class="box brd"><div class="lbl">Pendências para finalizar a modelagem <em>mantidas separadas das regras confirmadas</em></div><div class="tw"><table><thead><tr><th>#</th><th>Pendência</th><th>O que falta</th><th>Como o painel trata hoje</th></tr></thead><tbody>';
   PENDENCIAS.forEach(function (p) { h += '<tr><td><b>' + p[0] + '</b></td><td style="white-space:normal;min-width:160px"><b>' + p[1] + '</b></td><td style="white-space:normal;min-width:280px">' + p[2] + '</td><td style="white-space:normal;min-width:220px" class="m">' + p[3] + '</td></tr>'; });
-  h += '</tbody></table></div><div class="note">Prioridade: tabelas das operadoras → vitalício → decisões de ROI e orçamento de marketing.</div></div>';
+  h += '</tbody></table></div><div class="note">Resolvidas: base do ROI (ROI sobre as vendas), categorias de investimento (registro por nome de campanha) e origem dos contratos (não é mais necessária para o ROI).</div></div>';
   h += '<div class="box mt"><div class="lbl">Fora do escopo desta etapa</div><p class="m">Distribuição de lucros entre W3G e sócias · média de comissões para provisionamento da folha · controle individual de salários fixos · CPL/ROI avançado sem atribuição confiável · conciliação detalhada por pagamento de operadora · estornos, cancelamentos, descontos e recebimentos parciais.</p></div>';
   document.getElementById('v-pen').innerHTML = h;
 }
@@ -999,14 +1117,17 @@ function vReg() {
     + card('Reserva de marketing', '15%', 'Sobre a produção mensal (soma das mensalidades dos contratos efetivos). Destinação do resultado, não despesa.', { box: 'dk' })
     + card('Vitalício', 'a partir da ' + REGRAS.vitalicio.inicioParcela + 'ª parcela', 'Enquanto o contrato estiver ativo, % da operadora. ' + T.pend, { box: 'dk' }) + '</div>';
   h += '<div class="sec">Fórmulas do sistema <small>cada regra nova entra aqui</small></div><div class="grid g2">'
-    + regra('Lucro ou prejuízo da unidade', 'Resultado operacional = comissões efetivamente recebidas − 15% de imposto − comissões dos vendedores − custo fixo − provisão 13º/férias', 'Positivo = LUCRO · negativo = PREJUÍZO. Calculado por unidade e no consolidado (soma das duas).')
-    + regra('Mínimo para não fechar no vermelho', 'Recebidas mínimas = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85', 'Valor de comissões recebidas no mês em que o resultado operacional é zero.')
-    + regra('Mínimo sustentável', 'Recebidas mínimas = (comissões dos vendedores + custo fixo + provisão + reserva de marketing) ÷ 0,85', 'Não fecha no vermelho e ainda cobre a reserva de marketing (15% da produção mensal).')
+    + regra('Lucro ou prejuízo da unidade', 'Resultado operacional = a receber das operadoras − 15% de imposto − comissões dos vendedores − custo fixo − provisão 13º/férias', 'Positivo = LUCRO · negativo = PREJUÍZO. Calculado por unidade e no consolidado (soma das duas).')
+    + regra('Mínimo para não fechar no vermelho', 'A receber mínimo = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85', 'Valor a receber das operadoras no mês em que o resultado fica em zero.')
+    + regra('Mínimo sustentável', 'A receber mínimo = (comissões dos vendedores + custo fixo + provisão + reserva de marketing) ÷ 0,85', 'Não fecha no vermelho e ainda cobre a reserva de marketing (15% da produção mensal).')
     + regra('Resultado financeiro', 'Resultado financeiro = resultado operacional − reserva de marketing', 'Reserva de marketing = 15% da produção mensal. É destinação do resultado, não despesa.')
     + regra('Qual comissão se aplica a cada venda', '1º tabela gravada na data da venda → 2º regra do projeto (Projeto Hapvida) → 3º tabela da operadora', 'Hapvida fora do projeto usa 350% + 2%. Mudanças futuras de tabela não alteram vendas antigas.')
     + regra('Resultado financeiro do mês', 'Resultado financeiro = a receber das operadoras − impostos (15% do a receber) − custo total da Optas no mês − reserva de marketing (15% da produção mensal)', 'Positivo = verde; negativo = vermelho. Para fechar no verde, o a receber precisa cobrir impostos, custo total e reserva.')
     + regra('Limite de investimento', 'Limite = 15% × produção do mês · Dentro se investido ≤ limite; passou se investido > limite', 'Soma de todos os investimentos registrados no mês.')
     + regra('ROI sobre as vendas', 'ROI = (vendido no mês − investido no mês) ÷ investido no mês', 'Vendido = produção dos contratos efetivos. Também mostra quanto foi vendido para cada R$ 1,00 investido.')
+    + regra('Sustentação no ano', 'Resultado do ano = soma do resultado dos meses com valor a receber calculado · Se sustentando se ≥ 0', 'Cada mês é gravado automaticamente; ao fechar o mês, os números ficam travados.')
+    + regra('Provisão de 13º e férias no ano', 'Obrigação do ano = R$ 1.623,15 × 12 · Coberta se o resultado do ano ≥ 0', 'A provisão já é descontada todo mês no resultado.')
+    + regra('Balanço anual e virada de ano', 'Em dezembro: fechar o ano grava o balanço geral e o saldo (depois da reserva) passa para o ano seguinte', 'Acumulado = saldo do ano anterior + resultado depois da reserva do ano atual.')
     + regra('Custo total da Optas no mês', 'Custo total = comissões dos vendedores + custo fixo + provisão 13º/férias', 'Soma de tudo que a Optas paga no mês para operar, sem impostos e sem reserva de marketing.')
     + regra('Comissão do vendedor', 'Comissão = produção do mês × percentual da faixa atingida', 'O percentual incide sobre toda a produção. Sem médias históricas.')
     + '</div>';
@@ -1037,7 +1158,7 @@ function iniciar() {
   } else {
     FONTE = SNAPSHOT; FONTE_DESC = SNAPSHOT_ORIGEM;
     ESTADO = normEstado(DEMO ? JSON.parse(JSON.stringify(ESTADO_DEMO)) : carregarEstadoLocal());
-    if (DEMO) { var bn = document.createElement('div'); bn.className = 'demo'; bn.innerHTML = '<b>MODO EXEMPLO</b> · produção e comissões dos vendedores são reais (painel de 23/11 18:53). Recebidas, investimentos e os 4 contratos EX1–EX4 são <b>fictícios</b>, só para visualizar o layout.'; document.querySelector('.wrap').insertBefore(bn, document.getElementById('tabs')); }
+    if (DEMO) { var bn = document.createElement('div'); bn.className = 'demo'; bn.innerHTML = '<b>MODO EXEMPLO</b> · produção e comissões dos vendedores são reais (painel de 23/11 18:53). Investimentos, os 4 contratos EX1–EX4 e os meses de janeiro a outubro são <b>fictícios</b>, só para visualizar o layout.'; document.querySelector('.wrap').insertBefore(bn, document.getElementById('tabs')); }
     render(); if (tab && document.getElementById('v-' + tab)) show(tab);
   }
 }

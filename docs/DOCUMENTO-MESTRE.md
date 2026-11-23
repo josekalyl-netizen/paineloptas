@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 1.7  
+**Versão:** 1.9  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -362,6 +362,27 @@ Decisão do usuário: a reserva de marketing passa a ser **15% da produção men
 - Limite de investimento = 15% da produção do mês (reserva de marketing). O painel mostra **dentro dos 15%** ou **passou dos 15%**, quanto foi usado e quanto sobra ou excedeu.
 - **ROI sobre as vendas = (vendido no mês − investido no mês) ÷ investido no mês**, em que vendido = produção dos contratos efetivos. Também mostra o valor vendido para cada R$ 1,00 investido.
 - A tabela de retorno por campanha só aparece quando houver contratos com campanha informada.
+
+## 12.9. Base única: a receber das operadoras (v1.9)
+
+- Não há mais lançamento manual de comissões recebidas nem importação de CSV.
+- Todo o painel (visão geral, unidades, ano, financeiro) usa o **valor a receber das operadoras**: contratos efetivos × comissão de cada operadora (tabela gravada na época da venda → regra do projeto → tabela da operadora).
+- Imposto = 15% do a receber. Reserva de marketing = 15% da produção.
+- Registro de investimento: o usuário escreve nome da campanha, valor e data; o sistema identifica a data sozinho (hoje, ontem, dia 10, 10/11, mês) e mostra numa linha do tempo, mais recente primeiro, com total por campanha.
+
+## 12.10. Memória mensal, sustentação anual e balanço (v1.8)
+
+- O mês corrente é gravado automaticamente enquanto está aberto; "Fechar mês" trava os números.
+- Aba Ano: a receber no ano − custos no ano = resultado do ano. **Se sustentando no ano** se o resultado acumulado ≥ 0.
+- Provisão de 13º e férias: provisionado até agora × obrigação do ano (R$ 1.623,15 × 12) e se o resultado do ano cobriu a provisão.
+- Resultado mês a mês, tabela dos meses, melhor e pior mês, resultado por unidade.
+- Em dezembro, "Fechar o ano" grava o balanço geral, fecha todos os meses e leva o saldo (depois da reserva) para o ano seguinte. O balanço pode ser impresso ou salvo em PDF.
+
+## Pendências resolvidas pelas decisões acima
+
+- Pendência 4 (base do ROI): ROI sobre as vendas.
+- Pendência 5 (categorias de investimento): registro por nome de campanha.
+- Pendência 6 (origem dos contratos): não é mais necessária para o ROI.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
