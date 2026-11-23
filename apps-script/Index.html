@@ -602,7 +602,7 @@ function vGeral() {
     var U = R.unidades[u], r = U.res, st = r ? (r.operacional >= 0 ? 'lucro' : 'prej') : 'nd';
     h += '<button class="box unit ' + st + '" onclick="show(\'' + norm(u) + '\')"><div class="split"><div class="lbl">' + u + '</div><span class="st ' + st + '">' + (r ? (r.operacional >= 0 ? 'LUCRO' : 'PREJUÍZO') : 'SEM RECEBIDAS') + '</span></div>'
       + '<div class="v ' + (r ? (r.operacional >= 0 ? 'gr' : 'rd') : 'mu') + '">' + (r ? brl(r.operacional) : '—') + '</div>'
-      + '<div class="m">Recebidas <b>' + brl(U.recebidas) + '</b> · mínimo para empatar <b>' + brl(minimos(U.comissao, U.custos.fixo + U.custos.provisao).empate) + '</b></div></button>';
+      + '<div class="m">Recebidas <b>' + brl(U.recebidas) + '</b> · mínimo para não fechar no vermelho <b>' + brl(minimos(U.comissao, U.custos.fixo + U.custos.provisao).empate) + '</b></div></button>';
   });
   h += '</div>';
   var q8 = q.slice(0, 8);
@@ -635,7 +635,7 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso) {
     + '<div class="m">' + (res ? 'Resultado operacional · margem ' + pct(recebidas ? res.operacional / recebidas : null, 1) + ' · após reserva de marketing <b class="' + (res.financeiro >= 0 ? 'gr' : 'rd') + '">' + brl(res.financeiro) + '</b>' : (aviso || 'Comissões recebidas do mês não lançadas.')) + '</div></div>';
   var p1 = recebidas != null ? recebidas / mn.empate : 0, p2 = recebidas != null ? recebidas / mn.sustentavel : 0;
   h += '<div class="mins"><div class="mrow"><span>Recebidas</span><b>' + brl(recebidas) + '</b></div>'
-    + '<div class="mrow"><span>Mínimo para empatar</span><b>' + brl(mn.empate) + '</b></div>' + bar(p1, p1 >= 1 ? 'g' : 'r')
+    + '<div class="mrow"><span>Mínimo para não fechar no vermelho</span><b>' + brl(mn.empate) + '</b></div>' + bar(p1, p1 >= 1 ? 'g' : 'r')
     + '<div class="mrow"><span>' + (recebidas != null ? (recebidas >= mn.empate ? 'Acima do mínimo' : 'Abaixo do mínimo') : 'Diferença') + '</span><b class="' + (recebidas != null ? (recebidas >= mn.empate ? 'gr' : 'rd') : '') + '">' + (recebidas != null ? brl(recebidas - mn.empate) : '—') + '</b></div>'
     + '<div class="mrow" style="margin-top:10px"><span>Mínimo sustentável <small>(inclui reserva de 15%)</small></span><b>' + brl(mn.sustentavel) + '</b></div>' + bar(p2, p2 >= 1 ? 'g' : 'y')
     + '<div class="mrow"><span>' + (recebidas != null ? (recebidas >= mn.sustentavel ? 'Acima do sustentável' : 'Abaixo do sustentável') : 'Diferença') + '</span><b class="' + (recebidas != null ? (recebidas >= mn.sustentavel ? 'gr' : 'rd') : '') + '">' + (recebidas != null ? brl(recebidas - mn.sustentavel) : '—') + '</b></div></div></div>';
@@ -901,8 +901,8 @@ function vReg() {
     + card('Vitalício', 'a partir da ' + REGRAS.vitalicio.inicioParcela + 'ª parcela', 'Enquanto o contrato estiver ativo, % da operadora. ' + T.pend, { box: 'dk' }) + '</div>';
   h += '<div class="sec">Fórmulas do sistema <small>cada regra nova entra aqui</small></div><div class="grid g2">'
     + regra('Lucro ou prejuízo da unidade', 'Resultado operacional = comissões efetivamente recebidas − 15% de imposto − comissões dos vendedores − custo fixo − provisão 13º/férias', 'Positivo = LUCRO · negativo = PREJUÍZO. Calculado por unidade e no consolidado (soma das duas).')
-    + regra('Mínimo para empatar', 'Recebidas mínimas = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85', 'Valor de comissões recebidas no mês em que o resultado operacional é zero.')
-    + regra('Mínimo sustentável', 'Recebidas mínimas = (0,85 × comissões dos vendedores + custo fixo + provisão) ÷ 0,70', 'Empata e ainda forma a reserva de marketing de 15% do lucro bruto operacional.')
+    + regra('Mínimo para não fechar no vermelho', 'Recebidas mínimas = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85', 'Valor de comissões recebidas no mês em que o resultado operacional é zero.')
+    + regra('Mínimo sustentável', 'Recebidas mínimas = (0,85 × comissões dos vendedores + custo fixo + provisão) ÷ 0,70', 'Não fecha no vermelho e ainda forma a reserva de marketing de 15% do lucro bruto operacional.')
     + regra('Resultado financeiro', 'Resultado financeiro = resultado operacional − reserva de marketing', 'Reserva = 15% × (recebidas − comissões dos vendedores). É destinação do resultado, não despesa.')
     + regra('Qual comissão se aplica a cada venda', '1º tabela gravada na data da venda → 2º regra do projeto (Projeto Hapvida) → 3º tabela da operadora', 'Hapvida fora do projeto usa 350% + 2%. Mudanças futuras de tabela não alteram vendas antigas.')
     + regra('Comissão do vendedor', 'Comissão = produção do mês × percentual da faixa atingida', 'O percentual incide sobre toda a produção. Sem médias históricas.')

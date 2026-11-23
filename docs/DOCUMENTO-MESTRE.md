@@ -325,7 +325,7 @@ Analisar reserva, investimento realizado, contratos gerados, retorno projetado e
 Exibido de forma direta, sem sugestões: uma aba para Consolação, uma para Mogi e o consolidado no topo da visão geral.
 
 - Resultado operacional = comissões efetivamente recebidas − 15% de imposto − comissões dos vendedores − custo fixo − provisão 13º/férias. Positivo = LUCRO; negativo = PREJUÍZO.
-- Mínimo para empatar = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85.
+- Mínimo para não fechar no vermelho = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85.
 - Mínimo sustentável (forma também a reserva de 15% do lucro bruto operacional) = (0,85 × comissões dos vendedores + custo fixo + provisão) ÷ 0,70.
 - Resultado financeiro = resultado operacional − reserva de marketing.
 
