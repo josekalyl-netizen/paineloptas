@@ -509,6 +509,10 @@ function calcular() {
   // ---------- Produção por vendedor (fonte integrada) ----------
   var contratosMes = ESTADO.contratos.filter(function (c) { return (c.data_venda || '').slice(0, 7) === R.mes; });
   var usarContratos = contratosMes.length > 0;
+  if (usarContratos && D && D.vendedores) {
+    var prodAg = sum(D.vendedores, function (v) { return (+v.hap || 0) + (+v.fora || 0); }), prodCt = sum(contratosMes, function (c) { return +c.valor_mensal || 0; });
+    if (Math.abs(prodAg - prodCt) > Math.max(1, prodAg * 0.01)) R.alertas.push({ sev: 'er', cod: 'COBERTURA', titulo: 'Contratos não batem com a produção do painel gerencial', texto: 'Contratos do mês somam ' + brl(prodCt) + ' de mensalidade; o painel gerencial mostra ' + brl(prodAg) + ' de produção (diferença de ' + brl(prodAg - prodCt) + ').', impacto: 'O valor a receber e o lucro ou prejuízo ficam distorcidos: custos e comissões consideram toda a produção, mas o a receber só os contratos.', acao: 'Conferir se todas as vendas efetivas do mês foram enviadas pela planilha/CRM.' });
+  }
   R.usarContratos = usarContratos;
 
   var vend = {};
@@ -758,7 +762,7 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
   var h = '<div class="box res ' + st + '"><div class="split"><div class="lbl">' + titulo + ' <em>' + mesLabel(R.mes) + '</em></div></div>';
   // 1. A receber − Custos = Resultado
   h += '<div class="eq">'
-    + '<div class="eqc"><div class="eqk">A receber</div><div class="eqv">' + (tem ? brl(recebidas) : '—') + '</div><div class="eqd">das operadoras pelos contratos efetivos</div></div>'
+    + '<div class="eqc"><div class="eqk">A receber</div><div class="eqv">' + (tem ? brl(recebidas) : '—') + '</div><div class="eqd">das operadoras pelos contratos efetivos</div>' + (/^Optas consolidado/.test(titulo) && R.ag.naoCalc > 0 ? '<div class="plan no">+ ' + brl(R.ag.naoCalc) + ' de mensalidade fora da conta (' + (R.ag.porOperadora['Projeto Hapvida'] && R.ag.porOperadora['Projeto Hapvida'].ag == null ? 'comissão do Projeto Hapvida pendente' : 'sem regra de comissão') + ')</div>' : '') + '</div>'
     + '<div class="eqo">−</div>'
     + '<div class="eqc"><div class="eqk">Custos do mês</div><div class="eqv">' + (tem ? brl(saiu) : brl(comissoes + fixo + prov) + ' <small>+ impostos</small>') + '</div><div class="eqd">impostos, vendedores, custos e provisão</div></div>'
     + '<div class="eqo">=</div>'
@@ -1246,6 +1250,19 @@ function ajustarTela() {
 ajustarTela();
 window.addEventListener('resize', ajustarTela);
 window.addEventListener('orientationchange', ajustarTela);
+// Modo exemplo: contratos fictícios que somam EXATAMENTE a produção real de cada vendedor.
+// Parte "Projeto Hapvida" = produção hap do vendedor; parte "fora do projeto" = produção fora com operadora fictícia.
+function contratosDemo(D) {
+  var ops = [['Bradesco', 'PME', 'Meta Ads Bradesco PME', 0.7], ['Amil', 'PF', 'Leads Amil PF', 0], ['SulAmérica', 'PME', 'Indicação', 0], ['Porto', 'PF', 'Google Ads Porto', 0], ['Hapvida', 'PF', 'Carteira ativa', 0]];
+  var out = [], mes = (D.rotulo && mesReferenciaDe(D.rotulo)) || hojeISO().slice(0, 7);
+  D.vendedores.forEach(function (v, i) {
+    var dia = String(3 + (i * 2) % 24).padStart(2, '0');
+    if (v.hap > 0) out.push({ id_venda: 'EX-H' + i, contrato: 'C-H' + i, projeto: 'Projeto Hapvida', operadora: 'Hapvida', modalidade: 'PF', valor_mensal: r2(v.hap), vendedor: v.nome, unidade: v.equipe, data_venda: mes + '-' + dia, origem: 'Projeto Hapvida', campanha: 'Projeto Hapvida', valor_recebido: '' });
+    if (v.fora > 0) { var o = ops[i % ops.length]; out.push({ id_venda: 'EX-F' + i, contrato: 'C-F' + i, projeto: '', operadora: o[0], modalidade: o[1], valor_mensal: r2(v.fora), vendedor: v.nome, unidade: v.equipe, data_venda: mes + '-' + dia, origem: o[2], campanha: o[2], valor_recebido: o[3] ? r2(v.fora * 4 * o[3]) : '' }); }
+  });
+  return out;
+}
+function mesReferenciaDe(rot) { var n = norm(rot); for (var i = 0; i < 12; i++) if (n.indexOf(norm(MESES[i])) === 0) return ((rot.match(/(20\d\d)/) || [])[1] || new Date().getFullYear()) + '-' + String(i + 1).padStart(2, '0'); return null; }
 function iniciar() {
   var tab = location.hash.slice(1); if (!tab) { try { tab = localStorage.getItem('optas_tab'); } catch (e) {} }
   if (GAS) {
@@ -1259,7 +1276,8 @@ function iniciar() {
   } else {
     FONTE = SNAPSHOT; FONTE_DESC = SNAPSHOT_ORIGEM;
     ESTADO = normEstado(DEMO ? JSON.parse(JSON.stringify(ESTADO_DEMO)) : carregarEstadoLocal());
-    if (DEMO) { var bn = document.createElement('div'); bn.className = 'demo'; bn.innerHTML = '<b>MODO EXEMPLO</b> · produção e comissões dos vendedores são reais (painel de 23/11 18:53). Investimentos, os 4 contratos EX1–EX4 e os meses de janeiro a outubro são <b>fictícios</b>, só para visualizar o layout.'; document.querySelector('.wrap').insertBefore(bn, document.getElementById('tabs')); }
+    if (DEMO) ESTADO.contratos = contratosDemo(SNAPSHOT);
+    if (DEMO) { var bn = document.createElement('div'); bn.className = 'demo'; bn.innerHTML = '<b>MODO EXEMPLO</b> · produção e comissões dos vendedores são reais (painel de 23/11 18:53). Investimentos, a operadora/campanha das vendas fora do projeto e os meses de janeiro a outubro são <b>fictícios</b>, só para visualizar o layout.'; document.querySelector('.wrap').insertBefore(bn, document.getElementById('tabs')); }
     render(); if (tab && document.getElementById('v-' + tab)) show(tab);
   }
 }
