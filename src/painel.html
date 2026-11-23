@@ -710,7 +710,7 @@ function limiteSub(o) {
 
 // Mínimos de comissões recebidas no mês (receita bruta, antes do imposto de 15%)
 // empate:      R − 15%R − comissões − estrutura = 0
-// sustentável: além disso, forma a reserva de 15% do LBO  → 0,70R = 0,85·comissões + estrutura
+// sustentável: além disso, forma a reserva de 15% do lucro bruto operacional  → 0,70R = 0,85·comissões + estrutura
 function minimos(comissoes, estrutura) {
   var i = REGRAS.imposto, m = REGRAS.reservaMarketing;
   return { empate: (comissoes + estrutura) / (1 - i), sustentavel: ((1 - m) * comissoes + estrutura) / (1 - i - m) };
@@ -735,7 +735,7 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso) {
     + '<tr class="ded"><td>(−) Custos fixos e operacionais</td><td class="r">' + brl(-fixo) + '</td></tr>'
     + '<tr class="ded"><td>(−) Provisão 13º e férias</td><td class="r">' + brl(-prov) + '</td></tr>'
     + '<tr class="tot"><td>Resultado operacional</td><td class="r ' + (res ? (res.operacional >= 0 ? 'pos' : 'neg') : '') + '">' + (res ? brl(res.operacional) : '—') + '</td></tr>'
-    + '<tr class="ded"><td>(−) Reserva de marketing 15% do LBO</td><td class="r">' + (res ? brl(-res.reserva) : '—') + '</td></tr>'
+    + '<tr class="ded"><td>(−) Reserva de marketing (15% do lucro bruto operacional)</td><td class="r">' + (res ? brl(-res.reserva) : '—') + '</td></tr>'
     + '<tr class="tot"><td>Resultado financeiro</td><td class="r ' + (res ? (res.financeiro >= 0 ? 'pos' : 'neg') : '') + '">' + (res ? brl(res.financeiro) : '—') + '</td></tr>'
     + '</tbody></table></div></div>';
   return h;
@@ -786,7 +786,7 @@ function vFin() {
     row('(−) Provisão 13º e férias', function (c) { return brl(-c.provisao); }, 'ded');
     row('Resultado operacional', function (c) { return '<b class="' + (c.operacional >= 0 ? 'gr' : 'rd') + '">' + brl(c.operacional) + '</b>'; }, 'tot');
     row('Lucro bruto operacional <span class="m">(recebidas − comissões vendedores)</span>', function (c) { return brl(c.lbo); }, 'sub');
-    row('(−) Reserva de marketing 15% do LBO <span class="m">(destinação, não despesa)</span>', function (c) { return brl(-c.reserva); }, 'ded');
+    row('(−) Reserva de marketing (15% do lucro bruto operacional) <span class="m">(destinação, não despesa)</span>', function (c) { return brl(-c.reserva); }, 'ded');
     row('Resultado financeiro da Optas', function (c) { return '<b class="' + (c.financeiro >= 0 ? 'gr' : 'rd') + '">' + brl(c.financeiro) + '</b>'; }, 'tot');
     return x + '</tbody></table></div></div>';
   }
@@ -868,7 +868,7 @@ function vRoi() {
   var o = R.roi, rec = o.rec;
   var h = '<div class="grid g5">'
     + card('Lucro bruto operacional', R.res ? brl(R.res.lbo) : '—', R.res ? 'recebidas − comissões vendedores' : 'aguarda comissões recebidas', { tag: R.res ? T.real : T.pend })
-    + card('Reserva de marketing', o.reserva != null ? brl(o.reserva) : '—', o.reserva != null ? '15% do LBO' : 'referência projetada ' + brl(o.reservaProj), { tag: o.reserva != null ? T.real : T.pend, cls: 'or' })
+    + card('Reserva de marketing', o.reserva != null ? brl(o.reserva) : '—', o.reserva != null ? '15% do lucro bruto operacional' : 'referência projetada ' + brl(o.reservaProj), { tag: o.reserva != null ? T.real : T.pend, cls: 'or' })
     + card('Investido no mês', brl(o.total), o.inv.length + ' lançamentos · média ' + brl(o.media) + '/dia')
     + card('Saldo disponível', o.saldo != null ? brl(o.saldo) : '—', o.consumo != null ? pct(o.consumo) + ' da reserva consumido' : 'sem reserva confirmada', { cls: o.saldo != null ? (o.saldo >= 0 ? 'gr' : 'rd') : 'mu', extra: o.consumo != null ? '<div class="mt">' + bar(o.consumo, o.consumo > 1 ? 'r' : (o.consumo > .8 ? '' : 'g')) + '</div>' : '' })
     + card('Projeção até o fechamento', brl(o.projecao), o.ritmo != null ? pct(o.ritmo) + ' da reserva no ritmo atual' : o.dias + ' dias × média diária', { tag: T.proj })
@@ -997,7 +997,7 @@ function vReg() {
   REGRAS.operadoras.forEach(function (o) { h += '<tr><td>' + (o.nome === 'Hapvida' ? 'Hapvida <span class="m">fora do projeto</span>' : o.nome) + '</td><td class="r">' + (o.ag != null ? pct(o.ag) : '<span class="tag pend">pendente</span>') + '</td><td class="r">' + (o.vit != null ? pct(o.vit) : '<span class="tag pend">pendente</span>') + '</td><td>' + (o.modalidades ? Object.keys(o.modalidades).join(' / ') : '<span class="tag pend">não informado</span>') + '</td></tr>'; });
   h += '</tbody></table></div></div></div>';
   h += '<div class="grid g3 mt">' + card('Imposto', '15%', 'Sobre agenciamento e vitalício, todas as operadoras. Não é descontado do vendedor.', { box: 'dk' })
-    + card('Reserva de marketing', '15% do LBO', 'LBO = comissões efetivamente recebidas − comissões pagas aos vendedores. Destinação do resultado, não despesa.', { box: 'dk' })
+    + card('Reserva de marketing', '15%', 'Sobre o lucro bruto operacional = comissões efetivamente recebidas − comissões pagas aos vendedores. Destinação do resultado, não despesa.', { box: 'dk' })
     + card('Vitalício', 'a partir da ' + REGRAS.vitalicio.inicioParcela + 'ª parcela', 'Enquanto o contrato estiver ativo, % da operadora. ' + T.pend, { box: 'dk' }) + '</div>';
   h += '<div class="sec">Fórmulas do sistema <small>cada regra nova entra aqui</small></div><div class="grid g2">'
     + regra('Lucro ou prejuízo da unidade', 'Resultado operacional = comissões efetivamente recebidas − 15% de imposto − comissões dos vendedores − custo fixo − provisão 13º/férias', 'Positivo = LUCRO · negativo = PREJUÍZO. Calculado por unidade e no consolidado (soma das duas).')

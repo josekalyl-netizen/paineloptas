@@ -324,7 +324,7 @@ Exibido de forma direta, sem sugestões: uma aba para Consolação, uma para Mog
 
 - Resultado operacional = comissões efetivamente recebidas − 15% de imposto − comissões dos vendedores − custo fixo − provisão 13º/férias. Positivo = LUCRO; negativo = PREJUÍZO.
 - Mínimo para empatar = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85.
-- Mínimo sustentável (forma também a reserva de 15% do LBO) = (0,85 × comissões dos vendedores + custo fixo + provisão) ÷ 0,70.
+- Mínimo sustentável (forma também a reserva de 15% do lucro bruto operacional) = (0,85 × comissões dos vendedores + custo fixo + provisão) ÷ 0,70.
 - Resultado financeiro = resultado operacional − reserva de marketing.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
