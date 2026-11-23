@@ -392,6 +392,14 @@ Decisão do usuário: a reserva de marketing passa a ser **15% da produção men
 - O custo fixo de cada mês passa a variar com os dias úteis; outubro reproduz exatamente R$ 39.185,43.
 - Pendência 10: feriados municipais (São Paulo e Mogi das Cruzes), Carnaval, Corpus Christi e recesso de fim de ano.
 
+## 12.12. Cálculo do a receber, proposta a proposta (v2.1)
+
+- **A receber de cada proposta = valor mensal da proposta × % de agenciamento da operadora** (ou do Projeto Hapvida). O total do mês é a soma de todas as propostas efetivas.
+- Exemplo: R$ 54.886,64 de propostas, todas Amil (300%) → R$ 164.659,92 a receber.
+- Depois saem os descontos, nesta ordem: imposto 15% do a receber → comissões dos vendedores → custos fixos → provisão = lucro ou prejuízo; e então a reserva de marketing (15% da produção).
+- A visão geral mostra "De onde vem o a receber" (por operadora: mensalidades × % = a receber) e a aba Comercial lista cada proposta com %, a receber, imposto e líquido.
+- Proposta sem regra de comissão (ex.: Projeto Hapvida pendente) aparece como "fora da conta" e o valor de mensalidade excluído é mostrado.
+
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
 Distribuição de lucros entre W3G e sócias; média de comissões para provisionamento da folha; controle individual de salários fixos; CPL e ROI avançado sem atribuição confiável; conciliação detalhada de cada pagamento das operadoras; controle avançado de estornos, cancelamentos, descontos e recebimentos parciais.

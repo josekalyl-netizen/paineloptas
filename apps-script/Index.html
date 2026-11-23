@@ -543,7 +543,7 @@ function calcular() {
   R.vendedores.sort(function (a, b) { return b.producao - a.producao; });
 
   // ---------- Agenciamento / vitalício a receber (contratos efetivos) ----------
-  var ag = { valor: 0, base: 0, provisorio: false, naoCalc: 0, naoCalcQtd: 0, vit: 0, porOperadora: {}, pf: 0, pme: 0, semMod: 0 };
+  var ag = { valor: 0, base: 0, provisorio: false, naoCalc: 0, naoCalcQtd: 0, vit: 0, porOperadora: {}, pf: 0, pme: 0, semMod: 0, propostas: [] };
   var semOrigem = 0, semOrigemValor = 0, semMod = 0, semOp = 0, opSemRegra = {}, camposFaltando = {};
   if (usarContratos) {
     contratosMes.forEach(function (c) {
@@ -558,12 +558,13 @@ function calcular() {
       var rg = regraVenda(c);
       var rk = rg && rg.projeto ? rg.nome : (c.operadora ? (operadora(c.operadora) ? operadora(c.operadora).nome + (operadora(c.operadora).nome === 'Hapvida' ? ' (fora do projeto)' : '') : c.operadora) : '(não informada)');
       var po = ag.porOperadora[rk] = ag.porOperadora[rk] || { valor: 0, qtd: 0, ag: null, vit: null };
-      po.valor += valor; po.qtd++;
+      po.valor += valor; po.qtd++; po.pct = rg ? rg.ag : null;
+      var prop = { c: c, grupo: rk, valor: valor, pct: rg ? rg.ag : null, aReceber: null }; ag.propostas.push(prop);
       if (!rg) { semOp++; ag.naoCalc += valor; ag.naoCalcQtd++; if (c.operadora) opSemRegra[c.operadora] = 1; return; }
       var pAg = rg.ag, pVit = rg.vit;
       if (pAg == null) { ag.naoCalc += valor; ag.naoCalcQtd++; opSemRegra[rg.nome] = 1; return; }
       if (!rg.projeto && !(rg.modalidades && rg.modalidades[mod])) ag.provisorio = true;
-      var a = valor * pAg; ag.valor += a; ag.base += valor; ag.vit += valor * (pVit || 0);
+      var a = valor * pAg; prop.aReceber = a; ag.valor += a; ag.base += valor; ag.vit += valor * (pVit || 0);
       po.ag = (po.ag || 0) + a; po.vit = (po.vit || 0) + valor * (pVit || 0);
     });
   } else if (D && D.geral) {
@@ -778,6 +779,8 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
     + '<div><span class="sw sw1"></span>Não fechar no vermelho <b>' + brl(mn.empate) + '</b>' + (tem ? ' · <b class="' + (recebidas >= mn.empate ? 'gr' : 'rd') + '">' + (recebidas >= mn.empate ? 'acima em ' : 'faltam ') + brl(Math.abs(recebidas - mn.empate)) + '</b>' : '') + '</div>'
     + '<div><span class="sw sw2"></span>Cobrir também a reserva de marketing <b>' + brl(mn.sustentavel) + '</b>' + (tem ? ' · <b class="' + (recebidas >= mn.sustentavel ? 'gr' : 'rd') + '">' + (recebidas >= mn.sustentavel ? 'acima em ' : 'faltam ') + brl(Math.abs(recebidas - mn.sustentavel)) + '</b>' : '') + '</div>'
     + '</div></div>';
+  // 2b. De onde vem o a receber (só no consolidado)
+  if (/^Optas consolidado/.test(titulo)) h += deOndeVem();
   // 3. Para onde vai o dinheiro
   var itens = [['Impostos (15%)', imp], ['Comissões dos vendedores', comissoes], ['Custos fixos (salários, VR, VT, operação)', fixo], ['Provisão 13º e férias', prov]];
   var base = tem && recebidas > 0 ? recebidas : (comissoes + fixo + prov);
@@ -790,6 +793,16 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
   return h;
 }
 
+function deOndeVem() {
+  var g = R.ag.porOperadora, ks = Object.keys(g).sort(function (a, b) { return (g[b].ag || 0) - (g[a].ag || 0); });
+  if (!ks.length) return '';
+  var h = '<div class="flow"><div class="metat">De onde vem o a receber · cada proposta × % da operadora</div><div class="tw"><table><thead><tr><th>Operadora</th><th class="r">Propostas</th><th class="r">Mensalidades</th><th class="r">%</th><th class="r">A receber</th></tr></thead><tbody>';
+  ks.forEach(function (k) { var o = g[k], p = o.ag != null && o.valor ? o.ag / o.valor : null; h += '<tr><td><b>' + esc(k) + '</b></td><td class="r">' + (o.qtd || '—') + '</td><td class="r">' + brl(o.valor) + '</td><td class="r">' + (p != null ? pct(p) : '<span class="tag pend">pendente</span>') + '</td><td class="r"><b>' + (o.ag != null ? brl(o.ag) : '<span class="m">fora da conta</span>') + '</b></td></tr>'; });
+  var tv = sum(ks, function (k) { return g[k].valor; });
+  h += '<tr class="tot"><td>Total</td><td class="r">' + sum(ks, function (k) { return g[k].qtd || 0; }) + '</td><td class="r">' + brl(tv) + '</td><td></td><td class="r">' + brl(R.ag.valor) + '</td></tr></tbody></table></div>';
+  if (R.ag.propostas.length) h += '<div class="note">Detalhe de cada proposta na aba Comercial.</div>';
+  return h + '</div>';
+}
 function vUnidade(u) {
   var U = R.unidades[u], c = U.custos;
   var h = blocoResultado('Unidade ' + u, U.res, U.recebidas, U.comissao, c.fixo, c.provisao, null, U.producao);
@@ -1007,6 +1020,14 @@ function vCom() {
   });
   REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; h += '<tr class="sub"><td></td><td>Subtotal ' + u + '</td><td></td><td class="r">' + brl(U.prodHap) + '</td><td class="r">' + brl(U.prodFora) + '</td><td class="r">' + brl(U.producao) + '</td><td></td><td class="r">' + brl(U.comissao) + '</td><td></td></tr>'; });
   h += '<tr class="tot"><td></td><td>Total</td><td></td><td class="r">' + brl(sum(R.vendedores, function (v) { return v.prodHap; })) + '</td><td class="r">' + brl(sum(R.vendedores, function (v) { return v.prodFora; })) + '</td><td class="r">' + brl(R.producao) + '</td><td></td><td class="r">' + brl(R.comissoes) + '</td><td></td></tr></tbody></table></div><div class="note">"Próxima faixa" mostra quanto de produção falta e quanto a comissão do vendedor aumentaria ao alcançá-la.</div></div>';
+  // Propostas do mês
+  if (R.ag.propostas.length) {
+    var ps = R.ag.propostas.slice().sort(function (a, b) { return (b.aReceber || 0) - (a.aReceber || 0); });
+    h += '<div class="box mt"><div class="lbl">Propostas efetivas do mês <em>valor da proposta × % da operadora = a receber</em></div><div class="tw"><table><thead><tr><th>Data</th><th>Vendedor(a)</th><th>Unidade</th><th>Operadora / projeto</th><th>Modalidade</th><th class="r">Mensalidade</th><th class="r">%</th><th class="r">A receber</th><th class="r">Imposto 15%</th><th class="r">Líquido</th></tr></thead><tbody>';
+    ps.forEach(function (p) { var c = p.c, a = p.aReceber; h += '<tr><td>' + (c.data_venda || '').split('-').reverse().join('/') + '</td><td>' + esc(c.vendedor) + '</td><td>' + esc(c.unidade) + '</td><td><b>' + esc(p.grupo) + '</b></td><td>' + esc(c.modalidade || '—') + '</td><td class="r">' + brl(p.valor) + '</td><td class="r">' + (p.pct != null ? pct(p.pct) : '<span class="tag pend">pendente</span>') + '</td><td class="r"><b>' + (a != null ? brl(a) : '—') + '</b></td><td class="r">' + (a != null ? brl(-a * REGRAS.imposto) : '—') + '</td><td class="r">' + (a != null ? brl(a * (1 - REGRAS.imposto)) : '—') + '</td></tr>'; });
+    var ta = R.ag.valor;
+    h += '<tr class="tot"><td colspan="5">Total · ' + ps.length + ' propostas</td><td class="r">' + brl(sum(ps, function (p) { return p.valor; })) + '</td><td></td><td class="r">' + brl(ta) + '</td><td class="r">' + brl(-ta * REGRAS.imposto) + '</td><td class="r">' + brl(ta * (1 - REGRAS.imposto)) + '</td></tr></tbody></table></div></div>';
+  }
   // Operadoras
   h += '<div class="grid g2 mt"><div class="box"><div class="lbl">Produção por operadora</div><div class="tw"><table><thead><tr><th>Operadora</th><th class="r">Vendas</th><th class="r">Mensalidades</th><th class="r">Agenciamento</th><th class="r">Vitalício/mês</th></tr></thead><tbody>';
   Object.keys(R.ag.porOperadora).forEach(function (k) { var o = R.ag.porOperadora[k]; h += '<tr><td>' + esc(k) + '</td><td class="r">' + (o.qtd || '—') + '</td><td class="r">' + brl(o.valor) + '</td><td class="r">' + (o.ag != null ? brl(o.ag) : '<span class="tag pend">sem regra</span>') + '</td><td class="r">' + (o.vit != null ? brl(o.vit) : '—') + '</td></tr>'; });
