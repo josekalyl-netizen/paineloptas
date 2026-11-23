@@ -609,14 +609,6 @@ function vGeral() {
   var cardQ = function (x) { return '<div class="box q"><div class="qn">' + x[0] + '</div><div class="v ' + x[4] + '">' + x[1] + '</div></div>'; };
   h += '<div class="sec">Indicadores do mês</div><div class="grid g4">' + q8.slice(0, 4).map(cardQ).join('') + '</div>';
   h += '<div class="grid g4 mt">' + q8.slice(4).map(cardQ).join('') + '</div>';
-  h += '<div class="box mt"><div class="lbl">Comparativo · contratos efetivos</div>';
-  [['Produção', 'producao'], ['Comissões dos vendedores', 'comissao'], ['Custo + provisão', null]].forEach(function (m) {
-    var val = function (u) { var U = R.unidades[u]; return m[1] ? U[m[1]] : U.custos.fixo + U.custos.provisao; };
-    var mx = Math.max.apply(null, REGRAS.unidades.map(val).concat([1]));
-    h += '<div class="m" style="margin-top:12px;font-weight:700">' + m[0] + '</div>';
-    REGRAS.unidades.forEach(function (u) { h += '<div class="cmp"><div class="n">' + u + '</div><div>' + bar(val(u) / mx, m[1] ? '' : 'r') + '</div><div class="r">' + brl0(val(u)) + '</div></div>'; });
-  });
-  h += '</div>';
   document.getElementById('v-geral').innerHTML = h;
 }
 
