@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 1.0  
+**Versão:** 1.1  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -213,6 +213,13 @@ Exemplos (mensalidade de R$ 5.000,00): Bradesco 400% → R$ 20.000,00; Amil 300%
 
 O cálculo de agenciamento utiliza o percentual da operadora sobre a mensalidade do plano.
 
+## 6.0. Projeto Hapvida (v1.1)
+
+- Vendas do **Projeto Hapvida** têm comissão própria, bem inferior à da Hapvida comum. Percentuais ainda não informados (Pendência 8).
+- Vendas **Hapvida fora do projeto** usam a tabela da operadora: 350% de agenciamento + 2% de vitalício.
+- Demais operadoras usam a tabela armazenada (seção 6).
+- Ordem de aplicação para cada venda: tabela gravada na época da venda → regra do projeto → tabela da operadora.
+
 ## 6.1. Operadoras com percentuais pendentes
 
 MedSênior, Prevent, Santa Helena, Sobam, Supermed, Qualicorp, Ana Costa, São Cristóvão, Trasmontano.
@@ -324,6 +331,9 @@ Distribuição de lucros entre W3G e sócias; média de comissões para provisio
 5. **Categorias de investimento diário:** tráfego pago, compra de leads, campanhas comerciais, outras ações de captação (a validar).
 6. **Origem dos contratos:** a integração disponibilizará origem, campanha e investimento correspondente?
 7. **Validação contábil dos encargos:** FPAS/terceiros, RAT, incidências, encargos já incluídos nos R$ 39.185,43.
+
+8. **Comissão do Projeto Hapvida:** agenciamento e vitalício do projeto.
+9. **Vínculo com planilha e CRM:** link da planilha e campos do PipeRun com as vendas linha a linha, incluindo a marcação de projeto.
 
 # 15. INSTRUÇÕES PARA CONTINUAR O PROJETO
 

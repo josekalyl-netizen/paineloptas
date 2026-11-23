@@ -142,6 +142,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--peach);border-co
 .split{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
 .empty{padding:22px;text-align:center;color:var(--mute);background:var(--tint-2);border-radius:10px;margin-top:10px}
 .ft{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mute);margin-top:30px;padding-top:14px;border-top:1px solid var(--line)}
+.demo{margin-top:14px;background:var(--gold-t);color:var(--gold-d);border:1px dashed var(--gold);border-radius:10px;padding:10px 14px;font-size:13px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;transition:transform .3s,opacity .3s;z-index:9;opacity:0;pointer-events:none}
 .toast.on{transform:translateX(-50%) translateY(0);opacity:1}
 details.rules{margin-top:10px}
@@ -194,7 +195,7 @@ details.rules summary{cursor:pointer;font-weight:600;color:var(--or-d)}
    Alterar aqui apenas quando o usuário confirmar novas regras.
    ===================================================================== */
 var REGRAS = {
-  versao: 'v1.0 · 23/11/2026',
+  versao: 'v1.1 · 23/11/2026',
   unidades: ['Consolação', 'Mogi'],
   // 3. Custos fixos (salários brutos JÁ incluem o PJ das sócias — não somar de novo)
   custos: {
@@ -218,7 +219,7 @@ var REGRAS = {
     { nome: 'SulAmérica',     ag: 3.00, vit: 0.02, modalidades: null },
     { nome: 'Seguros Unimed', ag: 3.00, vit: 0.02, modalidades: null },
     { nome: 'Porto',          ag: 3.00, vit: 0.02, modalidades: null },
-    { nome: 'Hapvida',        ag: 3.50, vit: 0.02, modalidades: null },
+    { nome: 'Hapvida',        ag: 3.50, vit: 0.02, modalidades: null },   // somente vendas FORA do Projeto Hapvida
     { nome: 'Alice',          ag: 3.00, vit: 0.02, modalidades: null },
     { nome: 'MedSênior',      ag: null, vit: null, modalidades: null },
     { nome: 'Prevent',        ag: null, vit: null, modalidades: null },
@@ -229,6 +230,11 @@ var REGRAS = {
     { nome: 'Ana Costa',      ag: null, vit: null, modalidades: null },
     { nome: 'São Cristóvão',  ag: null, vit: null, modalidades: null },
     { nome: 'Trasmontano',    ag: null, vit: null, modalidades: null }
+  ],
+  // Projetos com comissão própria. Venda marcada com o projeto usa ESTA regra, não a da operadora.
+  // Venda Hapvida fora do projeto usa a tabela da operadora (350% + 2%).
+  projetos: [
+    { nome: 'Projeto Hapvida', operadora: 'Hapvida', ag: null, vit: null }   // comissão inferior — percentuais pendentes (Pendência 8)
   ],
   vitalicio: { inicioParcela: 4, confirmado: false },          // Pendência 2
   imposto: 0.15,                                               // 8. sobre agenciamento e vitalício, todas as operadoras
@@ -249,12 +255,32 @@ var FONTE = null, FONTE_DESC = '';
 var ESTADO = { investimentos: [], recebidas: {}, contratos: [] };
 var GAS = (typeof google !== 'undefined' && google.script && google.script.run);
 var LS_KEY = 'optas_painel_estado_v1';
+var DEMO = false || /[?&]demo=1/.test(location.search);
+// Exemplo ILUSTRATIVO só para visualizar o layout — nunca salvo, nunca usado com dados reais.
+var ESTADO_DEMO = {
+  recebidas: { '2026-11': { 'Consolação': 30000, 'Mogi': 38000 } },
+  investimentos: [
+    { id: 'd1', data: '2026-11-03', valor: 300, categoria: 'Tráfego pago', campanha: 'Meta Ads Bradesco PME' },
+    { id: 'd2', data: '2026-11-05', valor: 450, categoria: 'Tráfego pago', campanha: 'Meta Ads Bradesco PME' },
+    { id: 'd3', data: '2026-11-10', valor: 250, categoria: 'Compra de leads', campanha: 'Leads Amil PF' },
+    { id: 'd4', data: '2026-11-14', valor: 500, categoria: 'Tráfego pago', campanha: 'Meta Ads Bradesco PME' },
+    { id: 'd5', data: '2026-11-19', valor: 400, categoria: 'Compra de leads', campanha: 'Leads Amil PF' },
+    { id: 'd6', data: '2026-11-21', valor: 350, categoria: 'Campanhas comerciais', campanha: '' }
+  ],
+  contratos: [
+    { id_venda: 'EX1', contrato: 'C-EX1', projeto: '', operadora: 'Bradesco', modalidade: 'PME', valor_mensal: 1800, vendedor: 'Wanderleia G.', unidade: 'Mogi', data_venda: '2026-11-08', origem: 'Meta', campanha: 'Meta Ads Bradesco PME', valor_recebido: 3600 },
+    { id_venda: 'EX2', contrato: 'C-EX2', projeto: '', operadora: 'Amil', modalidade: 'PF', valor_mensal: 950, vendedor: 'Gabrielly d.', unidade: 'Consolação', data_venda: '2026-11-12', origem: 'Leads', campanha: 'Leads Amil PF', valor_recebido: '' },
+    { id_venda: 'EX3', contrato: 'C-EX3', projeto: '', operadora: 'Hapvida', modalidade: 'PF', valor_mensal: 700, vendedor: 'Kevelin D.', unidade: 'Mogi', data_venda: '2026-11-15', origem: 'Meta', campanha: 'Meta Ads Bradesco PME', valor_recebido: '' },
+    { id_venda: 'EX4', contrato: 'C-EX4', projeto: 'Projeto Hapvida', operadora: 'Hapvida', modalidade: 'PF', valor_mensal: 420, vendedor: 'Samia P.', unidade: 'Consolação', data_venda: '2026-11-17', origem: '', campanha: '', valor_recebido: '' }
+  ]
+};
 
 function carregarEstadoLocal() {
   try { var s = localStorage.getItem(LS_KEY); if (s) return JSON.parse(s); } catch (e) {}
   return null;
 }
 function salvarEstado() {
+  if (DEMO) { toast('Modo exemplo: nada é salvo'); return; }
   if (GAS) {
     google.script.run.withSuccessHandler(function () { toast('Salvo'); })
       .withFailureHandler(function (e) { toast('Falha ao salvar: ' + e.message); })
@@ -284,6 +310,15 @@ function toast(t) { var el = document.getElementById('toast'); el.textContent = 
 function bar(p, cls) { var w = Math.max(0, Math.min(p || 0, 1)) * 100; return '<div class="bar"><i class="' + (cls || '') + '" style="width:' + w + '%"></i></div>'; }
 function unidadeCanon(u) { var n = norm(u); for (var i = 0; i < REGRAS.unidades.length; i++) if (norm(REGRAS.unidades[i]) === n) return REGRAS.unidades[i]; return null; }
 function operadora(nome) { var n = norm(nome); for (var i = 0; i < REGRAS.operadoras.length; i++) if (norm(REGRAS.operadoras[i].nome) === n) return REGRAS.operadoras[i]; return null; }
+function projeto(nome) { var n = norm(nome); if (!n || n === 'nao' || n === 'fora' || n === 'fora do projeto') return null; for (var i = 0; i < REGRAS.projetos.length; i++) { var pj = REGRAS.projetos[i]; if (norm(pj.nome) === n || norm(pj.nome).indexOf(n) >= 0 || n === 'sim') return pj; } return null; }
+// Regra aplicável a uma venda: tabela gravada na época > projeto > operadora
+function regraVenda(c) {
+  if (c.tabela) return c.tabela;
+  var pj = projeto(c.projeto);
+  if (pj) return { nome: pj.nome, ag: pj.ag, vit: pj.vit, projeto: true };
+  var op = operadora(c.operadora);
+  return op ? { nome: op.nome, ag: op.ag, vit: op.vit, modalidades: op.modalidades } : null;
+}
 var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 function mesLabel(k) { var p = k.split('-'); var m = MESES[+p[1] - 1]; return m.charAt(0).toUpperCase() + m.slice(1) + ' ' + p[0]; }
 function diasNoMes(k) { var p = k.split('-'); return new Date(+p[0], +p[1], 0).getDate(); }
@@ -371,40 +406,43 @@ function calcular() {
     contratosMes.forEach(function (c) {
       var faltas = [];
       ['id_venda', 'operadora', 'modalidade', 'valor_mensal', 'vendedor', 'unidade', 'data_venda', 'origem', 'contrato'].forEach(function (f) { if (c[f] == null || c[f] === '') faltas.push(f); });
+      if (!c.operadora && projeto(c.projeto)) faltas = faltas.filter(function (f) { return f !== 'operadora'; });
       faltas.forEach(function (f) { (camposFaltando[f] = camposFaltando[f] || []).push(c.id_venda || c.contrato || '(sem id)'); });
       var valor = +c.valor_mensal || 0;
       var op = operadora(c.operadora), mod = (c.modalidade || '').toUpperCase();
       if (mod === 'PF') ag.pf += valor; else if (mod === 'PME') ag.pme += valor; else { ag.semMod += valor; semMod++; }
       if (!c.origem && !c.campanha) { semOrigem++; semOrigemValor += valor; }
-      var rk = c.operadora || '(não informada)';
+      var rg = regraVenda(c);
+      var rk = rg && rg.projeto ? rg.nome : (c.operadora ? (operadora(c.operadora) ? operadora(c.operadora).nome + (operadora(c.operadora).nome === 'Hapvida' ? ' (fora do projeto)' : '') : c.operadora) : '(não informada)');
       var po = ag.porOperadora[rk] = ag.porOperadora[rk] || { valor: 0, qtd: 0, ag: null, vit: null };
       po.valor += valor; po.qtd++;
-      var t = c.tabela || null; // tabela gravada na época da venda
-      var pAg = t ? t.ag : (op ? op.ag : null), pVit = t ? t.vit : (op ? op.vit : null);
-      if (!op && !t) { semOp++; ag.naoCalc += valor; ag.naoCalcQtd++; if (c.operadora) opSemRegra[c.operadora] = 1; return; }
-      if (pAg == null) { ag.naoCalc += valor; ag.naoCalcQtd++; opSemRegra[op.nome] = 1; return; }
-      if (!(op && op.modalidades && op.modalidades[mod])) ag.provisorio = true;
+      if (!rg) { semOp++; ag.naoCalc += valor; ag.naoCalcQtd++; if (c.operadora) opSemRegra[c.operadora] = 1; return; }
+      var pAg = rg.ag, pVit = rg.vit;
+      if (pAg == null) { ag.naoCalc += valor; ag.naoCalcQtd++; opSemRegra[rg.nome] = 1; return; }
+      if (!rg.projeto && !(rg.modalidades && rg.modalidades[mod])) ag.provisorio = true;
       var a = valor * pAg; ag.valor += a; ag.base += valor; ag.vit += valor * (pVit || 0);
       po.ag = (po.ag || 0) + a; po.vit = (po.vit || 0) + valor * (pVit || 0);
     });
   } else if (D && D.geral) {
-    // A integração atual entrega produção agregada: "Projeto Hapvida" (operadora conhecida) e "Fora do projeto" (operadora não identificada)
-    var hap = operadora('Hapvida');
+    // A integração atual entrega produção agregada: "Projeto Hapvida" (regra própria) e "Fora do projeto" (operadora não identificada)
+    var pjH = projeto('Projeto Hapvida');
     var vHap = D.geral.hap.valor || 0, vFora = D.geral.fora.valor || 0;
-    ag.valor = vHap * hap.ag; ag.base = vHap; ag.vit = vHap * hap.vit; ag.provisorio = true;
-    ag.porOperadora['Hapvida'] = { valor: vHap, qtd: D.geral.hap.qtd, ag: ag.valor, vit: ag.vit };
+    if (pjH.ag != null) { ag.valor = vHap * pjH.ag; ag.base = vHap; ag.vit = vHap * (pjH.vit || 0); }
+    else { ag.naoCalc += vHap; ag.naoCalcQtd += D.geral.hap.qtd; opSemRegra['Projeto Hapvida'] = 1; }
+    ag.porOperadora['Projeto Hapvida'] = { valor: vHap, qtd: D.geral.hap.qtd, ag: pjH.ag != null ? ag.valor : null, vit: pjH.ag != null ? ag.vit : null };
     ag.porOperadora['Fora do projeto (operadora não identificada)'] = { valor: vFora, qtd: D.geral.fora.qtd, ag: null, vit: null };
-    ag.naoCalc = vFora; ag.naoCalcQtd = D.geral.fora.qtd; ag.semMod = vHap + vFora;
-    semOrigem = (D.geral.hap.qtd || 0) + (D.geral.fora.qtd || 0); semOrigemValor = vHap + vFora; semMod = semOrigem;
+    ag.naoCalc += vFora; ag.naoCalcQtd += D.geral.fora.qtd; ag.semMod = vFora;
+    semMod = D.geral.fora.qtd || 0;
+    semOrigem = (D.geral.hap.qtd || 0) + (D.geral.fora.qtd || 0); semOrigemValor = vHap + vFora;
     R.alertas.push({ sev: 'er', cod: 'GRAN', titulo: 'A integração entrega produção agregada por vendedor, não por contrato',
       texto: 'O painel gerencial informa totais (Projeto Hapvida / fora do projeto). Não há identificação individual de venda, contrato, operadora, modalidade nem origem.',
       impacto: 'Agenciamento e vitalício por operadora, produção PF/PME, atribuição de contratos a investimentos (ROI) e preservação da tabela vigente por venda.',
       acao: 'Solicitar à equipe responsável que o painel gerencial exporte as vendas linha a linha (campos da seção 10). Enquanto isso, é possível importar um CSV na aba ROI.' });
-    if (vFora > 0) R.alertas.push({ sev: 'er', cod: 'OPERADORA', titulo: D.geral.fora.qtd + ' vendas "fora do projeto" sem operadora identificada', texto: 'Produção de ' + brl(vFora) + ' sem operadora.', impacto: 'Agenciamento, vitalício e impostos previstos dessas vendas não podem ser calculados (' + brl(vFora) + ' de mensalidade fora do cálculo).', acao: 'Incluir a operadora de cada venda na integração.', registros: D.geral.fora.qtd });
+    if (vFora > 0) R.alertas.push({ sev: 'er', cod: 'OPERADORA', titulo: D.geral.fora.qtd + ' vendas "fora do projeto" sem operadora identificada', texto: 'Produção de ' + brl(vFora) + ' sem operadora.', impacto: 'Agenciamento, vitalício e impostos previstos dessas vendas não podem ser calculados (' + brl(vFora) + ' de mensalidade fora do cálculo).', acao: 'Incluir a operadora de cada venda na integração (planilha/CRM). Venda Hapvida fora do projeto usa 350% + 2%.', registros: D.geral.fora.qtd });
   }
   if (semMod > 0) R.alertas.push({ sev: 'wa', cod: 'MODALIDADE', titulo: semMod + ' venda(s) sem modalidade PF/PME', texto: 'Não é possível confirmar qual tabela (PF ou PME) se aplica.', impacto: 'O agenciamento calculado usa o percentual informado sem distinção de modalidade e fica marcado como PROVISÓRIO.', acao: 'Corrigir os registros no painel gerencial e informar a modalidade das operadoras (Pendência 1).', registros: semMod });
   if (semOrigem > 0) R.alertas.push({ sev: 'er', cod: 'ORIGEM', titulo: semOrigem + ' contrato(s) sem origem ou campanha', texto: brl(semOrigemValor) + ' de produção mensal sem origem identificada.', impacto: 'Esses contratos não podem ser atribuídos a nenhum investimento: ROI projetado e realizado ficam sem base.', acao: 'Confirmar se a integração disponibilizará origem/campanha (Pendência 6).', registros: semOrigem });
-  if (Object.keys(opSemRegra).length) R.alertas.push({ sev: 'er', cod: 'TABELA', titulo: 'Operadoras sem tabela de comissão: ' + Object.keys(opSemRegra).join(', '), texto: ag.naoCalcQtd + ' venda(s), ' + brl(ag.naoCalc) + ' de mensalidade.', impacto: 'Agenciamento e vitalício dessas vendas não calculados.', acao: 'Informar agenciamento, vitalício e modalidade (Pendência 1).' });
+  if (Object.keys(opSemRegra).length) R.alertas.push({ sev: 'er', cod: 'TABELA', titulo: 'Sem tabela de comissão: ' + Object.keys(opSemRegra).join(', '), texto: ag.naoCalcQtd + ' venda(s), ' + brl(ag.naoCalc) + ' de mensalidade.', impacto: 'Agenciamento e vitalício dessas vendas não calculados.', acao: opSemRegra['Projeto Hapvida'] ? 'Informar agenciamento e vitalício do Projeto Hapvida (Pendência 8)' + (Object.keys(opSemRegra).length > 1 ? ' e das demais operadoras (Pendência 1).' : '.') : 'Informar agenciamento, vitalício e modalidade (Pendência 1).' });
   Object.keys(camposFaltando).forEach(function (f) {
     if (f === 'origem' || f === 'modalidade' || f === 'operadora') return;
     var ids = camposFaltando[f];
@@ -426,8 +464,9 @@ function calcular() {
     U.comissao = sum(vs, function (v) { return v.comissao; });
     U.comissaoProj = sum(vs, function (v) { return v.comissaoProj != null ? v.comissaoProj : v.comissao; });
     var eq = D && D.equipes ? D.equipes.filter(function (e) { return unidadeCanon(e.nome) === u; })[0] : null;
-    U.agPrev = eq ? (eq.hap.valor || 0) * operadora('Hapvida').ag : null;
-    if (usarContratos) U.agPrev = sum(contratosMes.filter(function (c) { return unidadeCanon(c.unidade) === u; }), function (c) { var o = c.tabela || operadora(c.operadora); return o && o.ag ? (+c.valor_mensal || 0) * o.ag : 0; });
+    var pjU = projeto('Projeto Hapvida');
+    U.agPrev = eq && pjU.ag != null ? (eq.hap.valor || 0) * pjU.ag : null;
+    if (usarContratos) U.agPrev = sum(contratosMes.filter(function (c) { return unidadeCanon(c.unidade) === u; }), function (c) { var o = regraVenda(c); return o && o.ag ? (+c.valor_mensal || 0) * o.ag : 0; });
     U.leads = eq ? eq.hap.leads : null; U.vidas = eq ? eq.hap.vidas : null; U.qtd = eq ? (eq.hap.qtd + eq.fora.qtd) : null;
     var rec = (ESTADO.recebidas[R.mes] || {})[u];
     U.recebidas = rec != null && rec !== '' ? +rec : null;
@@ -485,7 +524,7 @@ function calcularROI(R) {
   ESTADO.contratos.filter(function (c) { return (c.data_venda || '').slice(0, 7) === mes; }).forEach(function (c) {
     var k = norm(c.campanha || c.origem || '');
     if (!k) { semAtrib++; return; }
-    var o = c.tabela || operadora(c.operadora); var valor = +c.valor_mensal || 0;
+    var o = regraVenda(c); var valor = +c.valor_mensal || 0;
     var agv = o && o.ag ? valor * o.ag : null;
     var pv = pctVend[norm(c.vendedor)];
     var comV = pv != null ? valor * pv : null;
@@ -506,7 +545,7 @@ function calcularROI(R) {
 
   // Ponto de equilíbrio por R$ 1 de mensalidade Hapvida (usa percentuais efetivos do mês)
   var pctEf = R.producao ? R.comissoes / R.producao : null;
-  var hap = operadora('Hapvida');
+  var hap = operadora('Hapvida'); // Hapvida fora do projeto
   var liqPorReal = pctEf != null ? hap.ag * (1 - REGRAS.imposto) - pctEf : null;
 
   var o = { mes: mes, dias: dias, diaRef: diaRef, inv: inv, total: total, media: media, projecao: projecao, porDia: porDia, porCat: porCat, porCamp: porCamp,
@@ -535,7 +574,7 @@ function recomendar(o, R) {
   if (o.reserva == null) {
     st = 'Dados insuficientes'; cls = 'in';
     j.push('As comissões efetivamente recebidas do mês não foram lançadas; sem elas, a reserva de marketing (15% do lucro bruto operacional) não existe formalmente.');
-    if (o.reservaProj != null) j.push('Apenas como referência: se o agenciamento previsto (' + brl(R.ag.valor) + ') fosse integralmente recebido, a reserva seria ' + brl(o.reservaProj) + '. Isso é projeção, não verba disponível.');
+    if (o.reservaProj != null) j.push(R.ag.base ? 'Apenas como referência: se o agenciamento previsto (' + brl(R.ag.valor) + ') fosse integralmente recebido, a reserva seria ' + brl(o.reservaProj) + '. Isso é projeção, não verba disponível.' : 'Também não há projeção possível: a comissão do Projeto Hapvida ainda não foi informada e as vendas fora do projeto não têm operadora.');
     if (o.total > 0) j.push('Já foram investidos ' + brl(o.total) + ' sem reserva confirmada — manter novos aportes suspensos até o lançamento das recebidas.');
     acao = 'Lançar as comissões recebidas na aba Financeiro.';
   } else if (o.reserva <= 0) {
@@ -565,6 +604,10 @@ function recomendar(o, R) {
     j.push('ROI projetado de ' + pct(o.roiProj) + ' nas campanhas atribuídas e ' + pct(1 - o.ritmo) + ' da reserva livre na projeção.');
     j.push('É possível elevar o investimento diário de ' + brl(o.media) + ' para até ' + brl(porDia) + ' sem ultrapassar a reserva (saldo de ' + brl(o.saldo) + ' em ' + o.diasRest + ' dias).');
     if (o.roiReal == null) j.push('Atenção: retorno ainda projetado — confirmar com comissões recebidas antes de expandir de forma permanente.');
+  } else if (R.res && R.res.operacional < 0) {
+    st = 'Manter, sem aumentar'; cls = 'wa';
+    j.push('O retorno das campanhas atribuídas é positivo (ROI projetado ' + pct(o.roiProj) + '), mas a operação fecha o mês com resultado operacional negativo (' + brl(R.res.operacional) + ').');
+    j.push('Manter o ritmo atual (' + brl(o.media) + '/dia) dentro da reserva; ampliar só quando o resultado operacional voltar a ser positivo ou o ROI realizado se confirmar.');
   } else if (o.ritmo != null && o.ritmo < C.ritmoBaixo && o.roiProj != null && o.roiProj > C.roiMinimo) {
     st = 'Investimento baixo'; cls = 'up';
     j.push('Apenas ' + pct(o.ritmo) + ' da reserva deve ser usada no mês, com ROI projetado positivo (' + pct(o.roiProj) + ').');
@@ -572,7 +615,7 @@ function recomendar(o, R) {
     st = 'Investimento adequado'; cls = 'ok';
     j.push('Gasto projetado de ' + pct(o.ritmo) + ' da reserva com ROI projetado de ' + pct(o.roiProj) + '.');
   }
-  if (R.res && R.res.operacional < 0) j.push('Alerta de capacidade: o resultado operacional do mês é negativo (' + brl(R.res.operacional) + ').');
+  if (R.res && R.res.operacional < 0 && st !== 'Manter, sem aumentar') j.push('Alerta de capacidade: o resultado operacional do mês é negativo (' + brl(R.res.operacional) + ').');
   if (!REGRAS.baseROIDefinida) j.push('Base do ROI provisória: agenciamento − 15% de imposto − comissão do vendedor (Pendência 4).');
   return { status: st, cls: cls, justificativa: j, indicadores: ind, acao: acao };
 }
@@ -599,11 +642,11 @@ function vGeral() {
   var ro = R.roi, rec = ro.rec, res = R.res;
   var q = [
     ['Quanto a Optas está produzindo?', brl(R.producao), 'Mensalidades vendidas no mês (em contrato + implantado). Projeção com Ag. doc./Standby: <b>' + brl(R.prodProj) + '</b>', T.real, ''],
-    ['Quanto tem a receber das operadoras?', brl(R.ag.valor), 'Agenciamento previsto' + (R.ag.naoCalc ? ' · <b>' + brl(R.ag.naoCalc) + '</b> de mensalidade sem operadora/tabela (fora do cálculo)' : '') + ' · vitalício ' + brl(R.ag.vit) + '/mês a partir da ' + REGRAS.vitalicio.inicioParcela + 'ª parcela', R.ag.provisorio ? T.prov : T.proj, 'or'],
+    ['Quanto tem a receber das operadoras?', R.ag.base ? brl(R.ag.valor) : '—', (R.ag.base ? 'Agenciamento previsto' : 'Agenciamento ainda não calculável') + (R.ag.naoCalc ? ' · <b>' + brl(R.ag.naoCalc) + '</b> de mensalidade sem regra de comissão (Projeto Hapvida pendente) ou sem operadora' : '') + (R.ag.base ? ' · vitalício ' + brl(R.ag.vit) + '/mês a partir da ' + REGRAS.vitalicio.inicioParcela + 'ª parcela' : ''), R.ag.base ? (R.ag.provisorio ? T.prov : T.proj) : T.pend, R.ag.base ? 'or' : 'mu'],
     ['Quanto está pagando aos vendedores?', brl(R.comissoes), 'Comissões pelas faixas de cada unidade sobre a produção realizada. Se a projeção se confirmar: <b>' + brl(R.comissoesProj) + '</b>', T.real, ''],
     ['Quanto custa manter a operação?', brl(R.custoFixo + R.provisao), 'Custo fixo ' + brl(R.custoFixo) + ' + provisão 13º/férias ' + brl(R.provisao), '', ''],
-    ['Quanto sobra efetivamente?', res ? brl(res.financeiro) : '—', res ? 'Resultado após impostos, comissões, custos, provisão e reserva de marketing' : 'Depende das comissões <b>efetivamente recebidas</b>. Cenário se o agenciamento previsto fosse recebido: <b>' + brl(R.resProj.financeiro) + '</b>', res ? T.real : T.pend, res ? (res.financeiro >= 0 ? 'gr' : 'rd') : 'mu'],
-    ['Quanto pode investir em geração de negócios?', ro.reserva != null ? brl(ro.reserva) : '—', ro.reserva != null ? 'Reserva de marketing = 15% do lucro bruto operacional (' + brl(res.lbo) + ')' : 'Reserva exige comissões recebidas. Referência projetada: <b>' + brl(ro.reservaProj) + '</b>', ro.reserva != null ? T.real : T.pend, ro.reserva != null ? 'or' : 'mu'],
+    ['Quanto sobra efetivamente?', res ? brl(res.financeiro) : '—', res ? 'Resultado após impostos, comissões, custos, provisão e reserva de marketing' : 'Depende das comissões <b>efetivamente recebidas</b>.' + (R.ag.base ? ' Cenário se o agenciamento previsto fosse recebido: <b>' + brl(R.resProj.financeiro) + '</b>' : ''), res ? T.real : T.pend, res ? (res.financeiro >= 0 ? 'gr' : 'rd') : 'mu'],
+    ['Quanto pode investir em geração de negócios?', ro.reserva != null ? brl(ro.reserva) : '—', ro.reserva != null ? 'Reserva de marketing = 15% do lucro bruto operacional (' + brl(res.lbo) + ')' : 'Reserva exige comissões recebidas.' + (R.ag.base ? ' Referência projetada: <b>' + brl(ro.reservaProj) + '</b>' : ''), ro.reserva != null ? T.real : T.pend, ro.reserva != null ? 'or' : 'mu'],
     ['Quanto está investindo diariamente?', brl(ro.media) + '<small style="font-size:14px;color:var(--mute)">/dia</small>', 'Acumulado no mês ' + brl(ro.total) + ' · projeção até o fechamento ' + brl(ro.projecao), '', ''],
     ['Qual é o retorno desses investimentos?', ro.roiReal != null ? pct(ro.roiReal) : (ro.roiProj != null ? pct(ro.roiProj) : '—'), ro.roiReal != null ? 'ROI realizado sobre ' + brl(ro.invAtrib) + ' atribuídos' : (ro.roiProj != null ? 'ROI projetado (não é dinheiro recebido)' : 'Sem contratos com origem/campanha atribuída'), ro.roiReal != null ? T.real : (ro.roiProj != null ? T.proj : T.pend), ''],
     ['O investimento está adequado?', rec.status, rec.justificativa[0] || '', '', ''],
@@ -619,7 +662,7 @@ function vGeral() {
     var U = R.unidades[u], r = U.res;
     h += '<div class="box"><div class="split"><div class="lbl">Unidade ' + u + '</div><span class="pill ln">' + U.vendedores + ' vendedores · ' + U.custos.cltPessoas + ' CLT</span></div>'
       + '<div class="grid g3 mt"><div><div class="m">Produção</div><div class="v sm">' + brl(U.producao) + '</div></div><div><div class="m">Comissões vendedores</div><div class="v sm">' + brl(U.comissao) + '</div></div><div><div class="m">Custo + provisão</div><div class="v sm">' + brl(U.custos.fixo + U.custos.provisao) + '</div></div></div>'
-      + '<div class="grid g3 mt"><div><div class="m">Agenciamento previsto ' + T.prov + '</div><div class="v sm or">' + brl(U.agPrev) + '</div></div><div><div class="m">Recebidas</div><div class="v sm">' + (U.recebidas != null ? brl(U.recebidas) : '<span class="mu">não lançado</span>') + '</div></div><div><div class="m">Resultado operacional</div><div class="v sm ' + (r ? (r.operacional >= 0 ? 'gr' : 'rd') : 'mu') + '">' + (r ? brl(r.operacional) : '—') + '</div></div></div></div>';
+      + '<div class="grid g3 mt"><div><div class="m">Agenciamento previsto ' + (U.agPrev != null ? T.prov : T.pend) + '</div><div class="v sm ' + (U.agPrev != null ? 'or' : 'mu') + '">' + brl(U.agPrev) + '</div></div><div><div class="m">Recebidas</div><div class="v sm">' + (U.recebidas != null ? brl(U.recebidas) : '<span class="mu">não lançado</span>') + '</div></div><div><div class="m">Resultado operacional</div><div class="v sm ' + (r ? (r.operacional >= 0 ? 'gr' : 'rd') : 'mu') + '">' + (r ? brl(r.operacional) : '—') + '</div></div></div></div>';
   });
   h += '</div>';
   var maxP = Math.max.apply(null, REGRAS.unidades.map(function (u) { return R.unidades[u].prodProj; }).concat([1]));
@@ -683,8 +726,8 @@ function vFin() {
   if (ro.liqPorReal) {
     h += '<div class="box mt bl"><div class="lbl">Ponto de equilíbrio da estrutura ' + T.info + '</div><div class="grid g3 mt">'
       + mini('Estrutura mensal', brl(est), 'custo fixo + provisão')
-      + mini('Líquido por R$ 1 de mensalidade Hapvida', brl(ro.liqPorReal), '350% − 15% imposto − ' + pct(ro.pctEf, 1) + ' comissão efetiva do mês')
-      + mini('Produção Hapvida necessária', brl(est / ro.liqPorReal), 'para cobrir a estrutura com agenciamento') + '</div><div class="note">Indicador de referência com a regra informada para Hapvida (modalidade ainda não confirmada) e o percentual de comissão efetivamente apurado no mês. Não considera prazos de pagamento da operadora.</div></div>';
+      + mini('Líquido por R$ 1 de Hapvida fora do projeto', brl(ro.liqPorReal), '350% − 15% imposto − ' + pct(ro.pctEf, 1) + ' comissão efetiva do mês')
+      + mini('Produção necessária (Hapvida fora do projeto)', brl(est / ro.liqPorReal), 'para cobrir a estrutura com agenciamento') + '</div><div class="note">Indicador de referência com a regra de Hapvida fora do projeto (350%; modalidade ainda não confirmada) e o percentual de comissão efetivamente apurado no mês. Não considera prazos de pagamento da operadora.</div></div>';
   }
 
   // Custos
@@ -782,7 +825,7 @@ function vRoi() {
 
   // Importação
   h += '<div class="sec">Contratos linha a linha <small>enquanto a integração não envia as vendas individualizadas</small></div><div class="box bl"><div class="split"><div class="lbl">Importar CSV ' + T.info + '</div><div><button class="btn gh sm" onclick="modeloCSV()">Baixar modelo</button> ' + (ESTADO.contratos.length ? '<button class="btn gh sm" onclick="limparContratos()">Remover ' + ESTADO.contratos.length + ' contratos</button>' : '') + '</div></div>'
-    + '<p class="m">Colunas: id_venda; contrato; operadora; modalidade (PF/PME); valor_mensal; vendedor; unidade; data_venda (AAAA-MM-DD); origem; campanha; valor_recebido. Separador ; ou ,. Cada contrato grava a tabela de comissão vigente na importação — mudanças futuras não alteram o histórico.</p>'
+    + '<p class="m">Colunas: id_venda; contrato; projeto ("Projeto Hapvida" ou vazio); operadora; modalidade (PF/PME); valor_mensal; vendedor; unidade; data_venda (AAAA-MM-DD); origem; campanha; valor_recebido. Separador ; ou ,. Cada contrato grava a tabela de comissão vigente na importação — mudanças futuras não alteram o histórico.</p>'
     + '<div class="form" style="grid-template-columns:1fr auto"><input type="file" id="csvFile" accept=".csv,text/csv"><button class="btn" onclick="importarCSV()">Importar</button></div>'
     + (ESTADO.contratos.length ? '<div class="m mt">' + ESTADO.contratos.length + ' contratos carregados · ' + ESTADO.contratos.filter(function (c) { return (c.data_venda || '').slice(0, 7) === R.mes; }).length + ' em ' + mesLabel(R.mes) + '. Com contratos no mês, eles substituem os agregados no cálculo de agenciamento.</div>' : '') + '</div>';
   document.getElementById('v-roi').innerHTML = h;
@@ -796,7 +839,7 @@ function addInv() {
 function delInv(id) { if (!confirm('Excluir este lançamento?')) return; ESTADO.investimentos = ESTADO.investimentos.filter(function (i) { return i.id !== id; }); salvarEstado(); render(); show('roi'); }
 function limparContratos() { if (!confirm('Remover todos os contratos importados?')) return; ESTADO.contratos = []; salvarEstado(); render(); show('roi'); }
 function modeloCSV() {
-  var csv = 'id_venda;contrato;operadora;modalidade;valor_mensal;vendedor;unidade;data_venda;origem;campanha;valor_recebido\n';
+  var csv = 'id_venda;contrato;projeto;operadora;modalidade;valor_mensal;vendedor;unidade;data_venda;origem;campanha;valor_recebido\n';
   var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })); a.download = 'optas-contratos-modelo.csv'; a.click();
 }
 function importarCSV() {
@@ -814,8 +857,8 @@ function importarCSV() {
       ['valor_mensal', 'valor_recebido'].forEach(function (k) { if (o[k]) o[k] = parseNum(o[k]); });
       if (o.data_venda && /^\d{2}\/\d{2}\/\d{4}$/.test(o.data_venda)) o.data_venda = o.data_venda.split('/').reverse().join('-');
       if (o.modalidade) o.modalidade = o.modalidade.toUpperCase();
-      var op = operadora(o.operadora);
-      if (op && op.ag != null) o.tabela = { operadora: op.nome, ag: op.ag, vit: op.vit, versao: REGRAS.versao };
+      var rg = regraVenda(o);
+      if (rg && rg.ag != null) o.tabela = { nome: rg.nome, ag: rg.ag, vit: rg.vit, projeto: !!rg.projeto, versao: REGRAS.versao };
       ESTADO.contratos.push(o); n++;
     });
     salvarEstado(); render(); show('roi'); toast(n + ' contratos importados');
@@ -847,6 +890,8 @@ var PENDENCIAS = [
   ['4', 'Base definitiva do ROI', 'Quais componentes formam o retorno líquido atribuído (recebidas, 15% de imposto, comissões dos vendedores, outros custos)?', 'ROI usa base provisória: agenciamento − imposto − comissão do vendedor.'],
   ['5', 'Categorias de investimento', 'Validar: tráfego pago, compra de leads, campanhas comerciais, outras ações de captação.', 'Categorias disponíveis para lançamento, marcadas "a validar".'],
   ['6', 'Origem dos contratos na integração', 'A integração disponibilizará origem, campanha e identificação do investimento?', 'Nenhum contrato atribuível hoje — ROI sem base.'],
+  ['8', 'Comissão do Projeto Hapvida', 'Agenciamento e vitalício do Projeto Hapvida (comissão inferior à Hapvida comum). Venda Hapvida fora do projeto já usa 350% + 2%.', 'Produção do projeto fica fora do agenciamento previsto até a regra ser informada.'],
+  ['9', 'Vínculo com planilha e CRM', 'Link da planilha e campos do CRM (PipeRun) com venda a venda: projeto, operadora, modalidade, valor, vendedor, unidade, data, origem/campanha.', 'Painel usa os totais por vendedor do painel atual.'],
   ['7', 'Validação contábil dos encargos', 'FPAS/terceiros, RAT, incidências efetivas e encargos já incluídos nos R$ 39.185,43.', 'Provisão de R$ 1.623,15 é estimativa gerencial.']
 ];
 function vPen() {
@@ -864,7 +909,8 @@ function vReg() {
     h += '<div class="m mt" style="font-weight:700;color:var(--ink)">' + u + '</div><div class="tw"><table><tbody>' + fx.map(function (f, i) { return '<tr><td>' + (fx[i + 1] ? brl(f.de || 1) + ' a ' + brl(fx[i + 1].de - 0.01) : 'A partir de ' + brl(f.de)) + '</td><td class="r"><span class="tier">' + pct(f.pct) + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
   });
   h += '</div><div class="box"><div class="lbl">Comissões das operadoras <em>tabela ' + REGRAS.versao + '</em></div><div class="tw"><table><thead><tr><th>Operadora</th><th class="r">Agenciamento</th><th class="r">Vitalício</th><th>PF/PME</th></tr></thead><tbody>';
-  REGRAS.operadoras.forEach(function (o) { h += '<tr><td>' + o.nome + '</td><td class="r">' + (o.ag != null ? pct(o.ag) : '<span class="tag pend">pendente</span>') + '</td><td class="r">' + (o.vit != null ? pct(o.vit) : '<span class="tag pend">pendente</span>') + '</td><td>' + (o.modalidades ? Object.keys(o.modalidades).join(' / ') : '<span class="tag pend">não informado</span>') + '</td></tr>'; });
+  REGRAS.projetos.forEach(function (o) { h += '<tr style="background:var(--peach)"><td><b>' + o.nome + '</b> <span class="m">regra própria</span></td><td class="r">' + (o.ag != null ? pct(o.ag) : '<span class="tag pend">pendente</span>') + '</td><td class="r">' + (o.vit != null ? pct(o.vit) : '<span class="tag pend">pendente</span>') + '</td><td>—</td></tr>'; });
+  REGRAS.operadoras.forEach(function (o) { h += '<tr><td>' + (o.nome === 'Hapvida' ? 'Hapvida <span class="m">fora do projeto</span>' : o.nome) + '</td><td class="r">' + (o.ag != null ? pct(o.ag) : '<span class="tag pend">pendente</span>') + '</td><td class="r">' + (o.vit != null ? pct(o.vit) : '<span class="tag pend">pendente</span>') + '</td><td>' + (o.modalidades ? Object.keys(o.modalidades).join(' / ') : '<span class="tag pend">não informado</span>') + '</td></tr>'; });
   h += '</tbody></table></div></div></div>';
   h += '<div class="grid g3 mt">' + card('Imposto', '15%', 'Sobre agenciamento e vitalício, todas as operadoras. Não é descontado do vendedor.', { box: 'dk' })
     + card('Reserva de marketing', '15% do LBO', 'LBO = comissões efetivamente recebidas − comissões pagas aos vendedores. Destinação do resultado, não despesa.', { box: 'dk' })
@@ -896,7 +942,8 @@ function iniciar() {
     setInterval(function () { google.script.run.withSuccessHandler(function (r) { var x = typeof r === 'string' ? JSON.parse(r) : r; if (x && x.dados) { FONTE = x.dados; render(); } }).optasCarregar(); }, 5 * 60 * 1000);
   } else {
     FONTE = SNAPSHOT; FONTE_DESC = SNAPSHOT_ORIGEM;
-    ESTADO = normEstado(carregarEstadoLocal());
+    ESTADO = normEstado(DEMO ? JSON.parse(JSON.stringify(ESTADO_DEMO)) : carregarEstadoLocal());
+    if (DEMO) { var bn = document.createElement('div'); bn.className = 'demo'; bn.innerHTML = '<b>MODO EXEMPLO</b> · produção e comissões dos vendedores são reais (painel de 23/11 18:53). Recebidas, investimentos e os 4 contratos EX1–EX4 são <b>fictícios</b>, só para visualizar o layout.'; document.querySelector('.wrap').insertBefore(bn, document.getElementById('tabs')); }
     render(); if (tab && document.getElementById('v-' + tab)) show(tab);
   }
 }
