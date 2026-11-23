@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 1.2  
+**Versão:** 1.3  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -326,6 +326,14 @@ Exibido de forma direta, sem sugestões: uma aba para Consolação, uma para Mog
 - Mínimo para empatar = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85.
 - Mínimo sustentável (forma também a reserva de 15% do lucro bruto operacional) = (0,85 × comissões dos vendedores + custo fixo + provisão) ÷ 0,70.
 - Resultado financeiro = resultado operacional − reserva de marketing.
+
+## 12.5. Somente valores efetivos (v1.3)
+
+- Este painel ignora qualquer projeção (Ag. doc., Standby, pipeline, cenários, gasto projetado, ROI projetado). Projeção é usada apenas no painel TV, como norte para os gestores.
+- Produção e comissão dos vendedores: apenas contratos efetivos (em contrato + implantado).
+- Agenciamento e vitalício "a receber": valor que a Optas receberá das operadoras pelos contratos efetivos, conforme a comissão de cada operadora. Não é chamado de "previsto".
+- ROI: somente com valor efetivamente recebido.
+- Indicadores da visão geral exibem apenas título e número, sem textos explicativos.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
