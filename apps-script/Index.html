@@ -1059,15 +1059,6 @@ function vFin() {
     return x + '</tbody></table></div></div>';
   }
 
-  // Ponto de equilíbrio
-  var ro = R.roi, est = R.custoFixo + R.provisao;
-  if (ro.liqPorReal) {
-    h += '<div class="box mt bl"><div class="lbl">Ponto de equilíbrio da estrutura ' + T.info + '</div><div class="grid g3 mt">'
-      + mini('Estrutura mensal', brl(est), 'custo fixo + provisão')
-      + mini('Líquido por R$ 1 de Hapvida PME (fora do projeto)', brl(ro.liqPorReal), '350% − 15% imposto − ' + pct(ro.pctEf, 1) + ' comissão efetiva do mês')
-      + mini('Produção necessária (Hapvida PME)', brl(est / ro.liqPorReal), 'para cobrir a estrutura com agenciamento') + '</div>';
-  }
-
   // Custos
   var cs = REGRAS.unidades.map(function (u) { return custosUnidade(u, R.mes); });
   h += '<div class="sec">Estrutura de custos <small>' + mesLabel(R.mes) + ' · ' + cs[0].diasUteis + ' dias úteis</small></div><div class="grid g2"><div class="box dk"><div class="lbl">Custo mensal</div><div class="tw"><table><thead><tr><th>Rubrica</th><th class="r">Consolação</th><th class="r">Mogi</th><th class="r">Total</th></tr></thead><tbody>';
