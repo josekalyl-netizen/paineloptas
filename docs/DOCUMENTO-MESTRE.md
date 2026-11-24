@@ -430,6 +430,14 @@ Regra de aplicação por venda: percentual da modalidade da venda; se a operador
 
 O valor final (lucro do mês − reserva de marketing), antes chamado "Resultado financeiro" / "Depois de separar a reserva", passa a se chamar **Lucro líquido** em todo o painel.
 
+## 12.16. A receber · vitalício (v2.4)
+
+- Separado do agenciamento. **Vitalício previsto do mês = Σ (valor mensal × % de vitalício da operadora/modalidade)** de todos os contratos ativos da carteira (de qualquer ano) que estão na 4ª parcela ou depois. Parcela = meses desde o início do contrato + 1. Cancelados saem a partir do mês do cancelamento.
+- Vitalício recebido: relatórios das operadoras, lançados por operadora e mês. O painel mostra previsto × recebido × diferença, por operadora e mês a mês (aba Vitalício). Imposto de 15% e líquido previsto exibidos.
+- O vitalício ainda **não** entra no lucro bruto/líquido (decisão pendente).
+- Planilha: novas abas "Carteira ativa" e "Vitalício recebido".
+- Removidos por decisão do usuário: "% atingido" nas metas e a tabela "Fechamento do mês" da aba Financeiro.
+
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
 Distribuição de lucros entre W3G e sócias; média de comissões para provisionamento da folha; controle individual de salários fixos; CPL e ROI avançado sem atribuição confiável; conciliação detalhada de cada pagamento das operadoras; controle avançado de estornos, cancelamentos, descontos e recebimentos parciais.

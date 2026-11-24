@@ -47,11 +47,13 @@ linhas=[('LEGENDA',''),
  ('4. Equipe','Vendedores e sócias, com entrada e saída, para saber quantas pessoas havia em cada mês.'),
  ('5. Feriados e recessos','Diga em quais dias a Optas NÃO trabalha (reduz VR/VT). Feriados nacionais já estão listados.'),
  ('6. Investimentos mkt','Cada investimento em marketing: data, campanha e valor.'),
- ('7. Decisões','Respostas rápidas para regras que ainda estão em aberto.'),
- ('8. Resumo (automático)','Confere o que foi preenchido mês a mês e mostra o que falta. Não precisa editar.'),
+ ('7. Carteira ativa','Todos os contratos rodando (de qualquer ano), para calcular o vitalício.'),
+ ('8. Vitalício recebido','Quanto de vitalício entrou por operadora em cada mês (dos relatórios).'),
+ ('9. Decisões','Respostas rápidas para regras que ainda estão em aberto.'),
+ ('10. Resumo (automático)','Confere o que foi preenchido mês a mês e mostra o que falta. Não precisa editar.'),
  ('',''),('IMPORTANTE','Só contratos efetivos contam no painel (Em contrato ou Implantado). Valores em reais, sem fórmulas. Datas no formato dd/mm/aaaa.')]
 for i,(a,b) in enumerate(linhas,4):
-    ws.cell(row=i,column=1,value=a).font=B if a.isupper() or a.startswith(('1','2','3','4','5','6','7','8')) else N
+    ws.cell(row=i,column=1,value=a).font=B if a.isupper() or a.startswith(('1','2','3','4','5','6','7','8','9')) else N
     ws.cell(row=i,column=2,value=b).font=N
     ws.cell(row=i,column=2).alignment=Alignment(wrap_text=True,vertical='top')
 ws['A5'].fill=YEL; ws['A6'].font=BLUE; ws['A7'].fill=EX; ws['A7'].font=EXF; ws['A8'].fill=GRAY
@@ -187,6 +189,28 @@ entrada(ws,5,504,1,5,{1:DATE,3:BRL})
 for r in range(4,505):
     x=ws.cell(row=r,column=6,value=f'=IF(A{r}="","",MONTH(A{r}))'); x.fill=GRAY; x.font=N; x.border=BD
 lista(ws,'D5:D504',['Ambas','Consolação','Mogi'])
+ws.freeze_panes='A5'
+
+# ---------- Carteira ativa
+ws=wb.create_sheet('Carteira ativa')
+titulo(ws,'Carteira ativa (para o vitalício)','Todos os contratos que ainda estão rodando, de qualquer ano. Linha 4 é exemplo. O vitalício começa na 4ª parcela.')
+cab(ws,3,['Nº contrato','Operadora','Modalidade','Projeto Hapvida?','Valor mensal atual (R$)','Data de início','Unidade','Vendedor(a)','Situação','Cancelado em','Observações'],[16,18,11,12,16,13,13,20,12,13,26])
+for c,v in enumerate(['CT-004512','Bradesco','PME','Não',1850.00,dt.date(2025,3,10),'Mogi','Wanderleia G.','Ativo',None,'Exemplo — pode apagar'],1):
+    x=ws.cell(row=4,column=c,value=v); x.font=EXF; x.fill=EX; x.border=BD
+ws['E4'].number_format=BRL; ws['F4'].number_format=DATE
+entrada(ws,5,3004,1,11,{5:BRL,6:DATE,10:DATE})
+lista(ws,'B5:B3004',oper); lista(ws,'C5:C3004',['PF','PME']); lista(ws,'D5:D3004',['Sim','Não']); lista(ws,'G5:G3004',['Consolação','Mogi']); lista(ws,'I5:I3004',['Ativo','Cancelado'])
+ws.freeze_panes='A5'
+
+# ---------- Vitalício recebido
+ws=wb.create_sheet('Vitalício recebido')
+titulo(ws,'Vitalício recebido','Valores de vitalício que entraram, conforme os relatórios das operadoras. Uma linha por operadora por mês. Linha 4 é exemplo.')
+cab(ws,3,['Mês de referência','Operadora','Unidade (opcional)','Valor recebido (R$)','Nº de contratos no relatório','Observações'],[16,18,16,16,16,30])
+for c,v in enumerate([dt.date(2026,10,1),'Bradesco','Mogi',556.32,6,'Exemplo — pode apagar'],1):
+    x=ws.cell(row=4,column=c,value=v); x.font=EXF; x.fill=EX; x.border=BD
+ws['A4'].number_format='MM/YYYY'; ws['D4'].number_format=BRL
+entrada(ws,5,604,1,6,{1:'MM/YYYY',4:BRL})
+lista(ws,'B5:B604',oper); lista(ws,'C5:C604',['Ambas','Consolação','Mogi'])
 ws.freeze_panes='A5'
 
 # ---------- 8. Decisões
