@@ -759,7 +759,7 @@ function vGeral() {
     ['Custo total da Optas no mês', brl(custoTotal), 'Comissões dos vendedores + custo da operação', '', 'rd'],
     ['Impostos (15% do a receber)', rf ? brl(rf.imposto) : '—', '', '', rf ? 'rd' : 'mu'],
     ['Reserva de marketing (15% da produção)', brl(R.reservaMkt), '', '', 'or'],
-    ['Resultado financeiro', rf ? brl(rf.resultado) : '—', 'A receber − impostos − custo total da Optas − reserva de marketing', '', rf ? (rf.resultado >= 0 ? 'gr' : 'rd') : 'mu'],
+    ['Lucro líquido', rf ? brl(rf.resultado) : '—', 'A receber − impostos − custo total da Optas − reserva de marketing', '', rf ? (rf.resultado >= 0 ? 'gr' : 'rd') : 'mu'],
     ['ROI sobre as vendas', ro.total > 0 ? pct((R.producao - ro.total) / ro.total) : '—', '', '', ro.total > 0 ? ((R.producao - ro.total) >= 0 ? 'gr' : 'rd') : 'mu'],
     ['Investimento em marketing', brl(ro.total), '', '', ro.total > ro.reserva ? 'rd' : '', statusPlan(ro.total, ro.reserva)],
   ];
@@ -824,7 +824,7 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
   itens.forEach(function (x) { h += '<div class="fl"><span>' + x[0] + '</span><div class="fb"><i style="width:' + (x[1] != null ? Math.min(100, x[1] / base * 100) : 0) + '%"></i></div><b>' + (x[1] != null ? brl(x[1]) : '—') + '</b><em>' + (x[1] != null && tem ? pct(x[1] / recebidas, 0) + ' do a receber' : '') + '</em></div>'; });
   h += '<div class="fl tot ' + st + '"><span>' + (res ? (res.operacional >= 0 ? 'Sobrou' : 'Faltou') : 'Resultado') + '</span><div></div><b>' + (res ? brl(res.operacional) : '—') + '</b><em></em></div>';
   h += '<div class="fl res2"><span>Reserva de marketing (15% da produção)</span><div class="fb"><i class="dash" style="width:' + Math.min(100, reserva / base * 100) + '%"></i></div><b>' + brl(reserva) + '</b><em>separada para investir</em></div>';
-  h += '<div class="fl tot ' + (res ? (res.financeiro >= 0 ? 'lucro' : 'prej') : 'nd') + '"><span>Depois de separar a reserva</span><div></div><b>' + (res ? brl(res.financeiro) : '—') + '</b><em></em></div>';
+  h += '<div class="fl tot ' + (res ? (res.financeiro >= 0 ? 'lucro' : 'prej') : 'nd') + '"><span>Lucro líquido</span><div></div><b>' + (res ? brl(res.financeiro) : '—') + '</b><em></em></div>';
   h += '</div></div>';
   return h;
 }
@@ -919,7 +919,7 @@ function faixaAno() {
   if (!t.nRec) return '';
   var ok = t.resultado >= 0;
   return '<button class="box unit ' + (ok ? 'lucro' : 'prej') + ' mt" onclick="show(\'ano\')" style="display:block"><div class="split"><div class="lbl">' + ano + ' até agora <em>' + t.nRec + ' ' + (t.nRec === 1 ? 'mês' : 'meses') + ' com valores</em></div><span class="st ' + (ok ? 'lucro' : 'prej') + '">' + (ok ? 'SE SUSTENTANDO NO ANO' : 'NÃO SE SUSTENTANDO NO ANO') + '</span></div>'
-    + '<div class="kpirow" style="margin-top:10px"><div>A receber no ano<b>' + brl(t.recebidas) + '</b></div><div>Custos no ano<b>' + brl(t.saiu) + '</b></div><div>Resultado do ano<b class="' + (ok ? 'gr' : 'rd') + '">' + brl(t.resultado) + '</b></div><div>Depois da reserva<b class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</b></div><div>Meses no lucro<b>' + t.mesesLucro + ' de ' + t.nRec + '</b></div></div></button>';
+    + '<div class="kpirow" style="margin-top:10px"><div>A receber no ano<b>' + brl(t.recebidas) + '</b></div><div>Custos no ano<b>' + brl(t.saiu) + '</b></div><div>Resultado do ano<b class="' + (ok ? 'gr' : 'rd') + '">' + brl(t.resultado) + '</b></div><div>Lucro líquido<b class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</b></div><div>Meses no lucro<b>' + t.mesesLucro + ' de ' + t.nRec + '</b></div></div></button>';
 }
 function vAno() {
   var anos = {}; Object.keys(ESTADO.fechamentos).forEach(function (k) { anos[k.slice(0, 4)] = 1; }); anos[R.mes.slice(0, 4)] = 1;
@@ -933,7 +933,7 @@ function vAno() {
     + '<div class="eqc"><div class="eqk">A receber no ano</div><div class="eqv">' + brl(t.recebidas) + '</div><div class="eqd">das operadoras pelos contratos efetivos</div></div><div class="eqo">−</div>'
     + '<div class="eqc"><div class="eqk">Custos no ano</div><div class="eqv">' + brl(t.saiu) + '</div><div class="eqd">impostos, vendedores, custos e provisão</div></div><div class="eqo">=</div>'
     + '<div class="eqc res-' + st + '"><div class="eqk">' + (t.nRec ? (ok ? 'Se sustentando no ano' : 'Não se sustentando no ano') : 'Sem meses com valores') + '</div><div class="eqv big2">' + (t.nRec ? brl(t.resultado) : '—') + '</div><div class="eqd">' + (t.nRec ? 'média de ' + brl(t.resultado / t.nRec) + ' por mês · ' + t.mesesLucro + ' de ' + t.nRec + ' meses no lucro' : '') + '</div></div></div>';
-  h += '<div class="grid g4 mt">' + mini('Reserva de marketing no ano', brl(t.reserva), '15% da produção') + mini('Depois de separar a reserva', '<span class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</span>', '') + mini('Saldo do ano anterior', brl(t.saldoAnterior), ESTADO.anos[ano - 1] ? 'balanço de ' + (ano - 1) : 'sem ano anterior fechado') + mini('Acumulado com o ano anterior', '<span class="' + (t.acumulado >= 0 ? 'gr' : 'rd') + '">' + brl(t.acumulado) + '</span>', '') + '</div></div>';
+  h += '<div class="grid g4 mt">' + mini('Reserva de marketing no ano', brl(t.reserva), '15% da produção') + mini('Lucro líquido', '<span class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</span>', '') + mini('Saldo do ano anterior', brl(t.saldoAnterior), ESTADO.anos[ano - 1] ? 'balanço de ' + (ano - 1) : 'sem ano anterior fechado') + mini('Acumulado com o ano anterior', '<span class="' + (t.acumulado >= 0 ? 'gr' : 'rd') + '">' + brl(t.acumulado) + '</span>', '') + '</div></div>';
   // Provisão
   var pctProv = t.provisaoAcum / t.provisaoAnual, coberta = t.nRec ? t.resultado >= 0 : null;
   h += '<div class="box dk mt"><div class="lbl">Provisão de 13º e férias em ' + ano + '</div><div class="grid g4 mt">'
@@ -948,7 +948,7 @@ function vAno() {
   }
   h += '</div><div class="note">* mês em aberto (ainda atualizando).</div></div>';
   // Tabela
-  h += '<div class="box mt"><div class="lbl">Meses de ' + ano + '</div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">Produção</th><th class="r">A receber</th><th class="r">Custos</th><th class="r">Resultado</th><th class="r">Reserva mkt</th><th class="r">Depois da reserva</th><th class="r">Investido</th><th>Situação</th><th></th></tr></thead><tbody>';
+  h += '<div class="box mt"><div class="lbl">Meses de ' + ano + '</div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">Produção</th><th class="r">A receber</th><th class="r">Custos</th><th class="r">Resultado</th><th class="r">Reserva mkt</th><th class="r">Lucro líquido</th><th class="r">Investido</th><th>Situação</th><th></th></tr></thead><tbody>';
   t.meses.forEach(function (m) {
     h += '<tr><td><b>' + mesLabel(m.mes) + '</b></td><td class="r">' + brl(m.producao) + '</td><td class="r">' + brl(m.recebidas) + '</td><td class="r">' + brl(m.saiu) + '</td><td class="r ' + (m.resultado != null ? (m.resultado >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.resultado) + '</b></td><td class="r">' + brl(m.reserva) + '</td><td class="r ' + (m.depois != null ? (m.depois >= 0 ? 'pos' : 'neg') : '') + '">' + brl(m.depois) + '</td><td class="r">' + brl(m.investido) + '</td><td>' + (m.fechado ? '<span class="tag real">Fechado</span>' : '<span class="tag proj">Em aberto</span>') + '</td><td>'
       + (fechadoAno || m.exemplo ? '' : (m.fechado ? '<button class="btn gh sm" onclick="reabrirMes(\'' + m.mes + '\')">Reabrir</button>' : '<button class="btn sm" onclick="fecharMes(\'' + m.mes + '\')">Fechar mês</button>')) + '</td></tr>';
@@ -989,7 +989,7 @@ function vFin() {
     row('(−) Provisão 13º e férias', function (c) { return brl(-c.provisao); }, 'ded');
     row('Resultado operacional', function (c) { return '<b class="' + (c.operacional >= 0 ? 'gr' : 'rd') + '">' + brl(c.operacional) + '</b>'; }, 'tot');
     row('(−) Reserva de marketing (15% da produção)', function (c) { return brl(-c.reserva); }, 'ded');
-    row('Resultado financeiro da Optas', function (c) { return '<b class="' + (c.financeiro >= 0 ? 'gr' : 'rd') + '">' + brl(c.financeiro) + '</b>'; }, 'tot');
+    row('Lucro líquido', function (c) { return '<b class="' + (c.financeiro >= 0 ? 'gr' : 'rd') + '">' + brl(c.financeiro) + '</b>'; }, 'tot');
     return x + '</tbody></table></div></div>';
   }
   if (R.res) h += dre(R.res, 'Fechamento do mês ', '');
@@ -1286,14 +1286,14 @@ function vReg() {
     + regra('Lucro ou prejuízo da unidade', 'Resultado operacional = a receber das operadoras − 15% de imposto − comissões dos vendedores − custo fixo − provisão 13º/férias', 'Positivo = LUCRO · negativo = PREJUÍZO. Calculado por unidade e no consolidado (soma das duas).')
     + regra('Mínimo para não fechar no vermelho', 'A receber mínimo = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85', 'Valor a receber das operadoras no mês em que o resultado fica em zero.')
     + regra('Mínimo sustentável', 'A receber mínimo = (comissões dos vendedores + custo fixo + provisão + reserva de marketing) ÷ 0,85', 'Não fecha no vermelho e ainda cobre a reserva de marketing (15% da produção mensal).')
-    + regra('Resultado financeiro', 'Resultado financeiro = resultado operacional − reserva de marketing', 'Reserva de marketing = 15% da produção mensal. É destinação do resultado, não despesa.')
+    + regra('Lucro líquido', 'Lucro líquido = lucro do mês − reserva de marketing', 'Reserva de marketing = 15% da produção mensal. É destinação do resultado, não despesa.')
     + regra('Qual comissão se aplica a cada venda', '1º tabela gravada na data da venda → 2º regra do projeto (Projeto Hapvida) → 3º tabela da operadora', 'Hapvida fora do projeto usa 350% + 2%. Mudanças futuras de tabela não alteram vendas antigas.')
-    + regra('Resultado financeiro do mês', 'Resultado financeiro = a receber das operadoras − impostos (15% do a receber) − custo total da Optas no mês − reserva de marketing (15% da produção mensal)', 'Positivo = verde; negativo = vermelho. Para fechar no verde, o a receber precisa cobrir impostos, custo total e reserva.')
+    + regra('Lucro líquido do mês', 'Lucro líquido = a receber das operadoras − impostos (15% do a receber) − custo total da Optas no mês − reserva de marketing (15% da produção mensal)', 'Positivo = verde; negativo = vermelho. Para fechar no verde, o a receber precisa cobrir impostos, custo total e reserva.')
     + regra('Limite de investimento', 'Limite = 15% × produção do mês · Dentro se investido ≤ limite; passou se investido > limite', 'Soma de todos os investimentos registrados no mês.')
     + regra('ROI sobre as vendas', 'ROI = (vendido no mês − investido no mês) ÷ investido no mês', 'Vendido = produção dos contratos efetivos. Também mostra quanto foi vendido para cada R$ 1,00 investido.')
     + regra('Sustentação no ano', 'Resultado do ano = soma do resultado dos meses com valor a receber calculado · Se sustentando se ≥ 0', 'Cada mês é gravado automaticamente; ao fechar o mês, os números ficam travados.')
     + regra('Provisão de 13º e férias no ano', 'Obrigação do ano = R$ 1.623,15 × 12 · Coberta se o resultado do ano ≥ 0', 'A provisão já é descontada todo mês no resultado.')
-    + regra('Balanço anual e virada de ano', 'Em dezembro: fechar o ano grava o balanço geral e o saldo (depois da reserva) passa para o ano seguinte', 'Acumulado = saldo do ano anterior + resultado depois da reserva do ano atual.')
+    + regra('Balanço anual e virada de ano', 'Em dezembro: fechar o ano grava o balanço geral e o saldo (lucro líquido do ano) passa para o ano seguinte', 'Acumulado = saldo do ano anterior + lucro líquido do ano atual.')
     + regra('VR e VT do mês', 'VR do mês = (VR de outubro ÷ 21 dias úteis) × dias úteis do mês · mesma regra para VT', 'Dias úteis = segunda a sexta menos feriados nacionais (inclui Sexta-feira Santa). Por pessoa = valor por dia da unidade ÷ número de CLT.')
     + regra('Arredondamento em centavos', 'Cada valor é arredondado em centavos (meio centavo para cima) no momento do cálculo · total = soma exata das linhas', 'Comissão por vendedor; a receber por proposta; imposto = 15% do a receber da unidade, rateado entre as propostas centavo a centavo; consolidado = soma das unidades.')
     + regra('Custo total da Optas no mês', 'Custo total = comissões dos vendedores + custo fixo + provisão 13º/férias', 'Soma de tudo que a Optas paga no mês para operar, sem impostos e sem reserva de marketing.')

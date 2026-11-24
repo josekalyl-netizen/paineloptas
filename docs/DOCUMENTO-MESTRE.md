@@ -426,6 +426,10 @@ Decisão do usuário: a reserva de marketing passa a ser **15% da produção men
 
 Regra de aplicação por venda: percentual da modalidade da venda; se a operadora só tem percentual sem modalidade, ele é usado como provisório; se a operadora não vende a modalidade (ex.: Prevent PME) ou a modalidade está pendente, a venda fica fora da conta e gera alerta.
 
+## 12.15. Nome "Lucro líquido" (v2.3)
+
+O valor final (lucro do mês − reserva de marketing), antes chamado "Resultado financeiro" / "Depois de separar a reserva", passa a se chamar **Lucro líquido** em todo o painel.
+
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
 Distribuição de lucros entre W3G e sócias; média de comissões para provisionamento da folha; controle individual de salários fixos; CPL e ROI avançado sem atribuição confiável; conciliação detalhada de cada pagamento das operadoras; controle avançado de estornos, cancelamentos, descontos e recebimentos parciais.
