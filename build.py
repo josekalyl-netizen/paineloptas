@@ -8,7 +8,9 @@ logo = base64.b64encode((raiz / 'assets/logo-optas.png').read_bytes()).decode()
 snap_path = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else raiz / 'data/snapshot.json'
 snap = json.dumps(json.loads(snap_path.read_text(encoding='utf-8')), ensure_ascii=False, separators=(',', ':'))
 html = src.replace('__LOGO__', logo).replace('__SNAP__', snap)
-(raiz / 'index.html').write_text(html.replace('__DEMO__', 'false'), encoding='utf-8')
-(raiz / 'apps-script/Index.html').write_text(html.replace('__DEMO__', 'false'), encoding='utf-8')
-(raiz / 'preview.html').write_text(html.replace('__DEMO__', 'true'), encoding='utf-8')
+# index.html e preview.html: revisão (com Pendências e Regras)
+# apps-script/Index.html: versão publicada, sem Pendências e Regras
+(raiz / 'index.html').write_text(html.replace('__DEMO__', 'false').replace('__PUBLICADO__', 'false'), encoding='utf-8')
+(raiz / 'apps-script/Index.html').write_text(html.replace('__DEMO__', 'false').replace('__PUBLICADO__', 'true'), encoding='utf-8')
+(raiz / 'preview.html').write_text(html.replace('__DEMO__', 'true').replace('__PUBLICADO__', 'false'), encoding='utf-8')
 print('ok', len(html), 'bytes')

@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 2.0  
+**Versão:** 3.0  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -437,6 +437,31 @@ O valor final (lucro do mês − reserva de marketing), antes chamado "Resultado
 - O vitalício ainda **não** entra no lucro bruto/líquido (decisão pendente).
 - Planilha: novas abas "Carteira ativa" e "Vitalício recebido".
 - Removidos por decisão do usuário: "% atingido" nas metas e a tabela "Fechamento do mês" da aba Financeiro.
+
+## 12.17. Revisão geral (v3.0 · 24/11/2026)
+
+**Cálculos (todos em centavos, consolidado = soma das unidades):**
+- Custo da operação = custos fixos + provisão 13º/férias.
+- **Custo de operação total = custo da operação + impostos** (ex.: 39.756,36 + 24.698,99 = 64.455,35).
+- Custos do mês = custo de operação total + comissões dos vendedores.
+- **Lucro bruto = a receber − comissões − custo de operação total.** Margem bruta = lucro bruto ÷ a receber.
+- **Lucro líquido = lucro bruto − investimento REAL em marketing** (não a reserva). Margem líquida = lucro líquido ÷ a receber.
+- Investido em marketing (%) = investido ÷ a receber.
+- Investimento por unidade: lançado com a unidade (texto com "Mogi"/"Consolação") fica nela; o resto é rateado pela produção.
+- Mínimos: "não fechar no vermelho" (lucro bruto ≥ 0) e "não fechar no vermelho e investir" (lucro bruto ≥ reserva de marketing).
+- **ROI = (retorno − investido) ÷ investido**; retorno = a receber das vendas ligadas a cada campanha (nome da campanha/origem do CRM, planilha ou sistemas). Venda sem campanha de marketing fica fora do ROI.
+- Ano: mês "se pagou" quando lucro bruto ≥ 0; reserva e investido lado a lado; lucro líquido do mês = lucro bruto − investido; acumulado = saldo anterior + lucros líquidos.
+
+**Cores:** verde = dinheiro que entra; vermelho = dinheiro que sai; amarelo = investimento.
+
+**Novas funções:** gráficos de vendas por operadora (valor e vidas); exportação Excel das comissões por vendedor com as propostas; barra de conversa (perguntas e registros em português, resposta só com dados); tudo recalcula sozinho a cada mudança.
+
+**Publicação:** a versão publicada (Apps Script) não exibe as abas Pendências e Regras.
+
+**Na fila:**
+- Projeto Hapvida · pagamento ao vendedor: 15% + R$ 20,00/vida (25 a 34 vidas), R$ 25,00/vida (35 a 49), R$ 35,00/vida (50 ou mais) — aguardando confirmação da base e da aplicação.
+- Projeto Hapvida · quanto a Optas recebe — aguardando o usuário.
+- Integração com CRM, planilha e sistemas internos para ligar cada venda à campanha.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 

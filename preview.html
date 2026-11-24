@@ -239,6 +239,12 @@ td.inv,.r.inv{color:var(--inv)}td.gr{color:var(--green)}td.rd{color:var(--red)}
 .hbt{height:12px;background:var(--tint);border-radius:999px;overflow:hidden}.hbt i{display:block;height:100%;border-radius:999px;background:var(--or)}.hbt i.in{background:var(--green)}.hbt i.vid{background:var(--blue)}
 .hb.tot{border-bottom:0;font-weight:700}
 @media(max-width:600px){.hb{grid-template-columns:1fr 90px 44px}.hb .hbt{grid-column:1/-1;order:5}}
+.chat{display:flex;gap:8px;margin:0 0 10px}.chat input{flex:1;border-radius:999px;padding:11px 18px;font-size:14px}.chat .btn{border-radius:999px}
+.ans{position:relative;background:var(--card);border-radius:14px;box-shadow:var(--sh);padding:12px 40px 12px 16px;margin-bottom:14px}
+.ans .x{position:absolute;right:8px;top:8px}.ansq{font-size:12px;color:var(--mute);margin-bottom:8px}
+.ansa{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ch{display:inline-flex;flex-direction:column;background:var(--tint-2);border-radius:10px;padding:6px 12px}.ch small{font-size:11px;color:var(--mute)}.ch b{font-family:var(--head);font-weight:800;font-size:16px}
+.ch.in b{color:var(--green)}.ch.out b{color:var(--red)}.ch.inv b{color:var(--inv)}.ch.mu b{color:var(--mute)}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;transition:transform .3s,opacity .3s;z-index:9;opacity:0;pointer-events:none}
 .toast.on{transform:translateX(-50%) translateY(0);opacity:1}
 details.rules{margin-top:10px}
@@ -315,6 +321,8 @@ html,body{overflow-x:hidden}
     <button class="tab" data-v="reg">Regras</button>
   </nav>
 
+  <form class="chat" id="chat" onsubmit="perguntar(event)"><input id="chatIn" autocomplete="off" placeholder="Pergunte ou registre: lucro líquido de Mogi · quanto falta para não fechar no vermelho · Meta Ads 500 hoje"><button class="btn">Enviar</button></form>
+  <div id="chatOut"></div>
   <section class="view on" id="v-geral"></section>
   <section class="view" id="v-consolacao"></section>
   <section class="view" id="v-mogi"></section>
@@ -337,7 +345,7 @@ html,body{overflow-x:hidden}
    Alterar aqui apenas quando o usuário confirmar novas regras.
    ===================================================================== */
 var REGRAS = {
-  versao: 'v2.4 · 24/11/2026',
+  versao: 'v3.0 · 24/11/2026',
   unidades: ['Consolação', 'Mogi'],
   // 3. Custos fixos (salários brutos JÁ incluem o PJ das sócias — não somar de novo)
   custos: {
@@ -402,6 +410,8 @@ var ESTADO = { investimentos: [], recebidas: {}, contratos: [] };
 var GAS = (typeof google !== 'undefined' && google.script && google.script.run);
 var LS_KEY = 'optas_painel_estado_v1';
 var DEMO = true || /[?&]demo=1/.test(location.search);
+// Versão publicada (Apps Script): sem as abas Pendências e Regras (decisão do usuário, 24/11/2026)
+var PUBLICADO = false;
 // Exemplo ILUSTRATIVO só para visualizar o layout — nunca salvo, nunca usado com dados reais.
 var ESTADO_DEMO = {
   recebidas: { '2026-11': { 'Consolação': 30000, 'Mogi': 38000 } },
@@ -963,7 +973,7 @@ function faixaAno() {
   if (!t.nRec) return '';
   var ok = t.resultado >= 0;
   return '<button class="box unit ' + (ok ? 'lucro' : 'prej') + ' mt" onclick="show(\'ano\')" style="display:block"><div class="split"><div class="lbl">' + ano + ' até agora</div><span class="st ' + (ok ? 'lucro' : 'prej') + '">' + (ok ? 'SE SUSTENTANDO NO ANO' : 'NÃO SE SUSTENTANDO NO ANO') + '</span></div>'
-    + '<div class="kpirow" style="margin-top:10px"><div>A receber no ano<b>' + brl(t.recebidas) + '</b></div><div>Custos no ano<b>' + brl(t.saiu) + '</b></div><div>Resultado do ano<b class="' + (ok ? 'gr' : 'rd') + '">' + brl(t.resultado) + '</b></div><div>Lucro líquido<b class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</b></div><div>Meses no lucro<b>' + t.mesesLucro + ' de ' + t.nRec + '</b></div></div></button>';
+    + '<div class="kpirow" style="margin-top:10px"><div>A receber no ano<b class="gr">' + brl(t.recebidas) + '</b></div><div>Custos no ano<b class="rd">' + brl(t.saiu) + '</b></div><div>Lucro bruto<b class="' + (ok ? 'gr' : 'rd') + '">' + brl(t.resultado) + '</b></div><div>Lucro líquido<b class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</b></div><div>Meses que se pagaram<b>' + t.mesesLucro + ' de ' + t.nRec + '</b></div></div></button>';
 }
 function vAno() {
   var anos = {}; Object.keys(ESTADO.fechamentos).forEach(function (k) { anos[k.slice(0, 4)] = 1; }); anos[R.mes.slice(0, 4)] = 1;
@@ -974,10 +984,10 @@ function vAno() {
   // Sustentação
   h += '<div class="box res ' + st + ' mt"><div class="lbl">' + (fechadoAno ? 'Balanço geral de ' + ano + ' · ano fechado em ' + fechadoAno.fechadoEm.split('-').reverse().join('/') : (t.n === 12 || R.mes === ano + '-12' ? 'Balanço geral de ' + ano : 'Sustentação de ' + ano + ' até agora')) + '</div>'
     + '<div class="eq">'
-    + '<div class="eqc"><div class="eqk">A receber no ano</div><div class="eqv">' + brl(t.recebidas) + '</div></div><div class="eqo">−</div>'
-    + '<div class="eqc"><div class="eqk">Custos no ano</div><div class="eqv">' + brl(t.saiu) + '</div></div><div class="eqo">=</div>'
+    + '<div class="eqc c-in"><div class="eqk">A receber no ano</div><div class="eqv">' + brl(t.recebidas) + '</div></div><div class="eqo">−</div>'
+    + '<div class="eqc c-out"><div class="eqk">Custos no ano</div><div class="eqv">' + brl(t.saiu) + '</div></div><div class="eqo">=</div>'
     + '<div class="eqc res-' + st + '"><div class="eqk">' + (t.nRec ? (ok ? 'Se sustentando no ano' : 'Não se sustentando no ano') : 'Sem meses com valores') + '</div><div class="eqv big2">' + (t.nRec ? brl(t.resultado) : '—') + '</div><div class="eqd">' + (t.nRec ? t.mesesLucro + ' de ' + t.nRec + ' meses no lucro' : '') + '</div></div></div>';
-  h += '<div class="grid g4 mt">' + mini('Reserva de marketing no ano', brl(t.reserva)) + mini('Lucro líquido', '<span class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</span>', '') + mini('Saldo do ano anterior', brl(t.saldoAnterior)) + mini('Acumulado com o ano anterior', '<span class="' + (t.acumulado >= 0 ? 'gr' : 'rd') + '">' + brl(t.acumulado) + '</span>', '') + '</div></div>';
+  h += '<div class="grid g5 mt">' + mini('Reserva de marketing no ano', '<span class="inv">' + brl(t.reserva) + '</span>') + mini('Investido no ano', '<span class="inv">' + brl(t.investido) + '</span>') + mini('Lucro líquido', '<span class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</span>', '') + mini('Saldo do ano anterior', brl(t.saldoAnterior)) + mini('Acumulado com o ano anterior', '<span class="' + (t.acumulado >= 0 ? 'gr' : 'rd') + '">' + brl(t.acumulado) + '</span>', '') + '</div></div>';
   // Provisão
   var pctProv = t.provisaoAcum / t.provisaoAnual, coberta = t.nRec ? t.resultado >= 0 : null;
   h += '<div class="box dk mt"><div class="lbl">Provisão de 13º e férias em ' + ano + '</div><div class="grid g4 mt">'
@@ -1091,6 +1101,57 @@ function vVit() {
   }
   h += '<tr class="tot"><td>Total</td><td></td><td class="r">' + brl(tp) + '</td><td class="r">' + (temR ? brl(trc) : '—') + '</td><td class="r">' + (temR ? brl(r2(trc - tp)) : '—') + '</td></tr></tbody></table></div></div>';
   document.getElementById('v-vit').innerHTML = h;
+}
+
+/* =====================================================================
+   CONVERSA: perguntas e registros em português, resposta só com dados
+   ===================================================================== */
+var PEND_CHAT = null;
+function perguntar(ev) {
+  if (ev) ev.preventDefault();
+  var el = document.getElementById('chatIn'), txt = el.value.trim(); if (!txt) return;
+  var r = responder(txt); document.getElementById('chatOut').innerHTML = '<div class="ans"><div class="ansq">' + esc(txt) + '</div><div class="ansa">' + r + '</div><button class="x" onclick="document.getElementById(\'chatOut\').innerHTML=\'\'">×</button></div>';
+  el.value = '';
+}
+function chip(rot, v, cls) { return '<span class="ch ' + (cls || '') + '"><small>' + rot + '</small><b>' + v + '</b></span>'; }
+function responder(txt) {
+  var t = norm(txt), un = /\bmogi\b/.test(t) ? 'Mogi' : /consola/.test(t) ? 'Consolação' : null;
+  var U = un ? R.unidades[un] : null, x = U ? U.res : R.res, nome = un || 'Optas';
+  var sinal = function (v) { return v == null ? 'mu' : v >= 0 ? 'in' : 'out'; };
+  // registrar investimento
+  if (/\d/.test(t) && /(invest|gast|pague|campanha|ads\b|lead|anunci|registr|trafego|tráfego|panflet|outdoor|impulsion)/.test(t)) {
+    var l = interpretarLinha(txt);
+    if (l.erro) return chip('Não registrado', l.erro, 'out');
+    PEND_CHAT = l;
+    return chip('Campanha', esc(l.campanha), '') + chip('Valor', brl(l.valor), 'inv') + chip('Data', dataLonga(l), '') + (l.unidade ? chip('Unidade', l.unidade, '') : '') + '<button class="btn sm" onclick="confirmarChat()">Registrar</button>';
+  }
+  // vendedor
+  var vend = R.vendedores.filter(function (v) { var pn = norm(v.nome).split(' ')[0]; return pn.length > 2 && new RegExp('\\b' + pn + '\\b').test(t); })[0];
+  if (vend) return chip(esc(vend.nome), vend.unidade, '') + chip('Produção', brl(vend.producao), '') + chip('Faixa', pct(vend.pct), '') + chip('Comissão', brl(vend.comissao), 'out') + (vend.faixa.prox ? chip('Próxima faixa', 'faltam ' + brl(vend.faltaProx), '') : chip('Faixa', 'máxima', 'in'));
+  if (!x && !/(ano|sustent|produ|vend|comiss|invest|reserva|mkt|marketing|roi|retorno|vitalic|custo)/.test(t)) return chip(nome, 'a receber ainda não calculável', 'mu');
+  if (/liquid/.test(t)) return chip('Lucro líquido · ' + nome, brl(x.financeiro), sinal(x.financeiro)) + chip('Margem líquida', pct(x.mLiquida, 1), sinal(x.mLiquida));
+  if (/margem/.test(t)) return chip('Margem bruta · ' + nome, pct(x.mBruta, 1), sinal(x.mBruta)) + chip('Margem líquida', pct(x.mLiquida, 1), sinal(x.mLiquida)) + chip('Investido em mkt', pct(x.mMkt, 1), 'inv');
+  if (/(vermelho|minimo|mínimo|empat|precis|falta|meta)/.test(t)) {
+    var c = U ? U.custos : { fixo: R.custoFixo, provisao: R.provisao }, mn = minimos(U ? U.comissao : R.comissoes, r2(c.fixo + c.provisao), x ? x.reserva : R.reservaMkt), rec = x ? x.recebidas : null;
+    var st = function (alvo) { return rec == null ? '' : (rec >= alvo ? ' · acima em ' + brl(rec - alvo) : ' · faltam ' + brl(alvo - rec)); };
+    return chip('Não fechar no vermelho · ' + nome, brl(mn.empate) + st(mn.empate), rec != null && rec >= mn.empate ? 'in' : 'out') + chip('Não fechar no vermelho e investir', brl(mn.sustentavel) + st(mn.sustentavel), rec != null && rec >= mn.sustentavel ? 'in' : 'out');
+  }
+  if (/vitalic/.test(t)) return chip('A receber · vitalício', R.vit.n ? brl(R.vit.total) : '—', 'in') + chip('Recebido', R.vit.recebido != null ? brl(R.vit.recebido) : '—', 'in') + chip('Contratos rodando', String(R.vit.n), '');
+  if (/(lucro|bruto|resultado|sobr|ganh)/.test(t)) return chip((x.operacional >= 0 ? 'Lucro bruto · ' : 'Prejuízo · ') + nome, brl(x.operacional), sinal(x.operacional)) + chip('Margem bruta', pct(x.mBruta, 1), sinal(x.mBruta)) + chip('Lucro líquido', brl(x.financeiro), sinal(x.financeiro));
+  if (/(receb|agencia)/.test(t)) return chip('A receber · ' + nome, x ? brl(x.recebidas) : '—', 'in') + (un ? '' : chip('Vitalício', R.vit.n ? brl(R.vit.total) : '—', 'in'));
+  if (/impost/.test(t)) return chip('Impostos · ' + nome, x ? brl(x.imposto) : '—', 'out');
+  if (/comiss/.test(t)) return chip('Comissões · ' + nome, brl(U ? U.comissao : R.comissoes), 'out');
+  if (/custo/.test(t)) return chip('Custo da operação · ' + nome, x ? brl(x.custoOp) : '—', 'out') + chip('Custo de operação total', x ? brl(x.custoOpTotal) : '—', 'out') + chip('Custos do mês', x ? brl(x.custos) : '—', 'out');
+  if (/(roi|retorno)/.test(t)) return chip('ROI', R.roi.roi != null ? pct(R.roi.roi) : '—', sinal(R.roi.roi)) + chip('Retorno', brl(R.roi.retorno), 'in') + chip('Investido', brl(R.roi.invAtrib), 'inv');
+  if (/(invest|reserva|mkt|marketing|verba)/.test(t)) { var iv = U ? U.investido : R.investido, rs = U ? U.reservaMkt : R.reservaMkt; return chip('Reserva · ' + nome, brl(rs), 'inv') + chip('Investido', brl(iv), iv > rs ? 'out' : 'inv') + chip(iv > rs ? 'Fora do planejamento' : 'Disponível', brl(Math.abs(rs - iv)), iv > rs ? 'out' : 'in'); }
+  if (/(produ|vend|venda)/.test(t)) return chip('Produção · ' + nome, brl(U ? U.producao : R.producao), '') + chip('Propostas', String((R.ag.propostas || []).filter(function (p) { return !un || p.unidade === un; }).length || '—'), '');
+  if (/(ano|sustent|acumul)/.test(t)) { var a = resumoAno(+R.mes.slice(0, 4)); return chip(R.mes.slice(0, 4) + ' · lucro bruto', brl(a.resultado), sinal(a.resultado)) + chip('Lucro líquido', brl(a.depois), sinal(a.depois)) + chip('Meses que se pagaram', a.mesesLucro + ' de ' + a.nRec, a.resultado >= 0 ? 'in' : 'out'); }
+  return chip('Lucro bruto · ' + nome, x ? brl(x.operacional) : '—', sinal(x && x.operacional)) + chip('Lucro líquido', x ? brl(x.financeiro) : '—', sinal(x && x.financeiro)) + chip('A receber', x ? brl(x.recebidas) : '—', 'in') + chip('Custos', x ? brl(x.custos) : '—', 'out');
+}
+function confirmarChat() {
+  if (!PEND_CHAT) return; var p = PEND_CHAT; PEND_CHAT = null;
+  ESTADO.investimentos.push({ id: Date.now().toString(36), data: p.data, valor: p.valor, categoria: p.categoria, campanha: p.campanha, unidade: p.unidade, texto: p.texto, mensal: p.mensal });
+  salvarEstado(); render(); document.getElementById('chatOut').innerHTML = '<div class="ans"><div class="ansa">' + chip('Registrado', esc(p.campanha) + ' · ' + brl(p.valor), 'inv') + chip('Investido no mês', brl(R.investido), 'inv') + statusPlan(R.investido, R.reservaMkt) + '</div></div>';
 }
 
 function vFin() {
@@ -1388,6 +1449,7 @@ var PENDENCIAS = [
   ['9', 'Vínculo com planilha e CRM', 'Link da planilha e campos do CRM (PipeRun) com venda a venda: projeto, operadora, modalidade, valor, vendedor, unidade, data, origem/campanha.', 'Painel usa os totais por vendedor do painel atual.'],
 ];
 function vPen() {
+  if (!document.getElementById('v-pen')) return;
   var h = '<div class="box brd"><div class="lbl">Pendências para finalizar a modelagem <em>mantidas separadas das regras confirmadas</em></div><div class="tw"><table><thead><tr><th>#</th><th>Pendência</th><th>O que falta</th><th>Como o painel trata hoje</th></tr></thead><tbody>';
   PENDENCIAS.forEach(function (p) { h += '<tr><td><b>' + p[0] + '</b></td><td style="white-space:normal;min-width:160px"><b>' + p[1] + '</b></td><td style="white-space:normal;min-width:280px">' + p[2] + '</td><td style="white-space:normal;min-width:220px" class="m">' + p[3] + '</td></tr>'; });
   h += '</tbody></table></div><div class="note">Resolvidas: base do ROI (ROI sobre as vendas), categorias de investimento (registro por nome de campanha) e origem dos contratos (não é mais necessária para o ROI).</div></div>';
@@ -1397,6 +1459,7 @@ function vPen() {
 
 function regra(t, f, d) { return '<div class="box dk"><div class="lbl">' + t + '</div><div class="fx">' + f + '</div><div class="m">' + d + '</div></div>'; }
 function vReg() {
+  if (!document.getElementById('v-reg')) return;
   var h = '<div class="grid g2"><div class="box"><div class="lbl">Comissão dos vendedores <em>% da faixa sobre toda a produção</em></div>';
   REGRAS.unidades.forEach(function (u) {
     var fx = REGRAS.faixas[u];
@@ -1424,21 +1487,23 @@ function vReg() {
     + card('Reserva de marketing', '15%', 'Sobre a produção mensal (soma das mensalidades dos contratos efetivos). Destinação do resultado, não despesa.', { box: 'dk' })
     + card('Vitalício', 'a partir da ' + REGRAS.vitalicio.inicioParcela + 'ª parcela', 'Enquanto o contrato estiver ativo, % da operadora. ' + T.pend, { box: 'dk' }) + '</div>';
   h += '<div class="sec">Fórmulas do sistema <small>cada regra nova entra aqui</small></div><div class="grid g2">'
-    + regra('Lucro ou prejuízo da unidade', 'Resultado operacional = a receber das operadoras − 15% de imposto − comissões dos vendedores − custo fixo − provisão 13º/férias', 'Positivo = LUCRO · negativo = PREJUÍZO. Calculado por unidade e no consolidado (soma das duas).')
-    + regra('Mínimo para não fechar no vermelho', 'A receber mínimo = (comissões dos vendedores + custo fixo + provisão) ÷ 0,85', 'Valor a receber das operadoras no mês em que o resultado fica em zero.')
-    + regra('Mínimo sustentável', 'A receber mínimo = (comissões dos vendedores + custo fixo + provisão + reserva de marketing) ÷ 0,85', 'Não fecha no vermelho e ainda cobre a reserva de marketing (15% da produção mensal).')
-    + regra('Lucro líquido', 'Lucro líquido = lucro do mês − reserva de marketing', 'Reserva de marketing = 15% da produção mensal. É destinação do resultado, não despesa.')
+    + regra('Custo da operação', 'Custo da operação = custos fixos (salários, VR, VT, operação) + provisão 13º/férias', '')
+    + regra('Custo de operação total', 'Custo de operação total = custo da operação + impostos (15% do a receber)', '')
+    + regra('Lucro bruto', 'Lucro bruto = a receber das operadoras − comissões dos vendedores − custo de operação total', 'Positivo = LUCRO BRUTO; negativo = PREJUÍZO. Margem bruta = lucro bruto ÷ a receber.')
+    + regra('Lucro líquido', 'Lucro líquido = lucro bruto − investimento real em marketing', 'Margem líquida = lucro líquido ÷ a receber. A reserva de marketing (15% da produção) é o planejado; o que entra na conta é o que foi realmente investido.')
+    + regra('Investimento por unidade', 'Investimento lançado com a unidade (Mogi/Consolação) fica nela · o restante é rateado pela produção de cada unidade', 'Investido em marketing (%) = investido ÷ a receber.')
+    + regra('Mínimo para não fechar no vermelho', 'Menor a receber em que o lucro bruto fica ≥ 0 (com o imposto de 15% arredondado)', '')
+    + regra('Mínimo para não fechar no vermelho e investir', 'Menor a receber em que o lucro bruto cobre a reserva de marketing', '')
+    + regra('ROI', 'ROI = (retorno − investido) ÷ investido · retorno = a receber das vendas ligadas a cada campanha', 'A venda é ligada à campanha pelo nome da campanha/origem vindo do CRM, planilha ou sistemas. Venda sem campanha de marketing não entra no ROI.')
+    + regra('Se a operação se pagou', 'Mês se pagou quando o lucro bruto ≥ 0 · acumulado do ano = saldo do ano anterior + lucro líquido dos meses', '')
+    + regra('Cores', 'Verde = dinheiro que entra · vermelho = dinheiro que sai · amarelo = investimento', '')
     + regra('Qual comissão se aplica a cada venda', '1º tabela gravada na data da venda → 2º regra do projeto (Projeto Hapvida) → 3º tabela da operadora', 'Hapvida fora do projeto usa 350% + 2%. Mudanças futuras de tabela não alteram vendas antigas.')
-    + regra('Lucro líquido do mês', 'Lucro líquido = a receber das operadoras − impostos (15% do a receber) − custo total da Optas no mês − reserva de marketing (15% da produção mensal)', 'Positivo = verde; negativo = vermelho. Para fechar no verde, o a receber precisa cobrir impostos, custo total e reserva.')
     + regra('Limite de investimento', 'Limite = 15% × produção do mês · Dentro se investido ≤ limite; passou se investido > limite', 'Soma de todos os investimentos registrados no mês.')
-    + regra('ROI sobre as vendas', 'ROI = (vendido no mês − investido no mês) ÷ investido no mês', 'Vendido = produção dos contratos efetivos. Também mostra quanto foi vendido para cada R$ 1,00 investido.')
-    + regra('Sustentação no ano', 'Resultado do ano = soma do resultado dos meses com valor a receber calculado · Se sustentando se ≥ 0', 'Cada mês é gravado automaticamente; ao fechar o mês, os números ficam travados.')
     + regra('Provisão de 13º e férias no ano', 'Obrigação do ano = R$ 1.623,15 × 12 · Coberta se o resultado do ano ≥ 0', 'A provisão já é descontada todo mês no resultado.')
     + regra('Balanço anual e virada de ano', 'Em dezembro: fechar o ano grava o balanço geral e o saldo (lucro líquido do ano) passa para o ano seguinte', 'Acumulado = saldo do ano anterior + lucro líquido do ano atual.')
     + regra('VR e VT do mês', 'VR do mês = (VR de outubro ÷ 21 dias úteis) × dias úteis do mês · mesma regra para VT', 'Dias úteis = segunda a sexta menos feriados nacionais (inclui Sexta-feira Santa). Por pessoa = valor por dia da unidade ÷ número de CLT.')
     + regra('Arredondamento em centavos', 'Cada valor é arredondado em centavos (meio centavo para cima) no momento do cálculo · total = soma exata das linhas', 'Comissão por vendedor; a receber por proposta; imposto = 15% do a receber da unidade, rateado entre as propostas centavo a centavo; consolidado = soma das unidades.')
     + regra('A receber · vitalício', 'Vitalício do mês = Σ (valor mensal × % de vitalício) dos contratos ativos a partir da ' + REGRAS.vitalicio.inicioParcela + 'ª parcela', 'Parcela = meses desde o início do contrato + 1. Cancelados saem a partir do mês do cancelamento. Comparado com o recebido dos relatórios das operadoras.')
-    + regra('Custo total da Optas no mês', 'Custo total = comissões dos vendedores + custo fixo + provisão 13º/férias', 'Soma de tudo que a Optas paga no mês para operar, sem impostos e sem reserva de marketing.')
     + regra('Comissão do vendedor', 'Comissão = produção do mês × percentual da faixa atingida', 'O percentual incide sobre toda a produção. Sem médias históricas.')
     + '</div>';
   document.getElementById('v-reg').innerHTML = h;
@@ -1512,6 +1577,9 @@ function regrasDemo() {
 }
 function mesReferenciaDe(rot) { var n = norm(rot); for (var i = 0; i < 12; i++) if (n.indexOf(norm(MESES[i])) === 0) return ((rot.match(/(20\d\d)/) || [])[1] || new Date().getFullYear()) + '-' + String(i + 1).padStart(2, '0'); return null; }
 function iniciar() {
+  if (PUBLICADO) ['pen', 'reg'].forEach(function (v) { var b = document.querySelector('.tab[data-v="' + v + '"]'), sc = document.getElementById('v-' + v); if (b) b.remove(); if (sc) sc.remove(); });
+  // Atualização automática: outra aba/janela salvou dados → recalcula tudo
+  window.addEventListener('storage', function (e) { if (e.key === LS_KEY && !GAS && !DEMO) { ESTADO = normEstado(carregarEstadoLocal()); render(); } });
   var tab = location.hash.slice(1); if (!tab) { try { tab = localStorage.getItem('optas_tab'); } catch (e) {} }
   if (GAS) {
     google.script.run.withSuccessHandler(function (r) {

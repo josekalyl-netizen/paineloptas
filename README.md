@@ -15,6 +15,7 @@ As regras de negócio seguem o [documento-mestre](docs/DOCUMENTO-MESTRE.md). Pri
 | **Comercial** | Produção e comissão por vendedor (faixas por unidade sobre toda a produção), quanto falta para a próxima faixa, produção por operadora, PF × PME, funil Hapvida |
 | **ROI & investimentos** | Registro de investimentos (campanha, valor e data em texto livre), linha do tempo, investimento × limite de 15% da produção (dentro / passou), ROI sobre as vendas |
 | **Alertas** | Verificação de integridade: campo ausente, registros afetados, cálculo comprometido, correção. Botão para copiar o texto e enviar à equipe responsável |
+| **Vitalício** | Vitalício previsto da carteira × recebido, por operadora e mês a mês |
 | **Pendências** | As 7 pendências do documento-mestre, separadas das regras confirmadas |
 | **Regras** | Tabelas vigentes e todas as fórmulas do sistema |
 
@@ -25,9 +26,12 @@ src/painel.html        código-fonte (HTML + CSS + JS, sem dependências)
 assets/logo-optas.png  logo extraída do painel atual
 data/snapshot.json     snapshot dos dados do painel gerencial (PipeRun + ASI)
 build.py               gera index.html e apps-script/Index.html
-index.html             painel pronto (abre direto no navegador)
+index.html             painel em modo real para revisão (com Pendências e Regras)
+preview.html           painel em modo exemplo (dados fictícios identificados)
 apps-script/Code.gs    backend para publicar no Google Apps Script
-apps-script/Index.html página usada pelo Apps Script
+apps-script/Index.html versão publicada (sem Pendências e Regras)
+testes/                auditoria dos cálculos em centavos
+planilhas/             planilha de coleta de dados de 2026
 docs/DOCUMENTO-MESTRE.md regras de negócio v1.0
 ```
 
