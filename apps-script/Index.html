@@ -245,6 +245,14 @@ td.inv,.r.inv{color:var(--inv)}td.gr{color:var(--green)}td.rd{color:var(--red)}
 .ansa{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .ch{display:inline-flex;flex-direction:column;background:var(--tint-2);border-radius:10px;padding:6px 12px}.ch small{font-size:11px;color:var(--mute)}.ch b{font-family:var(--head);font-weight:800;font-size:16px}
 .ch.in b{color:var(--green)}.ch.out b{color:var(--red)}.ch.inv b{color:var(--inv)}.ch.mu b{color:var(--mute)}
+.pzw{display:grid;grid-template-columns:190px 1fr;gap:18px;align-items:center;margin-top:8px}
+@media(max-width:600px){.pzw{grid-template-columns:1fr}.pzs{max-width:200px;margin:0 auto}}
+.pzs{width:100%;height:auto}.pzs path,.pzs circle{cursor:pointer;transition:opacity .15s,transform .15s}
+.pz.foco .pzs path:not(.hl){opacity:.25}.pzs path.hl{transform:scale(1.04)}
+.pzt{font-family:var(--head);font-weight:800;font-size:26px;fill:var(--ink)}.pzu{font-size:10px;fill:var(--mute)}
+.pzi{display:grid;grid-template-columns:12px 1fr auto 52px;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;font-size:13px;cursor:pointer}
+.pzi i{width:12px;height:12px;border-radius:3px}.pzi b{font-family:var(--head);font-weight:800;text-align:right}.pzi em{font-style:normal;font-size:12px;color:var(--mute);text-align:right}
+.pzi.hl{background:var(--peach)}.pzi.tot{cursor:default;border-top:1px solid var(--line);border-radius:0;margin-top:4px;font-weight:700}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;transition:transform .3s,opacity .3s;z-index:9;opacity:0;pointer-events:none}
 .toast.on{transform:translateX(-50%) translateY(0);opacity:1}
 details.rules{margin-top:10px}
@@ -345,7 +353,7 @@ html,body{overflow-x:hidden}
    Alterar aqui apenas quando o usuário confirmar novas regras.
    ===================================================================== */
 var REGRAS = {
-  versao: 'v3.0 · 24/11/2026',
+  versao: 'v3.1 · 24/11/2026',
   unidades: ['Consolação', 'Mogi'],
   // 3. Custos fixos (salários brutos JÁ incluem o PJ das sócias — não somar de novo)
   custos: {
@@ -479,6 +487,19 @@ function ratear(itens, total, base, campo) {
   parts.slice().sort(function (a, b) { return b.r - a.r; }).forEach(function (p, k) { if (k < resto) p.f++; });
   parts.forEach(function (p) { itens[p.i][campo] = p.f / 100; });
 }
+// CPF/CNPJ: só dígitos, validação dos dígitos verificadores e máscara
+function digitos(x) { return String(x || '').replace(/\D/g, ''); }
+function cpfValido(x) { var d = digitos(x); if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false; for (var t = 9; t < 11; t++) { var s = 0; for (var i = 0; i < t; i++) s += +d[i] * (t + 1 - i); if (+d[t] !== ((s * 10) % 11) % 10) return false; } return true; }
+function cnpjValido(x) { var d = digitos(x); if (d.length !== 14 || /^(\d)\1+$/.test(d)) return false; var calc = function (n) { var w = n === 12 ? [5,4,3,2,9,8,7,6,5,4,3,2] : [6,5,4,3,2,9,8,7,6,5,4,3,2], s = 0; for (var i = 0; i < n; i++) s += +d[i] * w[i]; var r = s % 11; return r < 2 ? 0 : 11 - r; }; return calc(12) === +d[12] && calc(13) === +d[13]; }
+function docFmt(x) { var d = digitos(x); if (d.length === 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'); if (d.length === 14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5'); return x || ''; }
+// Situação do documento conforme a modalidade: PF → CPF do titular · PME → CNPJ da empresa
+function docSituacao(c) {
+  var mod = String(c.modalidade || '').toUpperCase(), d = digitos(c.documento);
+  if (!d) return mod === 'PME' ? 'sem CNPJ' : mod === 'PF' ? 'sem CPF' : 'sem documento';
+  if (mod === 'PF') return cpfValido(d) ? '' : (d.length === 14 ? 'PF com CNPJ' : 'CPF inválido');
+  if (mod === 'PME') return cnpjValido(d) ? '' : (d.length === 11 ? 'PME com CPF' : 'CNPJ inválido');
+  return cpfValido(d) || cnpjValido(d) ? '' : 'documento inválido';
+}
 function soma2(a, f) { return r2(a.reduce(function (t, x) { return t + (f ? f(x) : x); }, 0)); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function sum(a, f) { return a.reduce(function (s, x) { return s + (f ? f(x) : x); }, 0); }
@@ -610,7 +631,7 @@ function calcular() {
 
   // ---------- Agenciamento / vitalício a receber (contratos efetivos) ----------
   var ag = { valor: 0, base: 0, provisorio: false, naoCalc: 0, naoCalcQtd: 0, vit: 0, porOperadora: {}, pf: 0, pme: 0, semMod: 0, propostas: [] };
-  var semOrigem = 0, semOrigemValor = 0, semMod = 0, semOp = 0, opSemRegra = {}, camposFaltando = {};
+  var semOrigem = 0, semOrigemValor = 0, semMod = 0, semOp = 0, opSemRegra = {}, camposFaltando = {}, semDoc = {};
   if (usarContratos) {
     contratosMes.forEach(function (c) {
       var faltas = [];
@@ -621,6 +642,7 @@ function calcular() {
       var op = operadora(c.operadora), mod = (c.modalidade || '').toUpperCase();
       if (mod === 'PF') ag.pf += valor; else if (mod === 'PME') ag.pme += valor; else { ag.semMod += valor; semMod++; }
       if (!c.origem && !c.campanha) { semOrigem++; semOrigemValor += valor; }
+      var dsit = docSituacao(c); if (dsit || !c.cliente) (semDoc[dsit || 'sem nome do titular/empresa'] = semDoc[dsit || 'sem nome do titular/empresa'] || []).push(c.id_venda || c.contrato || '(sem id)');
       var rg = regraVenda(c);
       var rk = rg && rg.projeto ? rg.nome : (c.operadora ? (operadora(c.operadora) ? operadora(c.operadora).nome + (operadora(c.operadora).nome === 'Hapvida' ? ' (fora do projeto)' : '') : c.operadora) : '(não informada)');
       var po = ag.porOperadora[rk] = ag.porOperadora[rk] || { valor: 0, qtd: 0, ag: null, vit: null };
@@ -659,6 +681,7 @@ function calcular() {
     var ids = camposFaltando[f];
     R.alertas.push({ sev: 'wa', cod: 'CAMPO_' + f, titulo: ids.length + ' contrato(s) sem o campo "' + f + '"', texto: 'Registros: ' + ids.slice(0, 12).join(', ') + (ids.length > 12 ? '…' : ''), impacto: impactoCampo(f), acao: 'Corrigir no painel gerencial / CRM.', registros: ids.length });
   });
+  Object.keys(semDoc).forEach(function (k) { var ids = semDoc[k]; R.alertas.push({ sev: 'er', cod: 'DOC_' + k, titulo: ids.length + ' proposta(s): ' + k, texto: 'Propostas: ' + ids.slice(0, 12).join(', ') + (ids.length > 12 ? '…' : ''), impacto: 'Identificação da proposta (PF = nome e CPF do titular · PME = nome e CNPJ da empresa)', acao: 'Corrigir no CRM/planilha.', registros: ids.length }); });
   ag.imposto = ag.valor * REGRAS.imposto; ag.impostoVit = ag.vit * REGRAS.imposto;
   R.ag = ag;
 
@@ -1224,7 +1247,7 @@ function linhasComissao() {
     var ps = R.ag.propostas.filter(function (p) { return norm(p.c.vendedor) === norm(v.nome); });
     ratear(ps, v.comissao, function (p) { return v.producao ? v.comissao * p.valor / v.producao : 0; }, 'comVend');
     res.push({ 'Vendedor(a)': v.nome, 'Unidade': v.unidade, 'Produção do mês (R$)': v.producao, 'Faixa': v.pct, 'Comissão a pagar (R$)': v.comissao, 'Propostas': ps.length, 'A receber das operadoras (R$)': soma2(ps, function (p) { return p.aReceber || 0; }) });
-    ps.forEach(function (p) { props.push({ 'Vendedor(a)': v.nome, 'Unidade': v.unidade, 'Data': (p.c.data_venda || '').split('-').reverse().join('/'), 'Nº contrato': p.c.contrato || p.c.id_venda || '', 'Operadora / projeto': p.grupo, 'Modalidade': p.c.modalidade || '', 'Vidas': +p.c.vidas || '', 'Mensalidade (R$)': p.valor, '% operadora': p.pct, 'A receber da operadora (R$)': p.aReceber, '% vendedor': v.pct, 'Comissão do vendedor (R$)': p.comVend }); });
+    ps.forEach(function (p) { props.push({ 'Vendedor(a)': v.nome, 'Unidade': v.unidade, 'Data': (p.c.data_venda || '').split('-').reverse().join('/'), 'Cliente (titular / empresa)': p.c.cliente || '', 'CPF / CNPJ': docFmt(p.c.documento), 'Nº contrato': p.c.contrato || p.c.id_venda || '', 'Operadora / projeto': p.grupo, 'Modalidade': p.c.modalidade || '', 'Vidas': +p.c.vidas || '', 'Mensalidade (R$)': p.valor, '% operadora': p.pct, 'A receber da operadora (R$)': p.aReceber, '% vendedor': v.pct, 'Comissão do vendedor (R$)': p.comVend }); });
   });
   return { resumo: res, propostas: props };
 }
@@ -1253,7 +1276,6 @@ function vCom() {
   if (R.ag.propostas.length) R.ag.propostas.forEach(function (p) { porValor[p.grupo] = r2((porValor[p.grupo] || 0) + p.valor); if (p.c.vidas) porVidas[p.grupo] = (porVidas[p.grupo] || 0) + (+p.c.vidas || 0); });
   else { Object.keys(R.ag.porOperadora).forEach(function (k) { porValor[k] = R.ag.porOperadora[k].valor; }); if (FONTE && FONTE.geral && FONTE.geral.hap.vidas) porVidas['Projeto Hapvida'] = FONTE.geral.hap.vidas; }
   var h = '<div class="split"><div class="sec" style="margin:0">Vendas do mês</div><button class="btn" onclick="exportarComissoes()">Exportar comissões (Excel)</button></div>';
-  h += '<div class="grid g2 mt">' + graficoOp('Operadoras por valor vendido', porValor, brl, 'in') + graficoOp('Operadoras por vidas', porVidas, function (n) { return n.toLocaleString('pt-BR') + ' vidas'; }, 'vid') + '</div>';
   h += '<div class="grid g4 mt">'
     + card('Produção total', brl(R.producao), 'Hapvida ' + brl(sum(R.vendedores, function (v) { return v.prodHap; })) + ' · fora ' + brl(sum(R.vendedores, function (v) { return v.prodFora; })))
     + card('Contratos efetivos', FONTE && FONTE.geral ? String(FONTE.geral.hap.qtd + FONTE.geral.fora.qtd) : '—')
@@ -1267,13 +1289,14 @@ function vCom() {
   });
   REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; h += '<tr class="sub"><td></td><td>Subtotal ' + u + '</td><td></td><td class="r">' + brl(U.prodHap) + '</td><td class="r">' + brl(U.prodFora) + '</td><td class="r">' + brl(U.producao) + '</td><td></td><td class="r">' + brl(U.comissao) + '</td><td></td></tr>'; });
   h += '<tr class="tot"><td></td><td>Total</td><td></td><td class="r">' + brl(sum(R.vendedores, function (v) { return v.prodHap; })) + '</td><td class="r">' + brl(sum(R.vendedores, function (v) { return v.prodFora; })) + '</td><td class="r">' + brl(R.producao) + '</td><td></td><td class="r">' + brl(R.comissoes) + '</td><td></td></tr></tbody></table></div></div>';
-  // Propostas do mês
+  // Propostas do mês (identificadas por titular/empresa e CPF/CNPJ)
   if (R.ag.propostas.length) {
-    var ps = R.ag.propostas.slice().sort(function (a, b) { return (b.aReceber || 0) - (a.aReceber || 0); });
-    h += '<div class="box mt"><div class="lbl">Propostas efetivas do mês</div><div class="tw"><table><thead><tr><th>Data</th><th>Vendedor(a)</th><th>Unidade</th><th>Operadora / projeto</th><th>Modalidade</th><th class="r">Mensalidade</th><th class="r">%</th><th class="r">A receber</th><th class="r">Imposto 15%</th><th class="r">Líquido</th></tr></thead><tbody>';
-    ps.forEach(function (p) { var c = p.c, a = p.aReceber; h += '<tr><td>' + (c.data_venda || '').split('-').reverse().join('/') + '</td><td>' + esc(c.vendedor) + '</td><td>' + esc(c.unidade) + '</td><td><b>' + esc(p.grupo) + '</b></td><td>' + esc(c.modalidade || '—') + '</td><td class="r">' + brl(p.valor) + '</td><td class="r">' + (p.pct != null ? pct(p.pct) : '<span class="tag pend">pendente</span>') + '</td><td class="r"><b>' + (a != null ? brl(a) : '—') + '</b></td><td class="r">' + (a != null ? brl(-p.imposto) : '—') + '</td><td class="r">' + (a != null ? brl(p.liquido) : '—') + '</td></tr>'; });
+    var f = vCom.filtro, ps = R.ag.propostas.filter(function (p) { return !f || p.grupo === f; }).sort(function (a, b) { return (b.aReceber || 0) - (a.aReceber || 0); });
+    h += '<div class="box mt" id="propostas"><div class="split"><div class="lbl">Propostas efetivas do mês</div>' + (f ? '<button class="pill ln" onclick="vCom.filtro=null;vCom()">' + esc(f) + ' ×</button>' : '') + '</div><div class="tw"><table><thead><tr><th>Data</th><th>Cliente (titular / empresa)</th><th>CPF / CNPJ</th><th>Mod.</th><th>Operadora / projeto</th><th class="r">Vidas</th><th>Vendedor(a)</th><th>Unidade</th><th class="r">Mensalidade</th><th class="r">%</th><th class="r">A receber</th><th class="r">Imposto</th><th class="r">Líquido</th></tr></thead><tbody>';
+    ps.forEach(function (p) { var c = p.c, a = p.aReceber, ds = docSituacao(c);
+      h += '<tr><td>' + (c.data_venda || '').split('-').reverse().join('/') + '</td><td><b>' + (c.cliente ? esc(c.cliente) : '<span class="tag pend">sem nome</span>') + '</b></td><td>' + (c.documento ? esc(docFmt(c.documento)) : '') + (ds ? ' <span class="tag pend">' + ds + '</span>' : '') + '</td><td>' + esc(c.modalidade || '—') + '</td><td>' + esc(p.grupo) + '</td><td class="r">' + (+c.vidas || '—') + '</td><td>' + esc(c.vendedor) + '</td><td>' + esc(c.unidade) + '</td><td class="r">' + brl(p.valor) + '</td><td class="r">' + (p.pct != null ? pct(p.pct) : '<span class="tag pend">pendente</span>') + '</td><td class="r gr"><b>' + (a != null ? brl(a) : '—') + '</b></td><td class="r rd">' + (a != null ? brl(-p.imposto) : '—') + '</td><td class="r">' + (a != null ? brl(p.liquido) : '—') + '</td></tr>'; });
     var ta = soma2(ps, function (p) { return p.aReceber || 0; }), ti = soma2(ps, function (p) { return p.imposto || 0; });
-    h += '<tr class="tot"><td colspan="5">Total · ' + ps.length + ' propostas</td><td class="r">' + brl(soma2(ps, function (p) { return p.valor; })) + '</td><td></td><td class="r">' + brl(ta) + '</td><td class="r">' + brl(-ti) + '</td><td class="r">' + brl(r2(ta - ti)) + '</td></tr></tbody></table></div></div>';
+    h += '<tr class="tot"><td colspan="5">Total · ' + ps.length + ' propostas</td><td class="r">' + sum(ps, function (p) { return +p.c.vidas || 0; }) + '</td><td colspan="2"></td><td class="r">' + brl(soma2(ps, function (p) { return p.valor; })) + '</td><td></td><td class="r gr">' + brl(ta) + '</td><td class="r rd">' + brl(-ti) + '</td><td class="r">' + brl(r2(ta - ti)) + '</td></tr></tbody></table></div></div>';
   }
   // Operadoras
   h += '<div class="grid g2 mt"><div class="box"><div class="lbl">Produção por operadora</div><div class="tw"><table><thead><tr><th>Operadora</th><th class="r">Vendas</th><th class="r">Mensalidades</th><th class="r">Agenciamento</th><th class="r">Vitalício/mês</th></tr></thead><tbody>';
@@ -1288,8 +1311,37 @@ function vCom() {
     FONTE.equipes.forEach(function (e) { h += '<tr><td>' + esc(e.nome) + '</td><td class="r">' + (e.hap.leads || 0).toLocaleString('pt-BR') + '</td><td class="r">' + e.hap.qtd + '</td><td class="r">' + e.hap.vidas + '</td><td class="r">' + (e.hap.imp != null ? e.hap.imp : '—') + '</td><td class="r">' + pct(e.hap.leads ? (e.hap.vidImp || 0) / e.hap.leads : 0, 1) + '</td><td class="r">' + (e.fora.rec || 0) + '</td></tr>'; });
     h += '</tbody></table></div></div>';
   }
+  h += '<div class="sec">Operadoras que mais venderam</div><div class="grid g2">' + pizza('Por valor vendido', porValor, brl, 'pzv') + pizza('Por vidas', porVidas, function (n) { return n.toLocaleString('pt-BR') + ' vidas'; }, 'pzd') + '</div>';
   document.getElementById('v-com').innerHTML = h;
 }
+// Pizza (rosca) interativa + lista ordenada da maior para a menor. Passar o mouse destaca; clicar filtra as propostas.
+var CORES_PZ = ['#FF811B', '#1F9D5C', '#2F6FB3', '#9A6700', '#7B4FB3', '#0E8F8F', '#D93A2B', '#C9580B', '#4FA3D9', '#B3477A', '#3C7D3C', '#8C6D46', '#5A6FA8', '#E8A33D', '#6E625A', '#A0A0A0', '#1E1A17'];
+function pizza(titulo, dados, fmt, id) {
+  var ks = Object.keys(dados).filter(function (k) { return dados[k] > 0; }).sort(function (a, b) { return dados[b] - dados[a]; }), tot = sum(ks, function (k) { return dados[k]; });
+  var h = '<div class="box pz" id="' + id + '"><div class="lbl">' + titulo + '</div>';
+  if (!ks.length) return h + '<div class="empty">—</div></div>';
+  var R0 = 80, r0 = 50, a0 = -Math.PI / 2, svg = '<svg viewBox="-100 -100 200 200" class="pzs">';
+  ks.forEach(function (k, i) {
+    var fr = dados[k] / tot, a1 = a0 + fr * 2 * Math.PI, cor = CORES_PZ[i % CORES_PZ.length];
+    if (fr >= 0.9999) svg += '<g data-k="' + esc(k) + '"><circle r="' + (R0 + r0) / 2 + '" fill="none" stroke="' + cor + '" stroke-width="' + (R0 - r0) + '"/></g>';
+    else { var lg = fr > 0.5 ? 1 : 0, p = function (r, a) { return (r * Math.cos(a)).toFixed(2) + ' ' + (r * Math.sin(a)).toFixed(2); };
+      svg += '<path data-k="' + esc(k) + '" fill="' + cor + '" d="M ' + p(R0, a0) + ' A ' + R0 + ' ' + R0 + ' 0 ' + lg + ' 1 ' + p(R0, a1) + ' L ' + p(r0, a1) + ' A ' + r0 + ' ' + r0 + ' 0 ' + lg + ' 0 ' + p(r0, a0) + ' Z"><title>' + esc(k) + ': ' + fmt(dados[k]) + ' (' + pct(fr, 1) + ')</title></path>'; }
+    a0 = a1;
+  });
+  svg += '<text y="-4" text-anchor="middle" class="pzt">' + ks.length + '</text><text y="14" text-anchor="middle" class="pzu">operadoras</text></svg>';
+  var lista = '<div class="pzl">' + ks.map(function (k, i) { return '<div class="pzi" data-k="' + esc(k) + '"><i style="background:' + CORES_PZ[i % CORES_PZ.length] + '"></i><span>' + (i + 1) + 'º ' + esc(k) + '</span><b>' + fmt(dados[k]) + '</b><em>' + pct(dados[k] / tot, 1) + '</em></div>'; }).join('') + '<div class="pzi tot"><i></i><span>Total</span><b>' + fmt(tot) + '</b><em></em></div></div>';
+  return h + '<div class="pzw">' + svg + lista + '</div></div>';
+}
+document.addEventListener('mouseover', function (e) {
+  var el = e.target.closest && e.target.closest('.pz [data-k]'); document.querySelectorAll('.pz .hl').forEach(function (x) { x.classList.remove('hl'); });
+  if (!el) return; var box = el.closest('.pz'), k = el.getAttribute('data-k');
+  box.querySelectorAll('[data-k]').forEach(function (x) { if (x.getAttribute('data-k') === k) x.classList.add('hl'); }); box.classList.add('foco');
+});
+document.addEventListener('mouseout', function (e) { var b = e.target.closest && e.target.closest('.pz'); if (b && !b.contains(e.relatedTarget)) b.classList.remove('foco'); });
+document.addEventListener('click', function (e) {
+  var el = e.target.closest && e.target.closest('.pz [data-k]'); if (!el) return;
+  vCom.filtro = el.getAttribute('data-k'); vCom(); var t = document.getElementById('propostas'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 
 // Situação do investimento frente ao planejamento (15% da produção): texto pequeno abaixo do valor
 function statusPlan(total, lim) {
@@ -1531,15 +1583,28 @@ window.addEventListener('resize', ajustarTela);
 window.addEventListener('orientationchange', ajustarTela);
 // Modo exemplo: contratos fictícios que somam EXATAMENTE a produção real de cada vendedor.
 // Parte "Projeto Hapvida" = produção hap do vendedor; parte "fora do projeto" = produção fora com operadora fictícia.
+// Documentos fictícios com dígitos verificadores válidos (só para o modo exemplo)
+function cpfFicticio(n) { var d = String(100000000 + n * 7919).slice(-9).split('').map(Number); for (var t = 9; t < 11; t++) { var s = 0; for (var i = 0; i < t; i++) s += d[i] * (t + 1 - i); d.push((s * 10 % 11) % 10); } return d.join(''); }
+function cnpjFicticio(n) { var d = (String(10000000 + n * 104729).slice(-8) + '0001').split('').map(Number); [[5,4,3,2,9,8,7,6,5,4,3,2],[6,5,4,3,2,9,8,7,6,5,4,3,2]].forEach(function (w) { var s = 0; w.forEach(function (x, i) { s += d[i] * x; }); var r = s % 11; d.push(r < 2 ? 0 : 11 - r); }); return d.join(''); }
+// Modo exemplo: a produção real de cada vendedor dividida entre VÁRIAS operadoras e modalidades (soma exata)
 function contratosDemo(D) {
-  // Modo exemplo: TODAS as propostas como Amil PF (300% + 2%), somando exatamente a produção real de cada vendedor
-  var out = [], mes = (D.rotulo && mesReferenciaDe(D.rotulo)) || hojeISO().slice(0, 7);
-  var camp = ['Meta Ads Bradesco PME', 'Leads Amil PF', 'Indicação', 'Carteira ativa'];
+  var mes = (D.rotulo && mesReferenciaDe(D.rotulo)) || hojeISO().slice(0, 7), out = [], n = 0;
+  var ops = [['Bradesco', 'PME'], ['Amil', 'PF'], ['SulAmérica', 'PME'], ['Hapvida', 'PME'], ['MedSênior', 'PF'], ['Prevent', 'PF'], ['Supermed', 'PF'], ['Qualicorp', 'PME'], ['Trasmontano', 'PME'], ['Santa Helena', 'PF'], ['Sobam', 'PME'], ['Ana Costa', 'PF'], ['Porto', 'PF'], ['Alice', 'PME'], ['Seguros Unimed', 'PME'], ['Hapvida', 'PF'], ['São Cristóvão', 'PF']];
+  var camp = ['Meta Ads Bradesco PME', 'Leads Amil PF', 'Indicação', 'Carteira ativa', 'Google Ads Saúde', 'Panfletagem Mogi'];
   D.vendedores.forEach(function (v, i) {
-    var dia = String(3 + (i * 2) % 24).padStart(2, '0');
-    [['H', +v.hap || 0], ['F', +v.fora || 0]].forEach(function (x, k) {
-      if (x[1] <= 0) return;
-      out.push({ id_venda: 'EX-' + x[0] + i, contrato: 'C-' + x[0] + i, projeto: '', operadora: 'Amil', modalidade: 'PF', valor_mensal: r2(x[1]), vidas: Math.max(1, Math.round(x[1] / 450)), vendedor: v.nome, unidade: v.equipe, data_venda: mes + '-' + dia, origem: camp[(i + k) % camp.length], campanha: camp[(i + k) % camp.length], valor_recebido: '' });
+    var partes = [];
+    if (v.hap > 0) [0.6, 0.4].forEach(function (w, k) { partes.push({ total: r2(v.hap), w: w, op: 'Hapvida', mod: k ? 'PME' : 'PF', projeto: 'Projeto Hapvida' }); });
+    if (v.fora > 0) [0.5, 0.3, 0.2].forEach(function (w, k) { var o = ops[(i * 3 + k) % ops.length]; partes.push({ total: r2(v.fora), w: w, op: o[0], mod: o[1], projeto: '' }); });
+    ['Projeto Hapvida', ''].forEach(function (pj) {
+      var g = partes.filter(function (x) { return x.projeto === pj; }); if (!g.length) return;
+      ratear(g, g[0].total, function (x) { return x.total * x.w; }, 'valor');
+    });
+    partes.forEach(function (x, k) {
+      n++; var pme = x.mod === 'PME', dia = String(2 + (n * 3) % 26).padStart(2, '0');
+      out.push({ id_venda: 'EX-' + String(n).padStart(3, '0'), contrato: 'C-' + String(n).padStart(4, '0'), projeto: x.projeto, operadora: x.op, modalidade: x.mod,
+        cliente: pme ? 'Empresa Exemplo ' + String(n).padStart(2, '0') + ' Ltda' : 'Titular Exemplo ' + String(n).padStart(2, '0'), documento: pme ? cnpjFicticio(n) : cpfFicticio(n),
+        valor_mensal: x.valor, vidas: pme ? 3 + (n * 7) % 18 : 1 + (n % 4), vendedor: v.nome, unidade: v.equipe, data_venda: mes + '-' + dia,
+        origem: camp[n % camp.length], campanha: camp[n % camp.length], valor_recebido: '' });
     });
   });
   return out;
@@ -1593,7 +1658,7 @@ function iniciar() {
     FONTE = SNAPSHOT; FONTE_DESC = SNAPSHOT_ORIGEM;
     ESTADO = normEstado(DEMO ? JSON.parse(JSON.stringify(ESTADO_DEMO)) : carregarEstadoLocal());
     if (DEMO) { regrasDemo(); ESTADO.contratos = contratosDemo(SNAPSHOT); ESTADO.carteira = carteiraDemo(); ESTADO.vitRecebido = vitRecebidoDemo(); }
-    if (DEMO) { var bn = document.createElement('div'); bn.className = 'demo'; bn.innerHTML = '<b>MODO EXEMPLO</b> · produção e comissões dos vendedores são reais (painel de 23/11 18:53). Todas as propostas do mês estão como <b>Amil PF (300% + 2%)</b>; carteira e vitalício recebido, percentuais marcados como fictício na aba Regras, investimentos e os meses de janeiro a outubro são <b>fictícios</b>, só para visualizar o layout.'; document.querySelector('.wrap').insertBefore(bn, document.getElementById('tabs')); }
+    if (DEMO) { var bn = document.createElement('div'); bn.className = 'demo'; bn.innerHTML = '<b>MODO EXEMPLO</b> · produção e comissões dos vendedores são reais (painel de 23/11 18:53). Propostas (operadoras, clientes, CPF/CNPJ, vidas), carteira e vitalício recebido, percentuais marcados como fictício na aba Regras, investimentos e os meses de janeiro a outubro são <b>fictícios</b>, só para visualizar o layout.'; document.querySelector('.wrap').insertBefore(bn, document.getElementById('tabs')); }
     render(); if (tab && document.getElementById('v-' + tab)) show(tab);
   }
 }

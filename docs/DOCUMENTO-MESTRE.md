@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 3.0  
+**Versão:** 3.1  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -462,6 +462,13 @@ O valor final (lucro do mês − reserva de marketing), antes chamado "Resultado
 - Projeto Hapvida · pagamento ao vendedor: 15% + R$ 20,00/vida (25 a 34 vidas), R$ 25,00/vida (35 a 49), R$ 35,00/vida (50 ou mais) — aguardando confirmação da base e da aplicação.
 - Projeto Hapvida · quanto a Optas recebe — aguardando o usuário.
 - Integração com CRM, planilha e sistemas internos para ligar cada venda à campanha.
+
+## 12.18. Identificação da proposta e gráficos (v3.1)
+
+- Toda proposta é identificada pelo **nome do titular (PF) ou da empresa (PME)** e pelo **CPF (PF) ou CNPJ (PME)**. O sistema valida os dígitos verificadores e se o documento combina com a modalidade; falhas viram alerta.
+- Lista de propostas (Comercial) com cliente, CPF/CNPJ, modalidade, operadora, vidas, vendedor, mensalidade, %, a receber, imposto e líquido; a exportação de comissões inclui cliente e documento.
+- Gráficos de pizza no fim da aba Comercial, da operadora que mais vendeu para a que menos vendeu, com lista ao lado: um por valor e outro por vidas. Passar o mouse destaca; clicar filtra as propostas.
+- Planilha: colunas Cliente, CPF/CNPJ e Vidas na aba Vendas.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
