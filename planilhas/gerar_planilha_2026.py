@@ -85,7 +85,7 @@ ws=wb.create_sheet('Operadoras')
 titulo(ws,'Comissões das operadoras','Percentuais como 350% = 3,5 vezes a mensalidade. Azul = o que você já me passou (sem modalidade). Amarelo = falta preencher.')
 cols=['Operadora','Informado (sem modalidade) · Agenciamento','Informado · Vitalício','Tem PF?','Agenciamento PF','Vitalício PF','Tem PME?','Agenciamento PME','Vitalício PME','Vitalício começa na parcela','Observações']
 cab(ws,3,cols,[20,18,13,9,14,12,9,14,12,14,30])
-conhecido={'Bradesco':(4,.04),'Amil':(3,.02),'SulAmérica':(3,.02),'Seguros Unimed':(3,.02),'Porto':(3,.02),'Hapvida':(3.5,.02),'Alice':(3,.02)}
+conhecido={'Bradesco':(4,.04),'Amil':(3,.02),'SulAmérica':(3,.02),'Seguros Unimed':(3,.02),'Porto':(3,.02),'Alice':(3,.02),'Santa Helena':(3,.02),'Sobam':(3,.02),'Ana Costa':(3,.02),'Supermed':(.30,None),'Qualicorp':(.50,None)}
 rows=[('Projeto Hapvida',None,None)]+[(o+(' (fora do projeto)' if o=='Hapvida' else ''),)+conhecido.get(o,(None,None)) for o in oper]
 for i,rw in enumerate(rows,4):
     ws.cell(row=i,column=1,value=rw[0]).font=B; ws.cell(row=i,column=1).border=BD
@@ -95,6 +95,18 @@ for i,rw in enumerate(rows,4):
         else: x.fill=GRAY
     entrada(ws,i,i,4,11,{5:PCT,6:PCT,8:PCT,9:PCT})
 ws.cell(row=4,column=11,value='Comissão própria, inferior à Hapvida comum').font=N
+# Valores por modalidade informados em 24/11/2026 (azul)
+porMod={'Hapvida (fora do projeto)':{'H':3.5,'I':.02,'G':'Sim','K':'PME confirmado; PF a confirmar'},
+ 'MedSênior':{'D':'Sim','E':2,'F':.02,'K':'PF confirmado; PME a confirmar'},
+ 'Prevent':{'D':'Sim','E':2,'G':'Não','K':'Só PF; vitalício a confirmar'},
+ 'Trasmontano':{'G':'Sim','H':3,'I':.05,'K':'PME confirmado; PF a confirmar'},
+ 'Supermed':{'K':'130% − 100% taxa de angariação = 30% efetivo; vitalício a confirmar'},
+ 'Qualicorp':{'K':'150% − 100% taxa de angariação = 50% efetivo; vitalício a confirmar'},
+ 'São Cristóvão':{'K':'Tudo a confirmar'}}
+for rr in range(4,4+len(rows)):
+    nm=ws.cell(row=rr,column=1).value
+    for col,val in porMod.get(nm,{}).items():
+        x=ws[f'{col}{rr}']; x.value=val; x.font=BLUE
 ws['B5'].comment=Comment('Valor informado por você no documento-mestre (v1.0, 23/11/2026).','Painel OPTAS')
 n=len(rows)+3
 lista(ws,f'D4:D{n}',['Sim','Não']); lista(ws,f'G4:G{n}',['Sim','Não'])

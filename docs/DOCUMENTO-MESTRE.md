@@ -409,6 +409,23 @@ Decisão do usuário: a reserva de marketing passa a ser **15% da produção men
 - Reserva de marketing: 15% da produção de cada unidade; consolidado = soma das unidades.
 - Consolidado = soma das unidades, campo a campo.
 
+## 12.14. Tabelas das operadoras recebidas em 24/11/2026 (v2.3)
+
+| Operadora | PF | PME | Observação |
+|---|---|---|---|
+| Hapvida (fora do projeto) | a confirmar | 350% + 2% | o valor já registrado era de PME |
+| MedSênior | 200% + 2% | a confirmar | |
+| Prevent | 200% (vitalício a confirmar) | não vende | só PF |
+| Santa Helena | 300% + 2% | 300% + 2% | informado sem modalidade (provisório) |
+| Sobam | 300% + 2% | 300% + 2% | informado sem modalidade (provisório) |
+| Ana Costa | 300% + 2% | 300% + 2% | informado sem modalidade (provisório) |
+| Supermed | 30% efetivo | 30% efetivo | 130% − 100% de taxa de angariação (não vem para a Optas); vitalício a confirmar; sem modalidade |
+| Qualicorp | 50% efetivo | 50% efetivo | 150% − 100% de taxa de angariação; vitalício a confirmar; sem modalidade |
+| Trasmontano | a confirmar | 300% + 5% | |
+| São Cristóvão | a confirmar | a confirmar | |
+
+Regra de aplicação por venda: percentual da modalidade da venda; se a operadora só tem percentual sem modalidade, ele é usado como provisório; se a operadora não vende a modalidade (ex.: Prevent PME) ou a modalidade está pendente, a venda fica fora da conta e gera alerta.
+
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
 Distribuição de lucros entre W3G e sócias; média de comissões para provisionamento da folha; controle individual de salários fixos; CPL e ROI avançado sem atribuição confiável; conciliação detalhada de cada pagamento das operadoras; controle avançado de estornos, cancelamentos, descontos e recebimentos parciais.
