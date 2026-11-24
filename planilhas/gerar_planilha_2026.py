@@ -79,7 +79,7 @@ oper=['Hapvida','Bradesco','Amil','SulAmérica','Seguros Unimed','Porto','Alice'
 lista(ws,f'B{R1}:B{R2}',['Consolação','Mogi'])
 lista(ws,f'D{R1}:D{R2}',['Sim','Não'],'Sim = venda do Projeto Hapvida (comissão própria)')
 lista(ws,f'E{R1}:E{R2}',oper)
-lista(ws,f'F{R1}:F{R2}',['PF','PME'])
+lista(ws,f'F{R1}:F{R2}',['PF','PME','Adesão'])
 lista(ws,f'H{R1}:H{R2}',['Em contrato','Implantado','Em andamento','Cancelado'],'Só Em contrato e Implantado contam no painel')
 dvd=DataValidation(type='date',operator='between',formula1='DATE(2026,1,1)',formula2='DATE(2026,12,31)',allow_blank=True); dvd.error='Use uma data de 2026'; ws.add_data_validation(dvd); dvd.add(f'A{R1}:A{R2}')
 dvn=DataValidation(type='decimal',operator='greaterThan',formula1='0',allow_blank=True); ws.add_data_validation(dvn); dvn.add(f'G{R1}:G{R2}')
@@ -90,7 +90,7 @@ ws=wb.create_sheet('Operadoras')
 titulo(ws,'Comissões das operadoras','Percentuais como 350% = 3,5 vezes a mensalidade. Azul = o que você já me passou (sem modalidade). Amarelo = falta preencher.')
 cols=['Operadora','Informado (sem modalidade) · Agenciamento','Informado · Vitalício','Tem PF?','Agenciamento PF','Vitalício PF','Tem PME?','Agenciamento PME','Vitalício PME','Vitalício começa na parcela','Observações']
 cab(ws,3,cols,[20,18,13,9,14,12,9,14,12,14,30])
-conhecido={'Bradesco':(4,.04),'Amil':(3,.02),'SulAmérica':(3,.02),'Seguros Unimed':(3,.02),'Porto':(3,.02),'Alice':(3,.02),'Santa Helena':(3,.02),'Sobam':(3,.02),'Ana Costa':(3,.02),'Supermed':(.30,None),'Qualicorp':(.50,None)}
+conhecido={}
 rows=[('Projeto Hapvida',None,None)]+[(o+(' (fora do projeto)' if o=='Hapvida' else ''),)+conhecido.get(o,(None,None)) for o in oper]
 for i,rw in enumerate(rows,4):
     ws.cell(row=i,column=1,value=rw[0]).font=B; ws.cell(row=i,column=1).border=BD
@@ -101,12 +101,21 @@ for i,rw in enumerate(rows,4):
     entrada(ws,i,i,4,11,{5:PCT,6:PCT,8:PCT,9:PCT})
 ws.cell(row=4,column=11,value='Comissão própria, inferior à Hapvida comum').font=N
 # Valores por modalidade informados em 24/11/2026 (azul)
-porMod={'Hapvida (fora do projeto)':{'H':3.5,'I':.02,'G':'Sim','K':'PME confirmado; PF a confirmar'},
- 'MedSênior':{'D':'Sim','E':2,'F':.02,'K':'PF confirmado; PME a confirmar'},
+porMod={'Ana Costa':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
+ 'Sobam':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
+ 'Santa Helena':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
+ 'Alice':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
+ 'Porto':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
+ 'Seguros Unimed':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
+ 'SulAmérica':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
+ 'Amil':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
+ 'Bradesco':{'D':'Não','G':'Sim','H':4,'I':0.04,'K':'Só PME'},
+ 'Hapvida (fora do projeto)':{'H':3.5,'I':.02,'G':'Sim','K':'PME confirmado; PF a confirmar'},
+ 'MedSênior':{'D':'Sim','E':2,'F':0,'G':'Sim','H':2,'I':.02,'K':'PF sem vitalício'},
  'Prevent':{'D':'Sim','E':2,'G':'Não','K':'Só PF; vitalício a confirmar'},
  'Trasmontano':{'G':'Sim','H':3,'I':.05,'K':'PME confirmado; PF a confirmar'},
- 'Supermed':{'K':'130% − 100% taxa de angariação = 30% efetivo; vitalício a confirmar'},
- 'Qualicorp':{'K':'150% − 100% taxa de angariação = 50% efetivo; vitalício a confirmar'},
+ 'Supermed':{'D':'Não','G':'Não','K':'Só ADESÃO: 130% − 100% taxa da 1ª parcela = 30% efetivo; vitalício a confirmar'},
+ 'Qualicorp':{'D':'Não','G':'Não','K':'Só ADESÃO: 150% − 100% taxa da 1ª parcela = 50% efetivo; vitalício a confirmar'},
  'São Cristóvão':{'K':'Tudo a confirmar'}}
 for rr in range(4,4+len(rows)):
     nm=ws.cell(row=rr,column=1).value
@@ -202,7 +211,7 @@ for c,v in enumerate(['CT-004512','Bradesco','PME','Não',1850.00,dt.date(2025,3
     x=ws.cell(row=4,column=c,value=v); x.font=EXF; x.fill=EX; x.border=BD
 ws['E4'].number_format=BRL; ws['F4'].number_format=DATE
 entrada(ws,5,3004,1,11,{5:BRL,6:DATE,10:DATE})
-lista(ws,'B5:B3004',oper); lista(ws,'C5:C3004',['PF','PME']); lista(ws,'D5:D3004',['Sim','Não']); lista(ws,'G5:G3004',['Consolação','Mogi']); lista(ws,'I5:I3004',['Ativo','Cancelado'])
+lista(ws,'B5:B3004',oper); lista(ws,'C5:C3004',['PF','PME','Adesão']); lista(ws,'D5:D3004',['Sim','Não']); lista(ws,'G5:G3004',['Consolação','Mogi']); lista(ws,'I5:I3004',['Ativo','Cancelado'])
 ws.freeze_panes='A5'
 
 # ---------- Vitalício recebido

@@ -353,7 +353,7 @@ html,body{overflow-x:hidden}
    Alterar aqui apenas quando o usuário confirmar novas regras.
    ===================================================================== */
 var REGRAS = {
-  versao: 'v3.2 · 24/11/2026',
+  versao: 'v3.3 · 24/11/2026',
   unidades: ['Consolação', 'Mogi'],
   // 3. Custos fixos (salários brutos JÁ incluem o PJ das sócias — não somar de novo)
   custos: {
@@ -385,13 +385,13 @@ var REGRAS = {
     { nome: 'Porto',          ag: null, vit: null, modalidades: { PME: { ag: 3.00, vit: 0.02 } }, apenas: ['PME'] },
     { nome: 'Hapvida',        ag: null, vit: null, modalidades: { PME: { ag: 3.50, vit: 0.02 }, PF: null } },   // fora do projeto · PF a confirmar
     { nome: 'Alice',          ag: null, vit: null, modalidades: { PME: { ag: 3.00, vit: 0.02 } }, apenas: ['PME'] },
-    { nome: 'MedSênior',      ag: null, vit: null, modalidades: { PF: { ag: 2.00, vit: 0.02 }, PME: null } },   // PME a confirmar
+    { nome: 'MedSênior',      ag: null, vit: null, modalidades: { PME: { ag: 2.00, vit: 0.02 }, PF: { ag: 2.00, vit: 0 } } },   // PF sem vitalício
     { nome: 'Prevent',        ag: null, vit: null, modalidades: { PF: { ag: 2.00, vit: null } }, apenas: ['PF'] }, // só PF · vitalício a confirmar
-    { nome: 'Santa Helena',   ag: 3.00, vit: 0.02, modalidades: null },
-    { nome: 'Sobam',          ag: 3.00, vit: 0.02, modalidades: null },
-    { nome: 'Supermed',       ag: 0.30, vit: null, bruto: 1.30, taxa: 1.00, modalidades: null },                // 130% − 100% taxa de angariação
-    { nome: 'Qualicorp',      ag: 0.50, vit: null, bruto: 1.50, taxa: 1.00, modalidades: null },                // 150% − 100% taxa de angariação
-    { nome: 'Ana Costa',      ag: 3.00, vit: 0.02, modalidades: null },
+    { nome: 'Santa Helena',   ag: null, vit: null, modalidades: { PME: { ag: 3.00, vit: 0.02 } }, apenas: ['PME'] },
+    { nome: 'Sobam',          ag: null, vit: null, modalidades: { PME: { ag: 3.00, vit: 0.02 } }, apenas: ['PME'] },
+    { nome: 'Supermed',       ag: null, vit: null, bruto: 1.30, taxa: 1.00, modalidades: { 'ADESÃO': { ag: 0.30, vit: null } }, apenas: ['ADESÃO'] }, // adesão: 130% − 100% taxa da 1ª parcela
+    { nome: 'Qualicorp',      ag: null, vit: null, bruto: 1.50, taxa: 1.00, modalidades: { 'ADESÃO': { ag: 0.50, vit: null } }, apenas: ['ADESÃO'] }, // adesão: 150% − 100% taxa da 1ª parcela
+    { nome: 'Ana Costa',      ag: null, vit: null, modalidades: { PME: { ag: 3.00, vit: 0.02 } }, apenas: ['PME'] },
     { nome: 'São Cristóvão',  ag: null, vit: null, modalidades: null },                                         // a confirmar
     { nome: 'Trasmontano',    ag: null, vit: null, modalidades: { PME: { ag: 3.00, vit: 0.05 }, PF: null } }    // PF a confirmar
   ],
@@ -488,13 +488,17 @@ function ratear(itens, total, base, campo) {
   parts.forEach(function (p) { itens[p.i][campo] = p.f / 100; });
 }
 // CPF/CNPJ: só dígitos, validação dos dígitos verificadores e máscara
+function modNorm(m) { var n = norm(m); return n === 'pf' ? 'PF' : n === 'pme' ? 'PME' : (n === 'adesao' || n === 'ades') ? 'ADESÃO' : String(m || '').toUpperCase(); }
+var MODALIDADES = ['PF', 'PME', 'ADESÃO'];
+function modRot(m) { return m === 'ADESÃO' ? 'Adesão' : m; }
 function digitos(x) { return String(x || '').replace(/\D/g, ''); }
 function cpfValido(x) { var d = digitos(x); if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false; for (var t = 9; t < 11; t++) { var s = 0; for (var i = 0; i < t; i++) s += +d[i] * (t + 1 - i); if (+d[t] !== ((s * 10) % 11) % 10) return false; } return true; }
 function cnpjValido(x) { var d = digitos(x); if (d.length !== 14 || /^(\d)\1+$/.test(d)) return false; var calc = function (n) { var w = n === 12 ? [5,4,3,2,9,8,7,6,5,4,3,2] : [6,5,4,3,2,9,8,7,6,5,4,3,2], s = 0; for (var i = 0; i < n; i++) s += +d[i] * w[i]; var r = s % 11; return r < 2 ? 0 : 11 - r; }; return calc(12) === +d[12] && calc(13) === +d[13]; }
 function docFmt(x) { var d = digitos(x); if (d.length === 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'); if (d.length === 14) return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5'); return x || ''; }
 // Situação do documento conforme a modalidade: PF → CPF do titular · PME → CNPJ da empresa
 function docSituacao(c) {
-  var mod = String(c.modalidade || '').toUpperCase(), d = digitos(c.documento);
+  var mod = modNorm(c.modalidade), d = digitos(c.documento);
+  if (mod === 'ADESÃO') mod = 'PF';   // adesão: titular pessoa física → CPF
   if (!d) return mod === 'PME' ? 'sem CNPJ' : mod === 'PF' ? 'sem CPF' : 'sem documento';
   if (mod === 'PF') return cpfValido(d) ? '' : (d.length === 14 ? 'PF com CNPJ' : 'CPF inválido');
   if (mod === 'PME') return cnpjValido(d) ? '' : (d.length === 11 ? 'PME com CPF' : 'CNPJ inválido');
@@ -516,7 +520,7 @@ function regraVenda(c) {
   if (pj) return { nome: pj.nome, ag: pj.ag, vit: pj.vit, projeto: true };
   var op = operadora(c.operadora);
   if (!op) return null;
-  var mod = String(c.modalidade || '').toUpperCase();
+  var mod = modNorm(c.modalidade);
   if (op.apenas && mod && op.apenas.indexOf(mod) < 0) return { nome: op.nome, ag: null, vit: null, semModalidade: mod };
   var m = op.modalidades && mod ? op.modalidades[mod] : null;
   if (m && m.ag != null) return { nome: op.nome, ag: m.ag, vit: m.vit, modalidade: mod };
@@ -639,8 +643,8 @@ function calcular() {
       if (!c.operadora && projeto(c.projeto)) faltas = faltas.filter(function (f) { return f !== 'operadora'; });
       faltas.forEach(function (f) { (camposFaltando[f] = camposFaltando[f] || []).push(c.id_venda || c.contrato || '(sem id)'); });
       var valor = r2(+c.valor_mensal || 0);
-      var op = operadora(c.operadora), mod = (c.modalidade || '').toUpperCase();
-      if (mod === 'PF') ag.pf += valor; else if (mod === 'PME') ag.pme += valor; else { ag.semMod += valor; semMod++; }
+      var op = operadora(c.operadora), mod = modNorm(c.modalidade);
+      if (mod === 'PF') ag.pf = r2(ag.pf + valor); else if (mod === 'PME') ag.pme = r2(ag.pme + valor); else if (mod === 'ADESÃO') ag.adesao = r2((ag.adesao || 0) + valor); else { ag.semMod += valor; semMod++; }
       if (!c.origem && !c.campanha) { semOrigem++; semOrigemValor += valor; }
       var dsit = docSituacao(c); if (dsit || !c.cliente) (semDoc[dsit || 'sem nome do titular/empresa'] = semDoc[dsit || 'sem nome do titular/empresa'] || []).push(c.id_venda || c.contrato || '(sem id)');
       var rg = regraVenda(c);
@@ -1301,8 +1305,8 @@ function vCom() {
   // Operadoras
   h += '<div class="grid g2 mt"><div class="box"><div class="lbl">Produção por operadora</div><div class="tw"><table><thead><tr><th>Operadora</th><th class="r">Vendas</th><th class="r">Mensalidades</th><th class="r">Agenciamento</th><th class="r">Vitalício/mês</th></tr></thead><tbody>';
   Object.keys(R.ag.porOperadora).forEach(function (k) { var o = R.ag.porOperadora[k]; h += '<tr><td>' + esc(k) + '</td><td class="r">' + (o.qtd || '—') + '</td><td class="r">' + brl(o.valor) + '</td><td class="r">' + (o.ag != null ? brl(o.ag) : '<span class="tag pend">sem regra</span>') + '</td><td class="r">' + (o.vit != null ? brl(o.vit) : '—') + '</td></tr>'; });
-  h += '</tbody></table></div></div><div class="box"><div class="lbl">PF × PME</div>';
-  if (R.ag.pf || R.ag.pme) h += '<div class="grid g3 mt">' + mini('PF', brl(R.ag.pf)) + mini('PME', brl(R.ag.pme)) + mini('Sem modalidade', brl(R.ag.semMod)) + '</div>';
+  h += '</tbody></table></div></div><div class="box"><div class="lbl">PF × PME × Adesão</div>';
+  if (R.ag.pf || R.ag.pme || R.ag.adesao) h += '<div class="grid g4 mt">' + mini('PF', brl(R.ag.pf)) + mini('PME', brl(R.ag.pme)) + mini('Adesão', brl(R.ag.adesao || 0)) + mini('Sem modalidade', brl(R.ag.semMod)) + '</div>';
   else h += '<div class="empty">A integração atual não informa a modalidade PF/PME de nenhuma venda (' + brl(R.ag.semMod) + ' sem modalidade).</div>';
   h += '</div></div>';
   // Funil
@@ -1492,7 +1496,7 @@ function copiarAlertas() {
 }
 
 var PENDENCIAS = [
-  ['1', 'Tabelas das operadoras', 'São Cristóvão (tudo); Hapvida PF; Trasmontano PF; MedSênior PME (vende ou não?); vitalício de Prevent, Supermed e Qualicorp; PF/PME de Santa Helena, Sobam, Ana Costa, Supermed e Qualicorp.', 'Percentual sem modalidade é usado como provisório; modalidade sem percentual fica fora da conta.'],
+  ['1', 'Tabelas das operadoras', 'São Cristóvão (tudo); Hapvida PF; Trasmontano PF; vitalício de Prevent, Supermed e Qualicorp.', 'Modalidade sem percentual fica fora da conta e gera alerta.'],
   ['2', 'Regras definitivas do vitalício', 'Início na 4ª parcela para todas as operadoras/modalidades? Base: valor original ou atualizado? Continuidade igual para todas as modalidades?', 'Vitalício exibido por parcela e fora do ROI.'],
   ['3', 'Acúmulo da reserva de marketing', 'A verba não utilizada acumula para o mês seguinte ou expira no fechamento?', 'Saldo calculado só dentro do mês.'],
   ['7', 'Validação contábil dos encargos', 'FPAS/terceiros, RAT, incidências efetivas e encargos já incluídos nos R$ 39.185,43.', 'Provisão de R$ 1.623,15 é estimativa gerencial.'],
@@ -1517,20 +1521,21 @@ function vReg() {
     var fx = REGRAS.faixas[u];
     h += '<div class="m mt" style="font-weight:700;color:var(--ink)">' + u + '</div><div class="tw"><table><tbody>' + fx.map(function (f, i) { return '<tr><td>' + (fx[i + 1] ? brl(f.de || 1) + ' a ' + brl(fx[i + 1].de - 0.01) : 'A partir de ' + brl(f.de)) + '</td><td class="r"><span class="tier">' + pct(f.pct) + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
   });
-  h += '</div><div class="box" style="grid-column:1/-1"><div class="lbl">Comissões das operadoras <em>tabela ' + REGRAS.versao + '</em></div><div class="tw"><table><thead><tr><th>Operadora</th><th class="r">PF · agenc.</th><th class="r">PF · vital.</th><th class="r">PME · agenc.</th><th class="r">PME · vital.</th><th>Observação</th></tr></thead><tbody>';
+  h += '</div><div class="box" style="grid-column:1/-1"><div class="lbl">Comissões das operadoras <em>tabela ' + REGRAS.versao + '</em></div><div class="tw"><table><thead><tr><th>Operadora</th><th class="r">PF · agenc.</th><th class="r">PF · vital.</th><th class="r">PME · agenc.</th><th class="r">PME · vital.</th><th class="r">Adesão · agenc.</th><th class="r">Adesão · vital.</th><th>Observação</th></tr></thead><tbody>';
   var FIC = ' <span class="tag proj">fictício</span>', PEN = '<span class="tag pend">pendente</span>';
   var cel = function (v, fic) { return v != null ? pct(v) + (fic ? FIC : '') : PEN; };
-  REGRAS.projetos.forEach(function (o) { h += '<tr style="background:var(--peach)"><td><b>' + o.nome + '</b></td><td class="r" colspan="2">' + cel(o.ag, o.demo) + ' · ' + cel(o.vit, o.demo) + '</td><td colspan="2"></td><td class="m">regra própria, inferior à Hapvida comum</td></tr>'; });
+  REGRAS.projetos.forEach(function (o) { h += '<tr style="background:var(--peach)"><td><b>' + o.nome + '</b></td><td class="r" colspan="2">' + cel(o.ag, o.demo) + ' · ' + cel(o.vit, o.demo) + '</td><td colspan="4"></td><td class="m">regra própria, inferior à Hapvida comum</td></tr>'; });
   REGRAS.operadoras.forEach(function (o) {
     var linha = '<td><b>' + (o.nome === 'Hapvida' ? 'Hapvida</b> <span class="m">fora do projeto</span>' : o.nome + '</b>') + '</td>', obs = [];
-    ['PF', 'PME'].forEach(function (m) {
-      if (o.apenas && o.apenas.indexOf(m) < 0) { linha += '<td class="r m" colspan="2">não vende ' + m + '</td>'; return; }
+    MODALIDADES.forEach(function (m) {
+      if (m === 'ADESÃO' && !(o.apenas && o.apenas.indexOf(m) >= 0)) { linha += '<td class="r m" colspan="2">—</td>'; return; }
+      if (o.apenas && o.apenas.indexOf(m) < 0) { linha += '<td class="r m" colspan="2">não vende ' + modRot(m) + '</td>'; return; }
       var x = o.modalidades && o.modalidades[m];
       if (x && x.ag != null) linha += '<td class="r">' + cel(x.ag, x.demo) + '</td><td class="r">' + cel(x.vit, x.demo || x.demoVit) + '</td>';
       else if (o.ag != null) linha += '<td class="r">' + pct(o.ag) + '*</td><td class="r">' + cel(o.vit) + '</td>';
       else linha += '<td class="r">' + PEN + '</td><td class="r">' + PEN + '</td>';
     });
-    if (o.taxa) obs.push(pct(o.bruto) + ' − ' + pct(o.taxa) + ' de taxa de angariação (não vem para a Optas) = <b>' + pct(o.ag) + ' efetivo</b>');
+    if (o.taxa) obs.push('adesão · ' + pct(o.bruto) + ' − ' + pct(o.taxa) + ' de taxa da 1ª parcela (não vem para a Optas) = <b>' + pct((o.modalidades && o.modalidades['ADESÃO'] ? o.modalidades['ADESÃO'].ag : o.ag)) + ' efetivo</b>');
     if (o.ag != null && !(o.modalidades && Object.keys(o.modalidades).some(function (k) { return o.modalidades[k] && !o.modalidades[k].demo; }))) obs.push('* informado sem modalidade');
     h += '<tr>' + linha + '<td class="m" style="white-space:normal">' + obs.join(' · ') + '</td></tr>';
   });
@@ -1589,7 +1594,7 @@ function cnpjFicticio(n) { var d = (String(10000000 + n * 104729).slice(-8) + '0
 // Modo exemplo: a produção real de cada vendedor dividida entre VÁRIAS operadoras e modalidades (soma exata)
 function contratosDemo(D) {
   var mes = (D.rotulo && mesReferenciaDe(D.rotulo)) || hojeISO().slice(0, 7), out = [], n = 0;
-  var ops = [['Bradesco', 'PME'], ['Amil', 'PME'], ['SulAmérica', 'PME'], ['Hapvida', 'PME'], ['MedSênior', 'PF'], ['Prevent', 'PF'], ['Supermed', 'PF'], ['Qualicorp', 'PME'], ['Trasmontano', 'PME'], ['Santa Helena', 'PF'], ['Sobam', 'PME'], ['Ana Costa', 'PF'], ['Porto', 'PME'], ['Alice', 'PME'], ['Seguros Unimed', 'PME'], ['Hapvida', 'PF'], ['São Cristóvão', 'PF']];
+  var ops = [['Bradesco', 'PME'], ['Amil', 'PME'], ['SulAmérica', 'PME'], ['Hapvida', 'PME'], ['MedSênior', 'PF'], ['Prevent', 'PF'], ['Supermed', 'ADESÃO'], ['Qualicorp', 'ADESÃO'], ['Trasmontano', 'PME'], ['Santa Helena', 'PME'], ['Sobam', 'PME'], ['Ana Costa', 'PME'], ['Porto', 'PME'], ['Alice', 'PME'], ['Seguros Unimed', 'PME'], ['Hapvida', 'PF'], ['São Cristóvão', 'PF']];
   var camp = ['Meta Ads Bradesco PME', 'Leads Amil PF', 'Indicação', 'Carteira ativa', 'Google Ads Saúde', 'Panfletagem Mogi'];
   D.vendedores.forEach(function (v, i) {
     var partes = [];
@@ -1612,7 +1617,7 @@ function contratosDemo(D) {
 // Modo exemplo: percentuais FICTÍCIOS para o que ainda está pendente, só para conferir se as contas rodam
 // Modo exemplo: carteira fictícia (contratos vendidos de jan/2025 a out/2026) e recebidos fictícios
 function carteiraDemo() {
-  var ops = [['Bradesco', 'PME'], ['Amil', 'PME'], ['SulAmérica', 'PME'], ['Hapvida', 'PME'], ['Porto', 'PME'], ['MedSênior', 'PF'], ['Santa Helena', 'PF'], ['Trasmontano', 'PME']], out = [], k = 0;
+  var ops = [['Bradesco', 'PME'], ['Amil', 'PME'], ['SulAmérica', 'PME'], ['Hapvida', 'PME'], ['Porto', 'PME'], ['MedSênior', 'PME'], ['Santa Helena', 'PME'], ['Trasmontano', 'PME']], out = [], k = 0;
   for (var a = 2025; a <= 2026; a++) for (var m = 1; m <= 12; m++) {
     if (a === 2026 && m > 10) break;
     for (var j = 0; j < 3; j++) { var o = ops[(k + j) % ops.length], val = 600 + ((k * 137 + j * 211) % 2400);
@@ -1632,8 +1637,7 @@ function regrasDemo() {
   REGRAS.operadoras.forEach(function (o) {
     var base = o.ag != null ? { ag: o.ag, vit: o.vit != null ? o.vit : 0.02 } : { ag: 3.00, vit: 0.02 };
     o.modalidades = o.modalidades || {};
-    ['PF', 'PME'].forEach(function (m) {
-      if (o.apenas && o.apenas.indexOf(m) < 0) return;
+    (o.apenas || ['PF', 'PME']).forEach(function (m) {
       var x = o.modalidades[m];
       if (!x) o.modalidades[m] = { ag: base.ag, vit: base.vit, demo: true };
       else if (x.vit == null) { x.vit = 0.02; x.demoVit = true; }

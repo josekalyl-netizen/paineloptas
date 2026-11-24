@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 3.2  
+**Versão:** 3.3  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -473,6 +473,13 @@ O valor final (lucro do mês − reserva de marketing), antes chamado "Resultado
 ## 12.19. Operadoras só PME (v3.2 · 24/11/2026)
 
 Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros Unimed vendem só PME**, com os percentuais já informados (Bradesco 400% + 4%; demais 300% + 2%). Venda PF dessas operadoras gera alerta e fica fora da conta.
+
+## 12.20. MedSênior, operadoras só PME e Adesão (v3.3 · 24/11/2026)
+
+- **MedSênior:** PME 200% + 2% (valor que já estava registrado era PME); **PF 200% sem vitalício**.
+- **Santa Helena, Sobam e Ana Costa:** só PME, 300% + 2%.
+- **Supermed e Qualicorp:** venda de **Adesão** (nem PF nem PME). Têm taxa de 100% da primeira parcela que não vem para a Optas: Supermed 130% → 30% efetivo; Qualicorp 150% → 50% efetivo. Vitalício a confirmar. Titular da adesão é pessoa física → identificação por CPF.
+- Modalidades do sistema: **PF, PME e Adesão**.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
