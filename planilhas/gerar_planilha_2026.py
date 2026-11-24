@@ -14,6 +14,7 @@ BLUE=Font(name=F,size=10,color='0000FF'); EXF=Font(name=F,size=10,italic=True,co
 BRL='"R$" #,##0.00;-"R$" #,##0.00;"-"'; PCT='0.0%;-0.0%;"-"'; DATE='DD/MM/YYYY'
 MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 snap=json.load(open('/home/user/paineloptas/data/snapshot.json'))
+oper=sorted(set(g['op'] for g in json.load(open('/home/user/paineloptas/data/grade-comissao.json'))['grade']))
 
 wb=Workbook()
 def titulo(ws,t,sub):
@@ -62,8 +63,8 @@ ws.column_dimensions['A'].width=26; ws.column_dimensions['B'].width=110
 # ---------- 2. Vendas
 ws=wb.create_sheet('Vendas 2026')
 titulo(ws,'Vendas 2026','Uma linha por venda. Linha 4 é exemplo. Preencha a partir da linha 5. "Mês" é calculado sozinho.')
-cols=['Data da venda','Unidade','Vendedor(a)','Projeto Hapvida?','Operadora','Modalidade','Valor mensal do plano (R$)','Situação','Nº contrato / proposta','Campanha / origem','Observações','Mês (auto)','Cliente (titular PF / empresa PME)','CPF (PF) / CNPJ (PME)','Vidas']
-cab(ws,3,cols,[14,13,20,12,18,11,16,14,18,22,26,9,30,20,8])
+cols=['Data da venda','Unidade','Vendedor(a)','Projeto Hapvida?','Operadora','Modalidade','Valor mensal do plano (R$)','Situação','Nº contrato / proposta','Campanha / origem','Observações','Mês (auto)','Cliente (titular PF / empresa PME)','CPF (PF) / CNPJ (PME)','Vidas','Produto / condição (copart., região, cartão, 0 a 18 anos)']
+cab(ws,3,cols,[14,13,20,12,18,11,16,14,18,22,26,9,30,20,8,30])
 ex=[dt.date(2026,1,15),'Mogi','Wanderleia G.','Não','Bradesco','PME',1800.00,'Implantado','PRP-000123','Meta Ads Bradesco PME','Exemplo — pode apagar']
 for c,v in {13:'Empresa Exemplo Ltda',14:'11.222.333/0001-81',15:6}.items():
     x=ws.cell(row=4,column=c,value=v); x.font=EXF; x.fill=EX; x.border=BD
@@ -72,10 +73,9 @@ for c,v in enumerate(ex,1):
 ws['A4'].number_format=DATE; ws['G4'].number_format=BRL
 NV=2000; R1,R2=5,5+NV-1
 entrada(ws,R1,R2,1,11,{1:DATE,7:BRL})
-entrada(ws,R1,R2,13,15)
+entrada(ws,R1,R2,13,16)
 for r in range(4,R2+1):
     x=ws.cell(row=r,column=12,value=f'=IF(A{r}="","",MONTH(A{r}))'); x.font=N; x.fill=GRAY; x.border=BD; x.alignment=Alignment(horizontal='center')
-oper=['Hapvida','Bradesco','Amil','SulAmérica','Seguros Unimed','Porto','Alice','MedSênior','Prevent','Santa Helena','Sobam','Supermed','Qualicorp','Ana Costa','São Cristóvão','Trasmontano']
 lista(ws,f'B{R1}:B{R2}',['Consolação','Mogi'])
 lista(ws,f'D{R1}:D{R2}',['Sim','Não'],'Sim = venda do Projeto Hapvida (comissão própria)')
 lista(ws,f'E{R1}:E{R2}',oper)
@@ -85,47 +85,24 @@ dvd=DataValidation(type='date',operator='between',formula1='DATE(2026,1,1)',form
 dvn=DataValidation(type='decimal',operator='greaterThan',formula1='0',allow_blank=True); ws.add_data_validation(dvn); dvn.add(f'G{R1}:G{R2}')
 ws.freeze_panes='A5'
 
-# ---------- 3. Operadoras
+# ---------- 3. Operadoras (Grade de Comissão V3 · 02/10/2026)
 ws=wb.create_sheet('Operadoras')
-titulo(ws,'Comissões das operadoras','Percentuais como 350% = 3,5 vezes a mensalidade. Azul = o que você já me passou (sem modalidade). Amarelo = falta preencher.')
-cols=['Operadora','Informado (sem modalidade) · Agenciamento','Informado · Vitalício','Tem PF?','Agenciamento PF','Vitalício PF','Tem PME?','Agenciamento PME','Vitalício PME','Vitalício começa na parcela','Observações']
-cab(ws,3,cols,[20,18,13,9,14,12,9,14,12,14,30])
-conhecido={}
-rows=[('Projeto Hapvida',None,None)]+[(o+(' (fora do projeto)' if o=='Hapvida' else ''),)+conhecido.get(o,(None,None)) for o in oper]
-for i,rw in enumerate(rows,4):
-    ws.cell(row=i,column=1,value=rw[0]).font=B; ws.cell(row=i,column=1).border=BD
-    for c,v in ((2,rw[1]),(3,rw[2])):
-        x=ws.cell(row=i,column=c,value=v); x.border=BD; x.number_format=PCT
-        if v is not None: x.font=BLUE; x.fill=PatternFill(None)
-        else: x.fill=GRAY
-    entrada(ws,i,i,4,11,{5:PCT,6:PCT,8:PCT,9:PCT})
-ws.cell(row=4,column=11,value='Comissão própria, inferior à Hapvida comum').font=N
-# Valores por modalidade informados em 24/11/2026 (azul)
-porMod={'Ana Costa':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
- 'Sobam':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
- 'Santa Helena':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
- 'Alice':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
- 'Porto':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
- 'Seguros Unimed':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
- 'SulAmérica':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
- 'Amil':{'D':'Não','G':'Sim','H':3,'I':0.02,'K':'Só PME'},
- 'Bradesco':{'D':'Não','G':'Sim','H':4,'I':0.04,'K':'Só PME'},
- 'Hapvida (fora do projeto)':{'H':3.5,'I':.02,'G':'Sim','K':'PME confirmado; PF a confirmar'},
- 'MedSênior':{'D':'Sim','E':2,'F':0,'G':'Sim','H':2,'I':.02,'K':'PF sem vitalício'},
- 'Prevent':{'D':'Sim','E':2,'G':'Não','K':'Só PF; vitalício a confirmar'},
- 'Trasmontano':{'G':'Sim','H':3,'I':.05,'K':'PME confirmado; PF a confirmar'},
- 'Supermed':{'D':'Não','G':'Não','K':'Só ADESÃO: 130% − 100% taxa da 1ª parcela = 30% efetivo; vitalício a confirmar'},
- 'Qualicorp':{'D':'Não','G':'Não','K':'Só ADESÃO: 150% − 100% taxa da 1ª parcela = 50% efetivo; vitalício a confirmar'},
- 'São Cristóvão':{'K':'Tudo a confirmar'}}
-for rr in range(4,4+len(rows)):
-    nm=ws.cell(row=rr,column=1).value
-    for col,val in porMod.get(nm,{}).items():
-        x=ws[f'{col}{rr}']; x.value=val; x.font=BLUE
-ws['B5'].comment=Comment('Valor informado por você no documento-mestre (v1.0, 23/11/2026).','Painel OPTAS')
-n=len(rows)+3
-lista(ws,f'D4:D{n}',['Sim','Não']); lista(ws,f'G4:G{n}',['Sim','Não'])
-ws.cell(row=n+2,column=1,value='Exemplo: Bradesco · Tem PF? Sim · Agenciamento PF 400% · Vitalício PF 4% · Tem PME? Sim · Agenciamento PME 300% · Vitalício PME 2% · começa na 4ª parcela.').font=NOTE
-ws.freeze_panes='B4'
+gr=json.load(open('/home/user/paineloptas/data/grade-comissao.json'))
+titulo(ws,'Comissões que a Optas recebe · '+gr['versao'],'Copiado da grade (azul). Percentual de cada parcela sobre a mensalidade. Corrija o que mudar.')
+cab(ws,3,['Tipo','Operadora','Modalidade','Produto / condição','Vidas','Total','1ª','2ª','3ª','4ª','5ª','Demais parcelas','Vitalício'],[10,22,11,26,10,9,8,8,8,8,8,22,10])
+r=4
+def lin(vals):
+    global r
+    for c,v in enumerate(vals,1):
+        x=ws.cell(row=r,column=c,value=v); x.font=BLUE; x.border=BD
+        if c>=6 and c!=12: x.number_format=PCT
+    r+=1
+lin(['Saúde','Projeto Hapvida','PF e PME','',None,1.0,1.0,None,None,None,None,'',None])
+for g in gr['grade']:
+    pc=g['parc']; dem=' · '.join(f"{k+6}ª {round(x*100)}%" for k,x in enumerate(pc[5:]) if x)
+    lin([g['tipo'],g['op'],{'ADESÃO':'Adesão','PET':'Pet'}.get(g['mod'],g['mod']),g.get('prod') or '',(f"{g['faixa'][0]:02d} a {g['faixa'][1]}" if g.get('faixa') else ''),sum(pc)]+[(pc[k] if k<len(pc) and pc[k] else None) for k in range(5)]+[dem,g['vit'] or None])
+ws.cell(row=r+1,column=1,value='Adesão: a 1ª parcela é a taxa de angariação cobrada do cliente.').font=NOTE
+ws.freeze_panes='C4'
 
 # ---------- 4. Custos mensais
 ws=wb.create_sheet('Custos mensais')

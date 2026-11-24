@@ -1,0 +1,1265 @@
+{
+ "versao": "Grade de Comissão V3 · 02/10/2026",
+ "projetoHapvida": {
+  "parc": [
+   1.0
+  ],
+  "vit": 0
+ },
+ "grade": [
+  {
+   "tipo": "Saúde",
+   "op": "Affix",
+   "mod": "ADESÃO",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Allcare",
+   "mod": "ADESÃO",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "CORPe",
+   "mod": "ADESÃO",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.15
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Hebrom",
+   "mod": "ADESÃO",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Plural",
+   "mod": "ADESÃO",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Qualicorp SP",
+   "mod": "ADESÃO",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Tec Saúde",
+   "mod": "ADESÃO",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Uniconsult",
+   "mod": "ADESÃO",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Supermed",
+   "mod": "ADESÃO",
+   "prod": "SP e RJ",
+   "faixa": null,
+   "parc": [
+    1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Biovida",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.5,
+    0.4,
+    0.4,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Bluemed",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "GoCare",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.5
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Hapvida",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.5,
+    0,
+    0,
+    0,
+    0.25,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0.25
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "GS Saúde",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.2,
+    0.1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Medtour",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "MedSênior",
+   "mod": "PF",
+   "prod": "SP e RJ",
+   "faixa": null,
+   "parc": [
+    1,
+    0.25,
+    0.25
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Plena Saúde",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.45,
+    0.45,
+    0.4
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Prevent Senior",
+   "mod": "PF",
+   "prod": "0 a 18 anos",
+   "faixa": null,
+   "parc": [
+    0
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Prevent Senior",
+   "mod": "PF",
+   "prod": "19+",
+   "faixa": null,
+   "parc": [
+    1,
+    0.3,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": true
+  },
+  {
+   "tipo": "Saúde",
+   "op": "São Cristóvão",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.25,
+    0.25,
+    0.1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "São Miguel",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.4,
+    0.4,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Sagrada Família",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.3,
+    0.25,
+    0.15,
+    0.1,
+    0.1,
+    0.1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Santa Casa de Mauá",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.3,
+    0.3,
+    0.3,
+    0.1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Select",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.2,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Trasmontano",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.6
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Unihosp",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.5,
+    0.3,
+    0.2,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Alice",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    29
+   ],
+   "parc": [
+    1,
+    0.7,
+    0.7
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Ameplan",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.4,
+    0.25,
+    0.2
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Amil",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.8,
+    0.7
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Ana Costa",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.5,
+    0.3
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Biovida",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.5,
+    0.4,
+    0.4,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Bluemed",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.6,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Bradesco",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    3,
+    199
+   ],
+   "parc": [
+    1,
+    0.8,
+    0.8,
+    0.4
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "GoCare",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    1,
+    99
+   ],
+   "parc": [
+    1,
+    0.25,
+    0.25
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Hapvida",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.9,
+    0.8,
+    0.4
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "MedSênior",
+   "mod": "PME",
+   "prod": "SP/RJ",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.5
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Medtour",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.3,
+    0.25,
+    0.25,
+    0.1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "NotreDame",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.9,
+    0.8,
+    0.4
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Omint",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    1,
+    29
+   ],
+   "parc": [
+    1,
+    0.8,
+    0.5
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Plena Saúde",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.45,
+    0.45
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Porto Saúde",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    3,
+    99
+   ],
+   "parc": [
+    1,
+    0.8,
+    0.7
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Sami",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    1,
+    2
+   ],
+   "parc": [
+    1,
+    0.8,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": true
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Sami",
+   "mod": "PME",
+   "prod": "Cartão de Crédito",
+   "faixa": [
+    1,
+    2
+   ],
+   "parc": [
+    1,
+    0.8,
+    0.7
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Sami",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    3,
+    99
+   ],
+   "parc": [
+    1,
+    0.8,
+    0.7
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Santa Helena",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.8,
+    0.7
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Sagrada Família",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.3,
+    0.25,
+    0.15,
+    0.1,
+    0.1,
+    0.1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "São Cristóvão",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    3,
+    99
+   ],
+   "parc": [
+    1,
+    0.4,
+    0.3,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "São Miguel",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    29
+   ],
+   "parc": [
+    1,
+    0.45,
+    0.45,
+    0.4
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Santa Casa de Mauá",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.3,
+    0.3,
+    0.3,
+    0.1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Seguros Unimed",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.8,
+    0.7
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Select",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    29
+   ],
+   "parc": [
+    1,
+    0.25,
+    0.05,
+    0.05,
+    0.05,
+    0.05,
+    0.05
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Sobam",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.7,
+    0.3
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "SulAmérica",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.8,
+    0.7
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "TecGroup",
+   "mod": "PME",
+   "prod": "Brasília, Salvador e SP",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.7,
+    0.3,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": true
+  },
+  {
+   "tipo": "Saúde",
+   "op": "TecGroup",
+   "mod": "PME",
+   "prod": "Belém, Campo Grande e Manaus",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.7,
+    0.3,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Tec Saúde",
+   "mod": "PME",
+   "prod": "PROASA",
+   "faixa": [
+    2,
+    29
+   ],
+   "parc": [
+    1,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Trasmontano",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Única Saúde",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    50
+   ],
+   "parc": [
+    1,
+    0.5,
+    0.5,
+    0.1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Unihosp",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    1,
+    99
+   ],
+   "parc": [
+    1,
+    0.5,
+    0.5
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Unimed GRU",
+   "mod": "PME",
+   "prod": "Sem coparticipação",
+   "faixa": [
+    2,
+    29
+   ],
+   "parc": [
+    1,
+    0.5,
+    0.5
+   ],
+   "vit": 0,
+   "padrao": true
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Unimed GRU",
+   "mod": "PME",
+   "prod": "Com coparticipação",
+   "faixa": [
+    2,
+    29
+   ],
+   "parc": [
+    1,
+    0.5,
+    0.5
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Unimed Jundiaí",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.5,
+    0.5
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Saúde",
+   "op": "Vera Cruz",
+   "mod": "PME",
+   "prod": "",
+   "faixa": [
+    2,
+    99
+   ],
+   "parc": [
+    1,
+    0.3
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Amil Dental",
+   "mod": "PF",
+   "prod": "Win/Kids",
+   "faixa": null,
+   "parc": [
+    1,
+    0.25,
+    0.1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Dental Par",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.4,
+    0.2,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Odontoprev",
+   "mod": "PF",
+   "prod": "Mensal",
+   "faixa": null,
+   "parc": [
+    1
+   ],
+   "vit": 0,
+   "padrao": true
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Odontoprev",
+   "mod": "PF",
+   "prod": "Anual",
+   "faixa": null,
+   "parc": [
+    0.09
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "SulAmérica Odonto",
+   "mod": "PF",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Amil Dental",
+   "mod": "PME",
+   "prod": "Win",
+   "faixa": null,
+   "parc": [
+    1,
+    0.8,
+    0.7
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Bradesco Dental",
+   "mod": "PME",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.8,
+    0.8,
+    0.4
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Care Plus",
+   "mod": "PME",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.8,
+    0.5
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Dental Par",
+   "mod": "PME",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.4,
+    0.3
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Interodonto",
+   "mod": "PME",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.9,
+    0.8,
+    0.2
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Odontoprev",
+   "mod": "PME",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.8,
+    0.8
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Omint Odonto",
+   "mod": "PME",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.8,
+    0.5
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Porto Seguro Odonto",
+   "mod": "PME",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.8,
+    0.7
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "São Cristóvão Odonto",
+   "mod": "PME",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.45,
+    0.25,
+    0.2
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "SulAmérica Odonto",
+   "mod": "PME",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1,
+    0.8,
+    0.7
+   ],
+   "vit": 0.01,
+   "padrao": false
+  },
+  {
+   "tipo": "Odonto",
+   "op": "Unimed Odonto",
+   "mod": "PME",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    1
+   ],
+   "vit": 0,
+   "padrao": false
+  },
+  {
+   "tipo": "Pet",
+   "op": "Petlove",
+   "mod": "PET",
+   "prod": "",
+   "faixa": null,
+   "parc": [
+    0.5,
+    0.25,
+    0.25
+   ],
+   "vit": 0,
+   "padrao": false
+  }
+ ]
+}

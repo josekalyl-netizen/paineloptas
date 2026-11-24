@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 3.3  
+**Versão:** 4.0  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -480,6 +480,25 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
 - **Santa Helena, Sobam e Ana Costa:** só PME, 300% + 2%.
 - **Supermed e Qualicorp:** venda de **Adesão** (nem PF nem PME). Têm taxa de 100% da primeira parcela que não vem para a Optas: Supermed 130% → 30% efetivo; Qualicorp 150% → 50% efetivo. Vitalício a confirmar. Titular da adesão é pessoa física → identificação por CPF.
 - Modalidades do sistema: **PF, PME e Adesão**.
+
+## 12.21. Grade de Comissão V3 e caixa por parcelas (v4.0 · 24/11/2026)
+
+**Fonte das comissões:** Grade de Comissão V3 (W3G), atualizada em 02/10/2026 — substitui todos os percentuais anteriores (que estavam errados, segundo o usuário). Contém Saúde Adesão, PF e PME, Odontológico PF e PME e Pet, com percentual de cada parcela, faixa de vidas, produto/condição e vitalício. Arquivo: `data/grade-comissao.json`.
+
+**Projeto Hapvida:** 100% em parcela única, sem vitalício, para PF e PME.
+
+**Modelo de caixa (regra do usuário):**
+- A 1ª parcela de cada venda entra no mês da venda; a 2ª no mês seguinte, e assim por diante, conforme a grade.
+- **A receber no mês = 1ª parcela das vendas do mês + parcelas das vendas dos meses anteriores.**
+- A meta é o mês se pagar só com a 1ª parcela das vendas do mês ("não fechar no vermelho" e "não fechar no vermelho e investir"). As parcelas seguintes viram lucro nos meses seguintes. Nos primeiros meses o resultado fica negativo — é esperado.
+- O painel mostra o que já está garantido para os próximos 6 meses (parcelas das vendas já feitas).
+- ROI: retorno = comissão total contratada (todas as parcelas) das vendas da campanha.
+
+**Escolha da linha da grade para cada venda:** operadora + modalidade + produto/condição (se informado) + faixa de vidas. Venda fora da faixa de vidas ou em modalidade que a operadora não vende fica fora da conta e gera alerta.
+
+**Adesão:** a 1ª parcela é a taxa de angariação cobrada do cliente; por informação anterior do usuário, não entra no a receber da Optas (a confirmar).
+
+**Dúvidas em aberto:** Hapvida PME e NotreDame PME têm total 290% na grade, mas as parcelas somam 310% (100/90/80/40); início do vitalício; taxa da adesão; Prevent Senior 0 a 18 anos (0%) depende da idade do titular.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 

@@ -19,9 +19,16 @@ const path = require('path');
       ok('produção = Σ unidades', R.producao, U.reduce((t, u) => t + u.producao, 0));
       ok('comissões = Σ unidades', R.comissoes, U.reduce((t, u) => t + u.comissao, 0));
       // propostas
+      // propostas do mês: cada parcela = mensalidade × % da parcela da grade; 1ª parcela entra no mês
       const ps = R.ag.propostas.filter(p => p.aReceber != null);
-      ps.forEach(p => ok('proposta ' + p.c.id_venda, p.aReceber, r2(p.valor * p.pct)));
-      if (ps.length) { ok('a receber = Σ propostas', R.ag.valor, ps.reduce((t, p) => t + p.aReceber, 0)); ok('imposto = Σ propostas', R.res.imposto, ps.reduce((t, p) => t + p.imposto, 0)); }
+      ps.forEach(p => { const rg = regraVenda(p.c); const taxa = rg.modalidade === 'ADESÃO' && !REGRAS.adesaoTaxaParaOptas; ok('1ª parcela ' + p.c.id_venda, p.aReceber, taxa ? 0 : r2(p.valor * rg.parc[0]));
+        ok('total contratado ' + p.c.id_venda, p.agTotal, rg.parc.reduce((t, x, k) => t + (k === 0 && taxa ? 0 : r2(p.valor * x)), 0)); ok('próximas ' + p.c.id_venda, p.futuro, p.agTotal - p.aReceber); });
+      if (ps.length) ok('1ª parcela do mês = Σ propostas', R.ag.valor, ps.reduce((t, p) => t + p.aReceber, 0));
+      // parcelas de vendas anteriores, recalculadas de forma independente
+      let ant = 0; carteiraCompleta().forEach(c => { const ini = String(c.data_venda || c.data_inicio || '').slice(0, 7); if (!ini || ini >= R.mes) return; if (/cancel/i.test(c.situacao || '') && (!c.cancelado_em || String(c.cancelado_em).slice(0, 7) <= R.mes)) return; const rg = regraVenda(c); if (!rg || rg.ag == null) return; const k = (+R.mes.slice(0, 4) - +ini.slice(0, 4)) * 12 + (+R.mes.slice(5, 7) - +ini.slice(5, 7)); if (rg.parc[k] && !(k === 0 && rg.modalidade === 'ADESÃO' && !REGRAS.adesaoTaxaParaOptas)) ant += r2(r2(+c.valor_mensal) * rg.parc[k]); });
+      ok('parcelas anteriores', R.caixaAnt.total, ant);
+      U.forEach(u => { if (u.recebidas != null) ok(u.custos.unidade + ' a receber = 1ª parcela + anteriores', u.recebidas, (u.primeira || 0) + (u.anteriores || 0)); });
+      if (R.recebidas != null) { ok('a receber = 1ª parcela + anteriores', R.recebidas, R.primeira + R.caixaAnt.total); ok('1ª parcela = Σ unidades', R.primeira, U.reduce((t, u) => t + (u.primeira || 0), 0)); }
       // investimento
       ok('investido = Σ lançamentos', R.investido, ESTADO.investimentos.filter(i => (i.data || '').slice(0, 7) === R.mes).reduce((t, i) => t + (+i.valor || 0), 0));
       ok('investido = Σ unidades', R.investido, U.reduce((t, u) => t + u.investido, 0));
@@ -38,7 +45,7 @@ const path = require('path');
       U.forEach(u => chk(u.custos.unidade, u.res)); chk('consolidado', R.res);
       if (R.res) ['recebidas', 'imposto', 'comissoes', 'reserva', 'fixo', 'provisao', 'custoOp', 'custoOpTotal', 'custos', 'operacional', 'investido', 'financeiro'].forEach(k => ok('consolidado ' + k + ' = Σ unidades', R.res[k], U.reduce((t, u) => t + u.res[k], 0)));
       ok('reserva = Σ unidades', R.reservaMkt, U.reduce((t, u) => t + u.reservaMkt, 0));
-      // mínimos: menor valor a receber que zera o lucro bruto / cobre a reserva
+      // mínimos: menor 1ª parcela que zera o lucro bruto / cobre a reserva
       const lb = (rec, x) => r2(rec - r2(rec * REGRAS.imposto) - x.comissoes - x.custoOp);
       [['consolidado', R.res]].concat(U.map(u => [u.custos.unidade, u.res])).forEach(([n, x]) => { if (!x) return;
         const m = minimos(x.comissoes, x.custoOp, x.reserva);
@@ -52,7 +59,7 @@ const path = require('path');
       const a = resumoAno(+R.mes.slice(0, 4)); a.meses.forEach(m => { if (m.resultado != null) { ok(m.mes + ' lucro bruto', m.resultado, m.recebidas - m.saiu); ok(m.mes + ' lucro líquido = bruto − investido', m.depois, m.resultado - (m.investido || 0)); } });
       // comissões exportadas
       const d = linhasComissao(); R.vendedores.forEach(v => { const pv = d.propostas.filter(x => x['Vendedor(a)'] === v.nome); if (pv.length) ok(v.nome + ' comissão exportada = Σ propostas', v.comissao, pv.reduce((t, x) => t + x['Comissão do vendedor (R$)'], 0)); });
-      return { falhas, resumo: R.res ? { aReceber: R.res.recebidas, impostos: R.res.imposto, custoOperacao: R.res.custoOp, custoOperacaoTotal: R.res.custoOpTotal, comissoes: R.res.comissoes, custosDoMes: R.res.custos, lucroBruto: R.res.operacional, margemBruta: +(R.res.mBruta * 100).toFixed(2), investido: R.res.investido, reserva: R.res.reserva, lucroLiquido: R.res.financeiro, margemLiquida: +(R.res.mLiquida * 100).toFixed(2), roi: R.roi.roi } : 'sem a receber' };
+      return { falhas, resumo: R.res ? { primeiraParcela: R.primeira, parcelasAnteriores: R.caixaAnt.total, aReceber: R.res.recebidas, impostos: R.res.imposto, custoOperacao: R.res.custoOp, custoOperacaoTotal: R.res.custoOpTotal, comissoes: R.res.comissoes, custosDoMes: R.res.custos, lucroBruto: R.res.operacional, margemBruta: +(R.res.mBruta * 100).toFixed(2), investido: R.res.investido, reserva: R.res.reserva, lucroLiquido: R.res.financeiro, margemLiquida: +(R.res.mLiquida * 100).toFixed(2), roi: R.roi.roi } : 'sem a receber' };
     });
     saida.push([f, r, errs]); await p.close();
   }
