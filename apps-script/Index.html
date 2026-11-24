@@ -353,7 +353,7 @@ html,body{overflow-x:hidden}
    Alterar aqui apenas quando o usuário confirmar novas regras.
    ===================================================================== */
 var REGRAS = {
-  versao: 'v3.1 · 24/11/2026',
+  versao: 'v3.2 · 24/11/2026',
   unidades: ['Consolação', 'Mogi'],
   // 3. Custos fixos (salários brutos JÁ incluem o PJ das sócias — não somar de novo)
   custos: {
@@ -378,13 +378,13 @@ var REGRAS = {
     // ag/vit = percentual informado SEM modalidade (provisório até confirmar PF/PME)
     // modalidades = percentuais por modalidade; apenas = modalidades que a operadora vende
     // taxa = parte do agenciamento que é taxa de angariação e NÃO vem para a Optas (ag já é o efetivo)
-    { nome: 'Bradesco',       ag: 4.00, vit: 0.04, modalidades: null },
-    { nome: 'Amil',           ag: 3.00, vit: 0.02, modalidades: null },
-    { nome: 'SulAmérica',     ag: 3.00, vit: 0.02, modalidades: null },
-    { nome: 'Seguros Unimed', ag: 3.00, vit: 0.02, modalidades: null },
-    { nome: 'Porto',          ag: 3.00, vit: 0.02, modalidades: null },
+    { nome: 'Bradesco',       ag: null, vit: null, modalidades: { PME: { ag: 4.00, vit: 0.04 } }, apenas: ['PME'] },
+    { nome: 'Amil',           ag: null, vit: null, modalidades: { PME: { ag: 3.00, vit: 0.02 } }, apenas: ['PME'] },
+    { nome: 'SulAmérica',     ag: null, vit: null, modalidades: { PME: { ag: 3.00, vit: 0.02 } }, apenas: ['PME'] },
+    { nome: 'Seguros Unimed', ag: null, vit: null, modalidades: { PME: { ag: 3.00, vit: 0.02 } }, apenas: ['PME'] },
+    { nome: 'Porto',          ag: null, vit: null, modalidades: { PME: { ag: 3.00, vit: 0.02 } }, apenas: ['PME'] },
     { nome: 'Hapvida',        ag: null, vit: null, modalidades: { PME: { ag: 3.50, vit: 0.02 }, PF: null } },   // fora do projeto · PF a confirmar
-    { nome: 'Alice',          ag: 3.00, vit: 0.02, modalidades: null },
+    { nome: 'Alice',          ag: null, vit: null, modalidades: { PME: { ag: 3.00, vit: 0.02 } }, apenas: ['PME'] },
     { nome: 'MedSênior',      ag: null, vit: null, modalidades: { PF: { ag: 2.00, vit: 0.02 }, PME: null } },   // PME a confirmar
     { nome: 'Prevent',        ag: null, vit: null, modalidades: { PF: { ag: 2.00, vit: null } }, apenas: ['PF'] }, // só PF · vitalício a confirmar
     { nome: 'Santa Helena',   ag: 3.00, vit: 0.02, modalidades: null },
@@ -1492,7 +1492,7 @@ function copiarAlertas() {
 }
 
 var PENDENCIAS = [
-  ['1', 'Tabelas das operadoras', 'São Cristóvão (tudo); Hapvida PF; Trasmontano PF; MedSênior PME; vitalício de Prevent, Supermed e Qualicorp; PF/PME de Bradesco, Amil, SulAmérica, Seguros Unimed, Porto, Alice, Santa Helena, Sobam, Ana Costa, Supermed e Qualicorp.', 'Percentual sem modalidade é usado como provisório; modalidade sem percentual fica fora da conta.'],
+  ['1', 'Tabelas das operadoras', 'São Cristóvão (tudo); Hapvida PF; Trasmontano PF; MedSênior PME (vende ou não?); vitalício de Prevent, Supermed e Qualicorp; PF/PME de Santa Helena, Sobam, Ana Costa, Supermed e Qualicorp.', 'Percentual sem modalidade é usado como provisório; modalidade sem percentual fica fora da conta.'],
   ['2', 'Regras definitivas do vitalício', 'Início na 4ª parcela para todas as operadoras/modalidades? Base: valor original ou atualizado? Continuidade igual para todas as modalidades?', 'Vitalício exibido por parcela e fora do ROI.'],
   ['3', 'Acúmulo da reserva de marketing', 'A verba não utilizada acumula para o mês seguinte ou expira no fechamento?', 'Saldo calculado só dentro do mês.'],
   ['7', 'Validação contábil dos encargos', 'FPAS/terceiros, RAT, incidências efetivas e encargos já incluídos nos R$ 39.185,43.', 'Provisão de R$ 1.623,15 é estimativa gerencial.'],
@@ -1589,7 +1589,7 @@ function cnpjFicticio(n) { var d = (String(10000000 + n * 104729).slice(-8) + '0
 // Modo exemplo: a produção real de cada vendedor dividida entre VÁRIAS operadoras e modalidades (soma exata)
 function contratosDemo(D) {
   var mes = (D.rotulo && mesReferenciaDe(D.rotulo)) || hojeISO().slice(0, 7), out = [], n = 0;
-  var ops = [['Bradesco', 'PME'], ['Amil', 'PF'], ['SulAmérica', 'PME'], ['Hapvida', 'PME'], ['MedSênior', 'PF'], ['Prevent', 'PF'], ['Supermed', 'PF'], ['Qualicorp', 'PME'], ['Trasmontano', 'PME'], ['Santa Helena', 'PF'], ['Sobam', 'PME'], ['Ana Costa', 'PF'], ['Porto', 'PF'], ['Alice', 'PME'], ['Seguros Unimed', 'PME'], ['Hapvida', 'PF'], ['São Cristóvão', 'PF']];
+  var ops = [['Bradesco', 'PME'], ['Amil', 'PME'], ['SulAmérica', 'PME'], ['Hapvida', 'PME'], ['MedSênior', 'PF'], ['Prevent', 'PF'], ['Supermed', 'PF'], ['Qualicorp', 'PME'], ['Trasmontano', 'PME'], ['Santa Helena', 'PF'], ['Sobam', 'PME'], ['Ana Costa', 'PF'], ['Porto', 'PME'], ['Alice', 'PME'], ['Seguros Unimed', 'PME'], ['Hapvida', 'PF'], ['São Cristóvão', 'PF']];
   var camp = ['Meta Ads Bradesco PME', 'Leads Amil PF', 'Indicação', 'Carteira ativa', 'Google Ads Saúde', 'Panfletagem Mogi'];
   D.vendedores.forEach(function (v, i) {
     var partes = [];
@@ -1612,7 +1612,7 @@ function contratosDemo(D) {
 // Modo exemplo: percentuais FICTÍCIOS para o que ainda está pendente, só para conferir se as contas rodam
 // Modo exemplo: carteira fictícia (contratos vendidos de jan/2025 a out/2026) e recebidos fictícios
 function carteiraDemo() {
-  var ops = [['Bradesco', 'PME'], ['Amil', 'PF'], ['SulAmérica', 'PME'], ['Hapvida', 'PME'], ['Porto', 'PF'], ['MedSênior', 'PF'], ['Santa Helena', 'PF'], ['Trasmontano', 'PME']], out = [], k = 0;
+  var ops = [['Bradesco', 'PME'], ['Amil', 'PME'], ['SulAmérica', 'PME'], ['Hapvida', 'PME'], ['Porto', 'PME'], ['MedSênior', 'PF'], ['Santa Helena', 'PF'], ['Trasmontano', 'PME']], out = [], k = 0;
   for (var a = 2025; a <= 2026; a++) for (var m = 1; m <= 12; m++) {
     if (a === 2026 && m > 10) break;
     for (var j = 0; j < 3; j++) { var o = ops[(k + j) % ops.length], val = 600 + ((k * 137 + j * 211) % 2400);
