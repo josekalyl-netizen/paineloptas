@@ -235,7 +235,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--peach);border-co
 .yc.clk{cursor:pointer}.yc.clk:hover{background:var(--tint-2);border-radius:8px}.yc.sel{background:var(--peach);border-radius:8px}
 .yc em{font-style:normal;font-weight:800;font-size:12px;height:16px}.yc em.ok{color:var(--green)}.yc em.no{color:var(--red)}
 .mdet{margin-top:14px;border-radius:12px;padding:12px 14px;background:var(--tint-2)}.mdet.lucro{background:var(--green-t)}.mdet.prej{background:var(--red-t)}
-tr.clk{cursor:pointer}a.lk{color:inherit;text-decoration:none;font-weight:600}a.lk:hover{text-decoration:underline}tr.clk:hover td{background:var(--tint-2)}tr.selr td{background:var(--peach)}
+tr.clk{cursor:pointer}table.fx tr.fxh td{font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:11px;padding-top:14px}table.fx tr.fxi td{font-size:12px;padding-left:26px;color:var(--mute)}table.fx tr.fxi td.r{color:inherit}table.fx tr.fxi td.r.gr{color:var(--green)}table.fx tr.fxi td.r.rd{color:var(--red)}table.fx tr.fxr td{font-size:14px}a.lk{color:inherit;text-decoration:none;font-weight:600}a.lk:hover{text-decoration:underline}tr.clk:hover td{background:var(--tint-2)}tr.selr td{background:var(--peach)}
 td.inv,.r.inv{color:var(--inv)}td.gr{color:var(--green)}td.rd{color:var(--red)}
 .hb{display:grid;grid-template-columns:minmax(110px,180px) 1fr 120px 56px;gap:10px;align-items:center;padding:6px 0;font-size:13px;border-bottom:1px solid var(--tint)}
 .hb b{text-align:right;font-family:var(--head);font-weight:800}.hb em{font-style:normal;font-size:12px;color:var(--mute);text-align:right}
@@ -1353,23 +1353,23 @@ function custoDetalhe(mes) {
   var out = { mes: mes, unidades: {}, total: 0 };
   REGRAS.unidades.forEach(function (u) {
     var x = d.unidades[u] || {}, c = custosUnidade(u, mes), L = [], fora = [];
-    var add = function (grupo, nome, valor, obs) { L.push({ grupo: grupo, nome: nome, valor: r2(valor), obs: obs || '' }); };
+    var add = function (grupo, nome, valor, obs, cat) { L.push({ grupo: grupo, nome: nome, valor: r2(valor), obs: obs || '', cat: cat || grupo }); };
     var orig = function (i) { return i.t[1] + ' · extrato ' + i.c.extrato + ' · pago em ' + mesLabel(i.c.mes); };
-    if (x.imposto != null) add('Imposto', '15% sobre o a receber de ' + brl(x.recebidas), x.imposto);
-    add('Comissões dos vendedores', x.comissoes ? 'Comissões à parte' : 'Já descontadas nos relatórios de pagamento (nada à parte)', x.comissoes || 0);
+    if (x.imposto != null) add('Imposto', '15% sobre o a receber de ' + brl(x.recebidas), x.imposto, '', 'imp');
+    add('Comissões dos vendedores', x.comissoes ? 'Comissões à parte' : 'Já descontadas nos relatórios de pagamento (nada à parte)', x.comissoes || 0, '', 'com');
     if (c.fonteCustos === 'extratos') {
-      c.extrato.itens.forEach(function (i) { if (i.a === 'folha') add('Folha (relatórios de pagamento)', i.c.descricao, -i.c.liquido, orig(i)); });
+      c.extrato.itens.forEach(function (i) { if (i.a === 'folha') add('Folha (relatórios de pagamento)', i.c.descricao, -i.c.liquido, orig(i), 'S' + i.t[0]); });
     } else {
-      add('Estrutura informada', 'Salários brutos (inclui PJ da sócia ' + brl(c.pj) + ')', c.salariosBrutos);
-      add('Estrutura informada', 'Vale-refeição · ' + c.diasUteis + ' dias úteis', c.vr);
-      add('Estrutura informada', 'Vale-transporte · ' + c.diasUteis + ' dias úteis', c.vt);
-      if (c.operacional) add('Estrutura informada', 'Custo operacional', c.operacional);
-      add('Provisão', '13º salário (1/12 da folha CLT)', c.prov13);
-      add('Provisão', 'Férias + 1/3 (1/36 da folha CLT)', c.provFerias);
-      add('Provisão', 'Encargos sobre 13º e férias', c.provEncargos);
+      add('Estrutura informada', 'Salários brutos (inclui PJ da sócia ' + brl(c.pj) + ')', c.salariosBrutos, '', 'est');
+      add('Estrutura informada', 'Vale-refeição · ' + c.diasUteis + ' dias úteis', c.vr, '', 'est');
+      add('Estrutura informada', 'Vale-transporte · ' + c.diasUteis + ' dias úteis', c.vt, '', 'est');
+      if (c.operacional) add('Estrutura informada', 'Custo operacional', c.operacional, '', 'est');
+      add('Provisão', '13º salário (1/12 da folha CLT)', c.prov13, '', 'prov');
+      add('Provisão', 'Férias + 1/3 (1/36 da folha CLT)', c.provFerias, '', 'prov');
+      add('Provisão', 'Encargos sobre 13º e férias', c.provEncargos, '', 'prov');
     }
     c.extrato.itens.forEach(function (i) {
-      if (i.a === 'custo' || i.a === 'custoOp') add('Lançado nos relatórios de pagamento', i.c.descricao, -i.c.liquido, orig(i));
+      if (i.a === 'custo' || i.a === 'custoOp') add('Lançado nos relatórios de pagamento', i.c.descricao, -i.c.liquido, orig(i), 'S' + i.t[0]);
       else if (i.a !== 'folha') fora.push({ nome: i.c.descricao, valor: i.c.liquido, como: i.a === 'receita' ? 'sem sinal: soma no a receber' : 'não entra (' + i.t[1] + ')' });
     });
     var tot = soma2(L, function (l) { return l.valor; });
@@ -1386,18 +1386,18 @@ function receberDetalhe(mes) {
   var vrec = (ESTADO.vitRecebido || []).filter(function (x) { return String(x.mes || '').slice(0, 7) === mes; }).concat(vitDosExtratos(mes));
   var ref = function (c) { return [c.numero || c.contrato || c.id_venda || c.id, c.operadora, c.cliente].filter(Boolean).join(' · '); };
   REGRAS.unidades.forEach(function (u) {
-    var L = [], add = function (grupo, nome, valor, obs) { if (valor) L.push({ grupo: grupo, nome: nome, valor: r2(valor), obs: obs || '' }); };
+    var L = [], add = function (grupo, nome, valor, obs, cat) { if (valor) L.push({ grupo: grupo, nome: nome, valor: r2(valor), obs: obs || '', cat: cat }); };
     ERP.forEach(function (c) {
       if ((c.data_venda || '').slice(0, 7) !== mes || statusProposta(c) === 'cancelada' || unidadeCanon(c.unidade) !== u) return;
       var pr = parcelasReais(c.valor_mensal, regraVenda(c)).map(function (v, k) { return valorParcelaERP(c, k, v); });
-      add('1ª parcela das vendas do mês', ref(c), pr[0] || 0, 'mensalidade ' + brl(c.valor_mensal));
+      add('1ª parcela das vendas do mês', ref(c), pr[0] || 0, 'mensalidade ' + brl(c.valor_mensal), 'ag1');
     });
-    if (R && mes === R.mes && R.unidades[u].primeiraProjeto) add('1ª parcela das vendas do mês', 'Projeto Hapvida · vendas do mês', R.unidades[u].primeiraProjeto, '100% da 1ª mensalidade · ainda sem relatório de pagamento');
-    ant.itens.forEach(function (i) { if (i.unidade === u) add('Parcelas de vendas anteriores', ref(i.c), i.valor, i.parcela + 'ª parcela · venda de ' + mesLabel(String(i.c.data_venda || i.c.data_inicio).slice(0, 7))); });
+    if (R && mes === R.mes && R.unidades[u].primeiraProjeto) add('1ª parcela das vendas do mês', 'Projeto Hapvida · vendas do mês', R.unidades[u].primeiraProjeto, '100% da 1ª mensalidade · ainda sem relatório de pagamento', 'ag1');
+    ant.itens.forEach(function (i) { if (i.unidade === u) add('Parcelas de vendas anteriores', ref(i.c), i.valor, i.parcela + 'ª parcela · venda de ' + mesLabel(String(i.c.data_venda || i.c.data_inicio).slice(0, 7)), 'agN'); });
     var vo = {}; vrec.forEach(function (x) { if (unidadeCanon(x.unidade) !== u) return; var g = vo[x.operadora] = vo[x.operadora] || { v: 0, n: 0 }; g.v = r2(g.v + (+x.valor || 0)); g.n++; });
-    Object.keys(vo).sort().forEach(function (o) { add('Vitalício recebido', o, vo[o].v, vo[o].n + ' parcela' + (vo[o].n > 1 ? 's' : '') + ' nos relatórios de pagamento'); });
-    if (R && mes === R.mes) { var semU = r2((R.vitUnidade[u] || 0) - soma2(Object.keys(vo), function (o) { return vo[o].v; })); add('Vitalício recebido', 'Recebido sem unidade no relatório (rateado)', semU); }
-    lancExtratos(mes, u).itens.forEach(function (i) { if (i.a === 'receita') add('Créditos dos relatórios de pagamento', i.c.descricao, i.c.liquido, i.t[1] + ' · extrato ' + i.c.extrato + ' · pago em ' + mesLabel(i.c.mes)); });
+    Object.keys(vo).sort().forEach(function (o) { add('Vitalício recebido', o, vo[o].v, vo[o].n + ' parcela' + (vo[o].n > 1 ? 's' : '') + ' nos relatórios de pagamento', 'vit'); });
+    if (R && mes === R.mes) { var semU = r2((R.vitUnidade[u] || 0) - soma2(Object.keys(vo), function (o) { return vo[o].v; })); add('Vitalício recebido', 'Recebido sem unidade no relatório (rateado)', semU, '', 'vit'); }
+    lancExtratos(mes, u).itens.forEach(function (i) { if (i.a === 'receita') add('Créditos dos relatórios de pagamento', i.c.descricao, i.c.liquido, i.t[1] + ' · extrato ' + i.c.extrato + ' · pago em ' + mesLabel(i.c.mes), 'E' + i.t[0]); });
     var x = d.unidades[u] || {}, tot = soma2(L, function (l) { return l.valor; });
     out.unidades[u] = { linhas: L, total: tot, guardado: x.recebidas != null ? x.recebidas : null };
     out.total = r2(out.total + tot);
@@ -1421,6 +1421,45 @@ function blocoReceberDetalhe(mes) {
     h += '</div>';
   });
   return h + '</div></div>';
+}
+// Entradas e saídas do mês: categorias × unidades (mesmas linhas do a receber detalhado e do detalhe dos custos)
+var FLUXO_ENT = [['ag1', 'Agenciamento · 1ª parcela'], ['agN', 'Agenciamento · parcelas seguintes'], ['vit', 'Vitalício'], ['EE', 'Campanhas de operadora'], ['EP', 'Premiações de operadora'], ['ET', 'Depto. de Seguros'], ['EF', 'Acertos'], ['EN|EO', 'Desconto da 1ª parcela devolvido'], ['EJ', 'Estornos devolvidos'], ['E*', 'Outros créditos']];
+var FLUXO_SAI = [['imp', 'Imposto 15%'], ['com', 'Comissões de vendedores'], ['SA', 'Salários'], ['SC', 'Benefícios'], ['SM', 'Férias'], ['SL', '13º salário'], ['SK', 'Rescisões'], ['SG', 'Vales'], ['est', 'Estrutura informada'], ['prov', 'Provisão 13º e férias'], ['SH|SI|SS', 'Adiantamentos de comissão'], ['SJ', 'Estornos de comissão'], ['SD', 'Boletos de clientes'], ['SB', 'Comissão Valdecir 40%'], ['SR', 'Premiação de vendedor'], ['SU', 'Taxa de implantação'], ['SE|SP|SF|SN|SO|ST', 'Campanhas e créditos estornados'], ['S*', 'Outros débitos']];
+function fluxoCat(lista, cat) {
+  var i; cat = cat || '';
+  for (i = 0; i < lista.length; i++) if (lista[i][0].split('|').indexOf(cat) >= 0) return i;
+  for (i = 0; i < lista.length; i++) if (lista[i][0].slice(-1) === '*' && cat.charAt(0) === lista[i][0].charAt(0)) return i;
+  return lista.length - 1;
+}
+function fluxoMes(mes) {
+  var rd = receberDetalhe(mes), cd = custoDetalhe(mes); if (!rd || !cd) return null;
+  var monta = function (lista, det) {
+    var cats = lista.map(function (c) { return { k: c[0], nome: c[1], itens: [], un: {}, total: 0 }; });
+    REGRAS.unidades.forEach(function (u) { det.unidades[u].linhas.forEach(function (l) { if (!l.valor) return; var g = cats[fluxoCat(lista, l.cat)]; g.itens.push({ u: u, nome: l.nome, valor: l.valor }); g.un[u] = r2((g.un[u] || 0) + l.valor); g.total = r2(g.total + l.valor); }); });
+    var un = {}; REGRAS.unidades.forEach(function (u) { un[u] = det.unidades[u].total; });
+    return { cats: cats.filter(function (g) { return g.itens.length; }), un: un, total: det.total };
+  };
+  return { mes: mes, ent: monta(FLUXO_ENT, rd), sai: monta(FLUXO_SAI, cd) };
+}
+function fxT(id) { document.querySelectorAll('.fx-' + id).forEach(function (e) { e.hidden = !e.hidden; }); var a = document.getElementById('fxa-' + id); if (a) a.textContent = a.textContent === '▸' ? '▾' : '▸'; }
+function blocoFluxo(mes) {
+  var f = fluxoMes(mes); if (!f) return '';
+  var us = REGRAS.unidades, n = 0;
+  var cel = function (v, cls) { return '<td class="r ' + cls + '">' + (v ? brl(v) : '—') + '</td>'; };
+  var h = '<div class="box mt" id="fluxo"><div class="lbl">Entradas e saídas · ' + mesLabel(mes) + '</div><div class="tw"><table class="fx"><thead><tr><th></th>' + us.map(function (u) { return '<th class="r">' + u + '</th>'; }).join('') + '<th class="r">Total</th></tr></thead><tbody>';
+  var secao = function (titulo, x, cls) {
+    h += '<tr class="fxh"><td colspan="' + (us.length + 2) + '" class="' + cls + '">' + titulo + '</td></tr>';
+    x.cats.forEach(function (g) {
+      var id = 'g' + (n++);
+      h += '<tr class="clk" onclick="fxT(\'' + id + '\')"><td><span class="mu" id="fxa-' + id + '">▸</span> ' + g.nome + ' <small class="mu">' + g.itens.length + '</small></td>' + us.map(function (u) { return cel(g.un[u], cls); }).join('') + cel(g.total, cls) + '</tr>';
+      g.itens.forEach(function (i) { h += '<tr class="fx-' + id + ' fxi" hidden><td>' + esc(i.nome) + '</td>' + us.map(function (u) { return '<td class="r ' + cls + '">' + (u === i.u ? brl(i.valor) : '') + '</td>'; }).join('') + '<td></td></tr>'; });
+    });
+    h += '<tr class="tot"><td>Total ' + titulo.toLowerCase() + '</td>' + us.map(function (u) { return '<td class="r ' + cls + '">' + brl(x.un[u]) + '</td>'; }).join('') + '<td class="r ' + cls + '">' + brl(x.total) + '</td></tr>';
+  };
+  secao('Entradas', f.ent, 'gr'); secao('Saídas', f.sai, 'rd');
+  var res = function (u) { return u ? r2(f.ent.un[u] - f.sai.un[u]) : r2(f.ent.total - f.sai.total); };
+  h += '<tr class="tot fxr"><td>Resultado (lucro bruto)</td>' + us.map(function (u) { var v = res(u); return '<td class="r ' + (v >= 0 ? 'gr' : 'rd') + '">' + brl(v) + '</td>'; }).join('') + '<td class="r ' + (res() >= 0 ? 'gr' : 'rd') + '">' + brl(res()) + '</td></tr>';
+  return h + '</tbody></table></div></div>';
 }
 function blocoCustoDetalhe(mes) {
   var cd = custoDetalhe(mes); if (!cd) return '';
@@ -1476,7 +1515,7 @@ function vAno() {
       + '<div>Margem bruta<b>' + pct(d.recebidas ? d.resultado / d.recebidas : null, 1) + '</b></div><div>Margem líquida<b>' + pct(d.recebidas ? d.depois / d.recebidas : null, 1) + '</b></div></div></div>';
   }
   h += '</div>';
-  if (sel && ESTADO.fechamentos[sel] && ESTADO.fechamentos[sel].resultado != null) h += blocoReceberDetalhe(sel) + blocoCustoDetalhe(sel);
+  if (sel && ESTADO.fechamentos[sel] && ESTADO.fechamentos[sel].resultado != null) h += blocoFluxo(sel);
   // Tabela
   h += '<div class="box mt"><div class="lbl">Meses de ' + ano + '</div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">A receber</th><th class="r">Recebido (extratos)</th><th class="r">Custos</th><th class="r">Lucro bruto</th><th class="r">Reserva mkt</th><th class="r">Investido</th><th class="r">ROI</th><th class="r">Lucro líquido</th><th class="r">Acumulado</th><th>Situação</th><th></th></tr></thead><tbody>';
   var acum = t.saldoAnterior;
@@ -1497,7 +1536,7 @@ function vAno() {
     h += '<div class="box gd mt"><div class="split"><div><div class="lbl">Fechar o ano de ' + ano + '</div><div class="m">' + (podeFechar ? 'Grava o balanço geral de ' + ano + ', fecha todos os meses e leva o saldo para ' + (ano + 1) + '.' : 'Disponível a partir de dezembro de ' + ano + '.') + '</div></div><button class="btn" onclick="fecharAno(' + ano + ')"' + (podeFechar ? '' : ' disabled style="opacity:.5;cursor:not-allowed"') + '>Fechar ' + ano + '</button></div></div>';
   }
   document.getElementById('v-ano').innerHTML = h;
-  if (vAno.ir) { var cdEl = document.getElementById(vAno.ir === 2 ? 'recDet' : 'custoDet'); vAno.ir = 0; if (cdEl) cdEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  if (vAno.ir) { var cdEl = document.getElementById('fluxo'); vAno.ir = 0; if (cdEl) cdEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 }
 function fecharAno(ano) {
   if (!ESTADO.fechamentos[ano + '-12']) return;
