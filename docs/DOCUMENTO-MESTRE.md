@@ -543,7 +543,15 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
    - Situação: cancelada (inclusive na operadora) registra e sai da conta; cancelada sem confirmação da 1ª com 90 dias ou mais desde o cancelamento = cancelada; com menos de 90 dias = válida em aberto; inadimplente = válida e implantada; implantado = implantado; o resto = válida em aberto. **A exportação recebida não tem a coluna de situação** — até chegar, todas são válidas.
    - Conferência: Σ parcelas da Optas no CSV R$ 1.141.906,29 − taxas de adesão R$ 50.098,65 = R$ 1.091.807,64 importados.
    - Os dados do ERP (com clientes) ficam fora do repositório (`data/erp/`, gitignored); `python3 -I data/importar_erp.py <pasta>` gera o arquivo.
-11. **Fonte dos dados reais:** fechamento de folha mensal (vendas e vitalícios recebidos), relatórios de recebimento (o que entrou, atrasou e falta receber), acesso ao Apps Script e ao ERP.
+11. **Extratos de comissão (SisWeb W3G → Optas), 25/11/2026:** 23 extratos (Mogi nov/25–out/26; Consolação jan–nov/26), 3.816 linhas, 231 créditos/débitos.
+   - Conferência por extrato (todas batem): Σ líquido das linhas = Ato da venda + Parcelas; saldo anterior + comissões + créditos/débitos = líquido do extrato.
+   - De-para com o ERP: 613 linhas casadas, todas com o valor do ERP no centavo (Unihosp e Med-Tour: 1ª parcela com líquido zero, como no ERP). Nenhuma parcela paga duas vezes. Pagamento costuma vir 2 a 3 meses depois do vencimento.
+   - 231 parcelas do ERP vencidas há 3+ meses do último extrato e não pagas (R$ 326.419,64); 82 propostas sem nenhum pagamento — dependem da situação das propostas.
+   - Desconto administrativo de 8,5% nas parcelas a partir da 2ª (Mogi em todas; Consolação nas novas; vitalício antigo de Consolação sem desconto).
+   - Vitalício do mês = vitalício recebido nos extratos da unidade (bruto); sem extrato no mês, o previsto do ERP.
+   - Créditos/débitos = salários, benefícios, férias/13º, rescisões, comissão do gestor (Valdecir 40%), adiantamentos de parcela, estornos, boletos de clientes, campanhas/premiações e SMS.
+   - Médias por mês: unidades pelo ERP (data de cadastro); vendedores pelos meses gravados no painel.
+12. **Fonte dos dados reais:** fechamento de folha mensal (vendas e vitalícios recebidos), relatórios de recebimento (o que entrou, atrasou e falta receber), acesso ao Apps Script e ao ERP.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 

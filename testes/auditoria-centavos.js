@@ -35,7 +35,8 @@ const path = require('path');
       ok('parcelas anteriores', R.caixaAnt.total, ant);
       U.forEach(u => { if (u.recebidas != null) ok(u.custos.unidade + ' a receber = 1ª parcela + anteriores + vitalício', u.recebidas, (u.primeira || 0) + (u.anteriores || 0) + (u.vitalicio || 0)); });
       if (R.recebidas != null) { ok('a receber = 1ª parcela + anteriores + vitalício', R.recebidas, R.primeira + R.caixaAnt.total + R.vitalicio);
-        ok('vitalício no a receber = ' + R.vitFonte, R.vitalicio, R.vitFonte === 'recebido' ? R.vit.recebido : R.vit.total); ok('1ª parcela = Σ unidades', R.primeira, U.reduce((t, u) => t + (u.primeira || 0), 0)); }
+        { const v = R.vit, us = REGRAS.unidades; const esp = us.reduce((t, u) => t + (R.vitFonteU[u] === 'recebido' ? (v.recebidoPorUnidade[u] || 0) : (v.porUnidade[u] || 0)), 0) + (v.recebido != null ? v.recebidoSemUnidade : 0) + (us.some(u => R.vitFonteU[u] === 'previsto') ? v.semUnidade : 0);
+          ok('vitalício no a receber (recebido por unidade, senão previsto)', R.vitalicio, esp); } ok('1ª parcela = Σ unidades', R.primeira, U.reduce((t, u) => t + (u.primeira || 0), 0)); }
       // investimento
       ok('investido = Σ lançamentos', R.investido, ESTADO.investimentos.filter(i => (i.data || '').slice(0, 7) === R.mes).reduce((t, i) => t + (+i.valor || 0), 0));
       ok('investido = Σ unidades', R.investido, U.reduce((t, u) => t + u.investido, 0));
@@ -64,6 +65,10 @@ const path = require('path');
           const cad = ERP.filter(c => c.data_venda.slice(0, 7) === k && unidadeCanon(c.unidade) === u && statusProposta(c) !== 'cancelada');
           ok(k + ' ' + u + ' produção ERP', x.producao, cad.reduce((t, c) => t + c.valor_mensal, 0)); ok(k + ' ' + u + ' 1ª parcela ERP', x.primeira, cad.reduce((t, c) => t + (c.tabela.valores[0] || 0), 0)); });
         ok(k + ' a receber ERP = Σ unidades', f.recebidas, REGRAS.unidades.reduce((t, u) => t + f.unidades[u].recebidas, 0)); });
+      // extratos: cada extrato fecha (linhas = ato + parcelas; acumulado + comissões + créd/déb = líquido)
+      if (extratosOn()) EXTRATOS.extratos.forEach(x => { const L = EXTRATOS.linhas.filter(l => l.extrato === x.codigo), C = EXTRATOS.creditos_debitos.filter(c => c.extrato === x.codigo);
+        ok('extrato ' + x.codigo + ' linhas', L.reduce((t, l) => t + l.liquido, 0), x.comissoes_liquido); ok('extrato ' + x.codigo + ' créd/déb', C.reduce((t, c) => t + c.liquido, 0), x.creditos_debitos);
+        ok('extrato ' + x.codigo + ' líquido', x.acumulado + x.comissoes_liquido + x.creditos_debitos, x.liquido); });
       // reserva: saldo dos meses anteriores e limite
       { const an = Object.keys(ESTADO.fechamentos).filter(k => k.slice(0, 4) === R.mes.slice(0, 4) && k < R.mes && ESTADO.fechamentos[k].producao != null);
         ok('saldo de reserva anterior', R.reservaAnterior, an.reduce((t, k) => t + ESTADO.fechamentos[k].reserva - (ESTADO.fechamentos[k].investido || 0), 0));
