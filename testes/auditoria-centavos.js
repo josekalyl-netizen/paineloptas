@@ -37,7 +37,13 @@ const path = require('path');
       U.forEach(u => { if (u.recebidas != null) ok(u.custos.unidade + ' a receber = 1ª parcela + anteriores + vitalício + outras receitas', u.recebidas, (u.primeira || 0) + (u.anteriores || 0) + (u.vitalicio || 0) + (u.outrasReceitas || 0)); });
       if (R.recebidas != null) { ok('a receber = 1ª parcela + anteriores + vitalício + outras receitas', R.recebidas, R.primeira + R.caixaAnt.total + R.vitalicio + U.reduce((t, u) => t + (u.outrasReceitas || 0), 0));
         { const v = R.vit, us = REGRAS.unidades; const esp = us.reduce((t, u) => t + (v.recebidoPorUnidade[u] || 0), 0) + (v.recebidoSemUnidade || 0);
-          ok('vitalício no a receber = só o recebido', R.vitalicio, esp); } ok('1ª parcela = Σ unidades', R.primeira, U.reduce((t, u) => t + (u.primeira || 0), 0)); }
+          ok('vitalício no a receber = só o recebido', R.vitalicio, esp); } } // cada custo no mês a que se refere: "COMISSÃO NOVEMBRO 2025 - VALDECIR" → 2025-11; 13º sem mês pago em janeiro → dezembro anterior
+      if (typeof EXTRATOS !== 'undefined' && EXTRATOS && EXTRATOS.creditos_debitos) EXTRATOS.creditos_debitos.forEach(c => { const d = norm(c.descricao).toUpperCase(); let m = null;
+        const x = d.match(/VALDECIR/) && d.match(/(JANEIRO|FEVEREIRO|MARCO|ABRIL|MAIO|JUNHO|JULHO|AGOSTO|SETEMBRO|OUTUBRO|NOVEMBRO|DEZEMBRO) (20\d\d)/);
+        if (x) m = x[2] + '-' + String(MESES_N.indexOf(x[1]) + 1).padStart(2, '0');
+        if (/13.? SALARIO/.test(d) && +c.mes.slice(5, 7) <= 2) m = (+c.mes.slice(0, 4) - 1) + '-12';
+        if (m && mesDevido(c) !== m) falhas.push('mês devido ' + c.descricao + ': ' + mesDevido(c) + ' ≠ ' + m); });
+      if (R.recebidas != null) { ok('1ª parcela = Σ unidades', R.primeira, U.reduce((t, u) => t + (u.primeira || 0), 0)); }
       // investimento
       ok('investido = Σ lançamentos', R.investido, ESTADO.investimentos.filter(i => (i.data || '').slice(0, 7) === R.mes).reduce((t, i) => t + (+i.valor || 0), 0));
       ok('investido = Σ unidades', R.investido, U.reduce((t, u) => t + u.investido, 0));

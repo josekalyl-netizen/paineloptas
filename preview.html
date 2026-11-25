@@ -535,7 +535,9 @@ function tipoCD(desc) { var d = norm(desc).toUpperCase(); for (var i = 0; i < CD
 // Mês devido (decisão de 25/11/2026): salário, benefícios, férias, 13º, rescisão e vale entram no mês a que se referem
 // ("SALÁRIOS - SETEMBRO 2026" → setembro; "SALÁRIO - JOANA 07/09" → setembro), não no mês em que o extrato descontou.
 // Sem mês na descrição → mês do desconto. O resto (boletos, estornos, AD, Valdecir, receitas) fica no mês do desconto.
-var CD_COMPETENCIA = { A: 1, C: 1, M: 1, L: 1, K: 1, G: 1 };
+// 25/11/2026 (pedido do usuário: cada custo no mês dele): comissão do Valdecir ("COMISSÃO NOVEMBRO 2025") e folha negativa/AD com data
+// ("AD COMISSÃO 13/08 ...") também vão para o mês a que se referem. 13º sem mês pago em jan/fev → dezembro do ano anterior.
+var CD_COMPETENCIA = { A: 1, B: 1, C: 1, I: 1, M: 1, L: 1, K: 1, G: 1 };
 var MESES_N = ['JANEIRO', 'FEVEREIRO', 'MARCO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
 function mesDevido(c) {
   if (c._md) return c._md;
@@ -544,6 +546,7 @@ function mesDevido(c) {
     var d = norm(c.descricao).toUpperCase(), mm = 0, aa = 0, x;
     for (var i = 0; i < 12 && !mm; i++) { x = d.match(new RegExp('\\b' + MESES_N[i] + '\\b(?:\\s*(?:DE\\s*)?(20\\d\\d))?')); if (x) { mm = i + 1; aa = x[1] ? +x[1] : 0; } }
     if (!mm && (x = d.match(/\b(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\b(?!\/?\d)/))) mm = +x[2];
+    if (!mm && t === 'L' && +c.mes.slice(5, 7) <= 2) { mm = 12; aa = +c.mes.slice(0, 4) - 1; }
     if (mm) {
       var ay = +c.mes.slice(0, 4), am = +c.mes.slice(5, 7);
       if (!aa) aa = mm > am ? ay - 1 : ay;   // sem ano: o mês mais recente até o do desconto
@@ -1364,8 +1367,12 @@ function custoDetalhe(mes) {
     }
     c.extrato.itens.forEach(function (i) {
       if (i.t[3] === 'custo' || i.t[3] === 'custoOp') add('Lançado nos relatórios de pagamento', i.c.descricao, -i.c.liquido, orig(i));
-      else if (i.t[3] !== 'folha') fora.push({ nome: i.c.descricao, valor: i.c.liquido, como: i.t[3] === 'receita' ? 'soma no a receber' : 'não entra (' + i.t[1] + ')' });
+      else if (i.t[3] !== 'folha') {
+        var k = norm(i.c.descricao).toUpperCase().replace(/\s+/g, ' ').trim(), f = fora.filter(function (z) { return z.k === k && z.ext === i.c.extrato && z.t === i.t[3]; })[0];
+        if (f) { f.valor = r2(f.valor + i.c.liquido); f.n++; } else fora.push({ k: k, ext: i.c.extrato, t: i.t[3], n: 1, nome: i.c.descricao, valor: i.c.liquido });
+      }
     });
+    fora.forEach(function (f) { f.como = f.n > 1 && Math.abs(f.valor) < 0.005 ? 'lançada e estornada no mesmo relatório: não soma' : f.t === 'receita' ? 'soma no a receber' : 'não entra (' + tipoCD(f.nome)[1] + ')'; });
     var tot = soma2(L, function (l) { return l.valor; });
     out.unidades[u] = { linhas: L, fora: fora, total: tot, guardado: x.saiu != null ? x.saiu : null, fonte: c.fonteCustos,
       real: c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido; sobrepõe a estrutura informada)' : 'Sem salário no relatório deste mês: vale a estrutura informada + provisão' };

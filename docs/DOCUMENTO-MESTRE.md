@@ -620,3 +620,5 @@ Distribuição de lucros entre W3G e sócias; média de comissões para provisio
 18. Não ampliar o escopo sem autorização.
 
 **Prioridade de continuidade:** fechar as tabelas de comissão das operadoras, as regras do vitalício e as decisões do módulo de ROI e orçamento de marketing.
+
+**Cada custo no mês a que se refere (25/11/2026):** os relatórios de Mogi chegam com atraso (o de janeiro/2026 traz salário e benefícios de nov–dez/2025, comissão do Valdecir de novembro/2025 e o 13º/2025). Além de salário, benefícios, férias, 13º, rescisão e vale, também a **comissão do Valdecir** ("COMISSÃO NOVEMBRO 2025") e o **adiantamento/folha negativa com data** ("AD COMISSÃO 13/08 …") vão para o mês da descrição. **13º sem mês pago em janeiro ou fevereiro → dezembro do ano anterior.** Sinal: valor com "-" é saída; sem sinal é entrada. Crédito lançado e estornado no mesmo relatório (ex.: campanha +2.250 e −2.250) aparece uma vez só, como "lançada e estornada: não soma". O mês de cada relatório é o da **previsão de pagamento**.
