@@ -634,7 +634,7 @@ function salvarEstado(silencioso) {
 }
 function normEstado(e) {
   e = e || {};
-  return { investimentos: e.investimentos || [], recebidas: e.recebidas || {}, contratos: e.contratos || [], fechamentos: e.fechamentos || {}, anos: e.anos || {}, carteira: e.carteira || [], vitRecebido: e.vitRecebido || [], baseRemovidos: e.baseRemovidos || [] };
+  return { investimentos: e.investimentos || [], recebidas: e.recebidas || {}, contratos: e.contratos || [], fechamentos: e.fechamentos || {}, anos: e.anos || {}, carteira: e.carteira || [], vitRecebido: e.vitRecebido || [], baseRemovidos: e.baseRemovidos || [], cancelados: e.cancelados || {} };
 }
 
 /* =====================================================================
@@ -1500,13 +1500,13 @@ function calcVitalicio(mes) {
 // ---------- Recebimentos: extratos de comissão × propostas do ERP ----------
 function mesesEntreISO(a, b) { return (+b.slice(0, 4) - +a.slice(0, 4)) * 12 + (+b.slice(5, 7) - +a.slice(5, 7)); }
 function deParaERP() {
-  var o = { pagas: 0, vPagas: 0, emDia: 0, vEmDia: 0, atrasadas: [], perdidas: [], ult: {} };
+  var o = { pagas: 0, vPagas: 0, emDia: 0, vEmDia: 0, atrasadas: [], perdidas: [], canceladas: [], ult: {} };
   if (!extratosOn()) return o;
   EXTRATOS.extratos.forEach(function (x) { if (!o.ult[x.unidade] || x.mes > o.ult[x.unidade]) o.ult[x.unidade] = x.mes; });
   livroReceber().itens.forEach(function (it) {
     if (it.situacao === 'recebida') { o.pagas++; o.vPagas = r2(o.vPagas + it.valor); }
     else if (it.situacao === 'em dia') { o.emDia++; o.vEmDia = r2(o.vEmDia + it.valor); }
-    else if (it.situacao === 'atrasada') o.atrasadas.push(it); else o.perdidas.push(it);
+    else if (it.situacao === 'atrasada') o.atrasadas.push(it); else if (it.situacao === 'cancelada') o.canceladas.push(it); else o.perdidas.push(it);
   });
   o.vAtrasadas = soma2(o.atrasadas, function (a) { return a.valor; }); o.vPerdidas = soma2(o.perdidas, function (a) { return a.valor; });
   return o;
@@ -1521,8 +1521,9 @@ function diasEntre(a, b) { return Math.round((new Date(b.slice(0, 10) + 'T12:00:
 var _livro = null;
 function livroReceber() {
   var hoje = hojeISO();
-  if (_livro && _livro.hoje === hoje) return _livro;
-  var o = { hoje: hoje, itens: [], porParcela: {} };
+  var cx = JSON.stringify(ESTADO.cancelados || {});
+  if (_livro && _livro.hoje === hoje && _livro.cx === cx) return _livro;
+  var o = { hoje: hoje, cx: cx, itens: [], porParcela: {} };
   if (DEMO || !ERP.length) return (_livro = o);
   var prev = {}, pago = {};
   if (extratosOn()) {
@@ -1536,7 +1537,9 @@ function livroReceber() {
       var vs = c.tabela.venc && c.tabela.venc[k], pg = pago[c.id + '|' + (k + 1)], prevista = vs || isoMais(ult, 30);   // vencimento do SisWeb; sem ele, 30 dias do último pagamento
       var it = { c: c, unidade: unidadeCanon(c.unidade), parcela: k + 1, comp: addMes(ini, k), esperado: v, prevista: prevista, valor: v, situacao: '', dias: 0 };
       if (pg) { it.situacao = 'recebida'; it.recebidaEm = pg.data; it.valor = pg.bruto; it.liquido = pg.liquido; ult = pg.data; }
-      else { ult = prevista; if (!v) return; var d = diasEntre(prevista, hoje); it.dias = d; it.situacao = d <= 0 ? 'em dia' : d < 90 ? 'atrasada' : 'perdida'; }
+      else { ult = prevista; if (!v) return; var d = diasEntre(prevista, hoje); it.dias = d; it.situacao = d <= 0 ? 'em dia' : d < 90 ? 'atrasada' : 'perdida';
+        // cancelada pela Optas (aba A receber): o que não foi recebido sai do a receber
+        if ((ESTADO.cancelados || {})[c.id]) { it.situacao = 'cancelada'; it.cancelada = ESTADO.cancelados[c.id]; } }
       if (!v && !pg) return;
       o.itens.push(it); o.porParcela[c.id + '|' + (k + 1)] = it;
     });
@@ -1544,13 +1547,13 @@ function livroReceber() {
   return (_livro = o);
 }
 // valor da parcela k (0 = 1ª) de uma proposta do ERP no mês dela: recebido > esperado; não recebida em 90 dias → 0
-function valorParcelaERP(c, k, v) { if (!c || !c.tabela || !c.tabela.erp) return v; var it = livroReceber().porParcela[c.id + '|' + (k + 1)]; if (!it) return v; return it.situacao === 'perdida' ? 0 : it.valor; }
+function valorParcelaERP(c, k, v) { if (!c || !c.tabela || !c.tabela.erp) return v; var it = livroReceber().porParcela[c.id + '|' + (k + 1)]; if (!it) return v; return it.situacao === 'perdida' || it.situacao === 'cancelada' ? 0 : it.valor; }
 function addMes(m, n) { var d = new Date(+m.slice(0, 4), +m.slice(5, 7) - 1 + n, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
 function recebidoMes(mes) { if (!extratosOn()) return null; var xs = EXTRATOS.extratos.filter(function (x) { return x.mes === mes; }); return xs.length ? soma2(xs, function (x) { return x.comissoes_liquido; }) : null; }
 // Aba A receber: tudo o que falta entrar, proposta a proposta, com a data prevista
 function itensAReceber() {
   var L = livroReceber().itens.filter(function (it) { return it.situacao === 'em dia' || it.situacao === 'atrasada'; }).map(function (it) {
-    return { tipo: 'erp', unidade: it.unidade, cliente: it.c.cliente || '', operadora: it.c.operadora + ' · ' + it.c.modalidade, proposta: it.c.numero, cadastro: it.c.data_venda, parcela: it.parcela, comp: it.comp, prevista: it.prevista, valor: it.valor, situacao: it.situacao, dias: it.dias };
+    return { tipo: 'erp', id: it.c.id, unidade: it.unidade, cliente: it.c.cliente || '', operadora: it.c.operadora + ' · ' + it.c.modalidade, proposta: it.c.numero, cadastro: it.c.data_venda, parcela: it.parcela, comp: it.comp, prevista: it.prevista, valor: it.valor, situacao: it.situacao, dias: it.dias };
   });
   // Projeto Hapvida (100% da 1ª mensalidade): ainda sem fonte de recebimento → a receber, previsto 30 dias depois do fim do mês da venda
   var pj = projeto('Projeto Hapvida'), hoje = hojeISO();
@@ -1559,6 +1562,16 @@ function itensAReceber() {
     L.push({ tipo: 'projeto', unidade: v.unidade, cliente: 'Vendas de ' + v.nome, operadora: 'Projeto Hapvida', proposta: '—', cadastro: R.mes + '-01', parcela: 1, comp: R.mes, prevista: pv, valor: r2(v.prodHap * pj.parc[0]), situacao: d <= 0 ? 'em dia' : d < 90 ? 'atrasada' : 'perdida', dias: d });
   });
   return L.filter(function (x) { return x.situacao !== 'perdida'; });
+}
+function cancelarProposta(id) {
+  var c = ERP.filter(function (x) { return x.id === id; })[0]; if (!c) return;
+  if (!confirm('Marcar a proposta ' + c.numero + ' (' + (c.cliente || '') + ' · ' + c.operadora + ') como CANCELADA?\n\nAs parcelas que não foram recebidas saem do a receber. O que já entrou continua contando. Dá para desfazer depois.')) return;
+  ESTADO.cancelados = ESTADO.cancelados || {}; ESTADO.cancelados[id] = { data: hojeISO(), numero: c.numero };
+  _livro = null; salvarEstado(true); toast('Proposta ' + c.numero + ' marcada como cancelada'); render();
+}
+function reativarProposta(id) {
+  if (!ESTADO.cancelados || !ESTADO.cancelados[id]) return;
+  delete ESTADO.cancelados[id]; _livro = null; salvarEstado(true); toast('Proposta voltou para o a receber'); render();
 }
 function vARec() {
   var el = document.getElementById('v-arec'); if (!el) return;
@@ -1579,9 +1592,15 @@ function vARec() {
     + '<tr class="tot"><td>Total</td><td class="r">' + L.length + '</td><td class="r">' + brl(soma2(emDia, function (x) { return x.valor; })) + '</td><td class="r">' + brl(soma2(atr, function (x) { return x.valor; })) + '</td><td class="r"><b>' + brl(tot) + '</b></td></tr></tbody></table></div></div>';
   // proposta a proposta
   var ord = L.slice().sort(function (a, b) { return a.prevista < b.prevista ? -1 : a.prevista > b.prevista ? 1 : b.valor - a.valor; });
-  h += '<div class="box mt"><div class="lbl">Proposta a proposta</div><div class="tw rol"><table><thead><tr><th>Data prevista</th><th>Situação</th><th>Unidade</th><th>Cliente</th><th>Operadora</th><th>Proposta</th><th>Cadastro</th><th class="r">Parcela</th><th>Mês da parcela</th><th class="r">Valor</th></tr></thead><tbody>'
-    + ord.map(function (x) { return '<tr><td>' + x.prevista.split('-').reverse().join('/') + '</td><td>' + (x.situacao === 'atrasada' ? '<span class="pill er">atrasada ' + x.dias + ' dias</span>' : '<span class="pill ok">em dia</span>') + '</td><td>' + x.unidade + '</td><td>' + esc(x.cliente) + '</td><td>' + esc(x.operadora) + '</td><td>' + esc(x.proposta) + '</td><td>' + x.cadastro.split('-').reverse().join('/') + '</td><td class="r">' + x.parcela + 'ª</td><td>' + mesLabel(x.comp) + '</td><td class="r ' + (x.situacao === 'atrasada' ? 'rd' : 'gr') + '">' + brl(x.valor) + '</td></tr>'; }).join('')
+  h += '<div class="box mt"><div class="lbl">Proposta a proposta</div><div class="tw rol"><table><thead><tr><th>Data prevista</th><th>Situação</th><th>Unidade</th><th>Cliente</th><th>Operadora</th><th>Proposta</th><th>Cadastro</th><th class="r">Parcela</th><th>Mês da parcela</th><th class="r">Valor</th><th></th></tr></thead><tbody>'
+    + ord.map(function (x) { return '<tr><td>' + x.prevista.split('-').reverse().join('/') + '</td><td>' + (x.situacao === 'atrasada' ? '<span class="pill er">atrasada ' + x.dias + ' dias</span>' : '<span class="pill ok">em dia</span>') + '</td><td>' + x.unidade + '</td><td>' + esc(x.cliente) + '</td><td>' + esc(x.operadora) + '</td><td>' + esc(x.proposta) + '</td><td>' + x.cadastro.split('-').reverse().join('/') + '</td><td class="r">' + x.parcela + 'ª</td><td>' + mesLabel(x.comp) + '</td><td class="r ' + (x.situacao === 'atrasada' ? 'rd' : 'gr') + '">' + brl(x.valor) + '</td><td>' + (x.situacao === 'atrasada' && x.tipo === 'erp' ? '<button class="btn gh sm" onclick="cancelarProposta(\'' + x.id + '\')" title="A proposta foi cancelada: tirar do a receber">Cancelada</button>' : '') + '</td></tr>'; }).join('')
     + '</tbody></table></div><div class="m mt">Data prevista = vencimento da parcela no SisWeb (sem vencimento: 30 dias depois do último pagamento). Passou da data → atrasada e vai para o próximo recebimento. Sem receber em 90 dias → sai da conta do mês e o mês fica com o que realmente entrou.</div></div>';
+  // canceladas pela Optas
+  var canc = livroReceber().itens.filter(function (it) { return it.situacao === 'cancelada'; }), cp = {};
+  canc.forEach(function (it) { var g = cp[it.c.id] = cp[it.c.id] || { c: it.c, unidade: it.unidade, n: 0, v: 0, info: it.cancelada }; g.n++; g.v = r2(g.v + it.valor); });
+  if (canc.length) h += '<div class="box mt"><div class="lbl">Propostas canceladas <em>marcadas por você · fora do a receber · ' + Object.keys(cp).length + (Object.keys(cp).length === 1 ? ' proposta · ' : ' propostas · ') + brl(soma2(canc, function (x) { return x.valor; })) + ' que não vamos receber</em></div><div class="tw"><table><thead><tr><th>Cancelada em</th><th>Unidade</th><th>Cliente</th><th>Operadora</th><th>Proposta</th><th class="r">Parcelas não recebidas</th><th class="r">Valor não recebido</th><th></th></tr></thead><tbody>'
+    + Object.keys(cp).map(function (k) { var g = cp[k]; return '<tr><td>' + String(g.info.data || '').split('-').reverse().join('/') + '</td><td>' + g.unidade + '</td><td>' + esc(g.c.cliente || '') + '</td><td>' + esc(g.c.operadora) + '</td><td>' + esc(g.c.numero) + '</td><td class="r">' + g.n + '</td><td class="r rd">' + brl(g.v) + '</td><td><button class="btn gh sm" onclick="reativarProposta(\'' + k + '\')">Desfazer</button></td></tr>'; }).join('')
+    + '</tbody></table></div><div class="m mt">O que já foi recebido dessas propostas continua contando. As parcelas não recebidas saem do a receber de todos os meses, que ficam só com o que realmente entrou.</div></div>';
   // fora da conta
   var perd = livroReceber().itens.filter(function (it) { return it.situacao === 'perdida'; });
   if (perd.length) h += '<div class="box mt"><div class="lbl">Não recebidas em 90 dias <em>fora da conta · ' + perd.length + ' parcelas · ' + brl(soma2(perd, function (x) { return x.valor; })) + '</em></div><div class="tw rol"><table><thead><tr><th>Data prevista</th><th>Unidade</th><th>Cliente</th><th>Operadora</th><th>Proposta</th><th class="r">Parcela</th><th>Mês da parcela</th><th class="r">Valor</th></tr></thead><tbody>'

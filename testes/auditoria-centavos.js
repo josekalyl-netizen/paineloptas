@@ -113,6 +113,14 @@ const path = require('path');
       Object.keys(ESTADO.fechamentos).forEach(m => { const f = ESTADO.fechamentos[m]; if (f.resultado == null || f.exemplo) return; const cd = custoDetalhe(m); if (!cd) return;
         REGRAS.unidades.forEach(u => { const x = f.unidades[u]; if (x && x.saiu != null) ok(m + ' ' + u + ' detalhe dos custos = custos do mês', cd.unidades[u].total, x.saiu); });
         ok(m + ' detalhe dos custos total', cd.total, f.saiu); });
+      // cancelar proposta atrasada: parcelas não recebidas saem do a receber; desfazer volta ao que era
+      if (!DEMO && ERP.length) { const at = livroReceber().itens.filter(it => it.situacao === 'atrasada')[0];
+        if (at) { const antes = R.recebidas, antesT = itensAReceber().reduce((t, x) => t + x.valor, 0), bak = JSON.stringify(ESTADO.cancelados || {});
+          const naoRec = livroReceber().itens.filter(it => it.c.id === at.c.id && (it.situacao === 'atrasada' || it.situacao === 'em dia'));
+          ESTADO.cancelados = Object.assign({}, ESTADO.cancelados, { [at.c.id]: { data: '2026-11-25' } }); _livro = null; calcular();
+          ok('cancelada: sai do a receber exatamente o não recebido', antesT - itensAReceber().reduce((t, x) => t + x.valor, 0), naoRec.reduce((t, x) => t + x.valor, 0));
+          if (livroReceber().itens.some(it => it.c.id === at.c.id && it.situacao !== 'recebida' && it.situacao !== 'cancelada')) falhas.push('cancelada: sobrou parcela em aberto');
+          ESTADO.cancelados = JSON.parse(bak); _livro = null; calcular(); ok('desfazer cancelamento volta ao a receber', R.recebidas, antes); } }
       // comissões exportadas
       const d = linhasComissao(); R.vendedores.forEach(v => { const pv = d.propostas.filter(x => x['Vendedor(a)'] === v.nome); if (pv.length) ok(v.nome + ' comissão exportada = Σ propostas', v.comissao, pv.reduce((t, x) => t + x['Comissão do vendedor (R$)'], 0)); });
       return { falhas, resumo: R.res ? { primeiraParcela: R.primeira, parcelasAnteriores: R.caixaAnt.total, aReceber: R.res.recebidas, impostos: R.res.imposto, custoOperacao: R.res.custoOp, custoOperacaoTotal: R.res.custoOpTotal, comissoes: R.res.comissoes, custosDoMes: R.res.custos, lucroBruto: R.res.operacional, margemBruta: +(R.res.mBruta * 100).toFixed(2), investido: R.res.investido, reserva: R.res.reserva, lucroLiquido: R.res.financeiro, margemLiquida: +(R.res.mLiquida * 100).toFixed(2), roi: R.roi.roi } : 'sem a receber' };
