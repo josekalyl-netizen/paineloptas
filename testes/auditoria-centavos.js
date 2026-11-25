@@ -33,8 +33,8 @@ const path = require('path');
       // parcelas de vendas anteriores, recalculadas de forma independente
       let ant = 0; carteiraCompleta().forEach(c => { const ini = String(c.data_venda || c.data_inicio || '').slice(0, 7); if (!ini || ini >= R.mes) return; if (/cancel/i.test(c.situacao || '') && (!c.cancelado_em || String(c.cancelado_em).slice(0, 7) <= R.mes)) return; const rg = regraVenda(c); if (!rg || rg.ag == null) return; const k = (+R.mes.slice(0, 4) - +ini.slice(0, 4)) * 12 + (+R.mes.slice(5, 7) - +ini.slice(5, 7)); if (rg.valores) { ant += rg.valores[k] || 0; return; } if (rg.parc[k] && !(k === 0 && rg.modalidade === 'ADESÃO' && !REGRAS.adesaoTaxaParaOptas)) ant += r2(r2(+c.valor_mensal) * rg.parc[k]); });
       ok('parcelas anteriores', R.caixaAnt.total, ant);
-      U.forEach(u => { if (u.recebidas != null) ok(u.custos.unidade + ' a receber = 1ª parcela + anteriores + vitalício', u.recebidas, (u.primeira || 0) + (u.anteriores || 0) + (u.vitalicio || 0)); });
-      if (R.recebidas != null) { ok('a receber = 1ª parcela + anteriores + vitalício', R.recebidas, R.primeira + R.caixaAnt.total + R.vitalicio);
+      U.forEach(u => { if (u.recebidas != null) ok(u.custos.unidade + ' a receber = 1ª parcela + anteriores + vitalício + outras receitas', u.recebidas, (u.primeira || 0) + (u.anteriores || 0) + (u.vitalicio || 0) + (u.outrasReceitas || 0)); });
+      if (R.recebidas != null) { ok('a receber = 1ª parcela + anteriores + vitalício + outras receitas', R.recebidas, R.primeira + R.caixaAnt.total + R.vitalicio + U.reduce((t, u) => t + (u.outrasReceitas || 0), 0));
         { const v = R.vit, us = REGRAS.unidades; const esp = us.reduce((t, u) => t + (R.vitFonteU[u] === 'recebido' ? (v.recebidoPorUnidade[u] || 0) : (v.porUnidade[u] || 0)), 0) + (v.recebido != null ? v.recebidoSemUnidade : 0) + (us.some(u => R.vitFonteU[u] === 'previsto') ? v.semUnidade : 0);
           ok('vitalício no a receber (recebido por unidade, senão previsto)', R.vitalicio, esp); } ok('1ª parcela = Σ unidades', R.primeira, U.reduce((t, u) => t + (u.primeira || 0), 0)); }
       // investimento
@@ -61,7 +61,7 @@ const path = require('path');
         if (lb(m.sustentavel, x) < x.reserva || lb(r2(m.sustentavel - 0.01), x) >= x.reserva) falhas.push(n + ' mínimo com reserva'); });
       // ERP: cada mês base = 1ª parcela das cadastradas + anteriores + vitalício, por unidade e consolidado
       if (!DEMO && ERP.length) Object.keys(ESTADO.fechamentos).filter(k => ESTADO.fechamentos[k].fonte === 'ERP').forEach(k => { const f = ESTADO.fechamentos[k];
-        REGRAS.unidades.forEach(u => { const x = f.unidades[u]; ok(k + ' ' + u + ' a receber ERP', x.recebidas, x.primeira + x.anteriores + x.vitalicio);
+        REGRAS.unidades.forEach(u => { const x = f.unidades[u]; ok(k + ' ' + u + ' a receber ERP', x.recebidas, x.primeira + x.anteriores + x.vitalicio + (x.outrasReceitas || 0)); ok(k + ' ' + u + ' outras receitas', x.outrasReceitas || 0, lancExtratos(k, u).receitas);
           const cad = ERP.filter(c => c.data_venda.slice(0, 7) === k && unidadeCanon(c.unidade) === u && statusProposta(c) !== 'cancelada');
           ok(k + ' ' + u + ' produção ERP', x.producao, cad.reduce((t, c) => t + c.valor_mensal, 0)); ok(k + ' ' + u + ' 1ª parcela ERP', x.primeira, cad.reduce((t, c) => t + (c.tabela.valores[0] || 0), 0)); });
         ok(k + ' a receber ERP = Σ unidades', f.recebidas, REGRAS.unidades.reduce((t, u) => t + f.unidades[u].recebidas, 0)); });
@@ -69,6 +69,13 @@ const path = require('path');
       if (extratosOn()) EXTRATOS.extratos.forEach(x => { const L = EXTRATOS.linhas.filter(l => l.extrato === x.codigo), C = EXTRATOS.creditos_debitos.filter(c => c.extrato === x.codigo);
         ok('extrato ' + x.codigo + ' linhas', L.reduce((t, l) => t + l.liquido, 0), x.comissoes_liquido); ok('extrato ' + x.codigo + ' créd/déb', C.reduce((t, c) => t + c.liquido, 0), x.creditos_debitos);
         ok('extrato ' + x.codigo + ' líquido', x.acumulado + x.comissoes_liquido + x.creditos_debitos, x.liquido); });
+      // créditos/débitos: receitas e custos por tipo, unidade e mês = soma independente dos lançamentos
+      if (extratosOn()) { const meses = [...new Set(EXTRATOS.creditos_debitos.map(c => c.mes))];
+        meses.forEach(m => REGRAS.unidades.forEach(u => { const cs = EXTRATOS.creditos_debitos.filter(c => c.mes === m && unidadeCanon(c.unidade) === u), lx = lancExtratos(m, u);
+          ok(m + ' ' + u + ' receitas dos extratos', lx.receitas, cs.filter(c => tipoCD(c.descricao)[3] === 'receita').reduce((t, c) => t + c.liquido, 0));
+          ok(m + ' ' + u + ' custos dos extratos', lx.custos, -cs.filter(c => /^custo/.test(tipoCD(c.descricao)[3])).reduce((t, c) => t + c.liquido, 0));
+          ok(m + ' ' + u + ' custo fixo = estrutura + extratos', custosUnidade(u, m).fixo, custosUnidade(u, m).fixoEstrutura + lx.custos); }));
+        const semTipo = EXTRATOS.creditos_debitos.filter(c => tipoCD(c.descricao)[0] === '?'); if (semTipo.length) falhas.push(semTipo.length + ' crédito(s)/débito(s) sem classificação'); }
       // reserva: saldo dos meses anteriores e limite
       { const an = Object.keys(ESTADO.fechamentos).filter(k => k.slice(0, 4) === R.mes.slice(0, 4) && k < R.mes && ESTADO.fechamentos[k].producao != null);
         ok('saldo de reserva anterior', R.reservaAnterior, an.reduce((t, k) => t + ESTADO.fechamentos[k].reserva - (ESTADO.fechamentos[k].investido || 0), 0));

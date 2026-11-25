@@ -555,7 +555,8 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
    - Desconto administrativo de 8,5% **faz parte dos 15%** (metade desconta do corretor final, metade a W3G paga): o painel não desconta à parte; o a receber segue bruto e o imposto de 15% cobre.
    - "AD nª PARC" = adiantamento da 1ª parcela para o corretor Optas (equipe Valdecir em Mogi, Joana em Consolação).
    - SMS descontado no extrato ("LEADS – 44.716 SMS") é o mesmo custo do investimento já lançado: não duplica.
-   - Créditos/débitos e "Comissão Valdecir 40%": aguardando o usuário definir como tratar cada tipo.
+   - Créditos/débitos por tipo (mês = mês do extrato): **soma no a receber** — campanhas, acertos, devoluções e diferenças de desconto da 1ª parcela, premiações de operadora, comissões do Departamento de Seguros; **custo da unidade** — vales, adiantamentos (AD), estornos, rescisões, 10% sobre parcela, taxa de implantação, premiação para vendedor (R$ 100/vida); **custo de operação** — boletos de clientes e comissão do Valdecir 40% (Mogi, no mês do desconto; encerrada em julho/2026 — se aparecer depois, o painel alerta); **ignorado** — SMS (já é investimento).
+   - **Aguardando decisão:** salários, benefícios, férias e 13º dos extratos (sobreposição com a estrutura de custos) e "Retiradas Joana e boleto apartamento" (+R$ 64.773,05, maio/2026). O aluguel Verus (−R$ 22.744,32 em março) foi estornado em maio (+R$ 22.744,32): efeito zero.
 13. **Fonte dos dados reais:** fechamento de folha mensal (vendas e vitalícios recebidos), relatórios de recebimento (o que entrou, atrasou e falta receber), acesso ao Apps Script e ao ERP.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
