@@ -159,7 +159,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--peach);border-co
 .st{font-family:var(--head);font-weight:800;font-size:12px;letter-spacing:.1em;border-radius:6px;padding:3px 8px}
 .st.lucro{background:var(--green-t);color:var(--green)}.st.prej{background:var(--red-t);color:var(--red)}.st.nd{background:var(--tint);color:var(--mute)}
 .fx{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--tint-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:8px;color:var(--ink)}
-.eq{display:grid;grid-template-columns:1fr auto 1fr auto 1.2fr;gap:14px;align-items:stretch;margin-top:16px}
+.eq{display:grid;grid-template-columns:1fr auto 1fr auto 1.2fr;gap:14px;align-items:stretch;margin-top:16px}.eq.e4{grid-template-columns:1fr auto 1fr auto 1fr auto 1.2fr}table.dre{width:100%;margin-top:12px;border-collapse:collapse}table.dre td{padding:7px 4px;border-bottom:1px solid var(--line,#eee);font-size:14px}table.dre td.r{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}table.dre tr.sub td{font-weight:800;background:var(--tint-2)}table.dre td.op{width:18px;color:var(--mute);font-weight:800}table.dre td.r.gr{color:var(--green)}table.dre td.r.rd{color:var(--red)}
 @media(max-width:900px){.eq{grid-template-columns:1fr}.eqo{display:none}}
 .eqc{background:var(--tint-2);border-radius:12px;padding:14px 16px;min-width:0}
 .eqc.res-lucro{background:var(--green-t)}.eqc.res-prej{background:var(--red-t)}
@@ -1337,15 +1337,15 @@ function resumoAno(ano) {
   t.pior = comRec.slice().sort(function (a, b) { return a.resultado - b.resultado; })[0];
   t.mesesLucro = comRec.filter(function (m) { return m.resultado >= 0; }).length;
   t.unidades = {};
-  REGRAS.unidades.forEach(function (u) { var us = comRec.map(function (m) { return (m.unidades || {})[u]; }).filter(Boolean); t.unidades[u] = { producao: soma2(us, function (x) { return x.producao || 0; }), recebidas: soma2(us, function (x) { return x.recebidas || 0; }), saiu: soma2(us, function (x) { return x.saiu || 0; }), resultado: soma2(us, function (x) { return x.resultado || 0; }), depois: soma2(us, function (x) { return x.depois || 0; }), n: us.length }; });
+  REGRAS.unidades.forEach(function (u) { var us = comRec.map(function (m) { return (m.unidades || {})[u]; }).filter(Boolean); t.unidades[u] = { producao: soma2(us, function (x) { return x.producao || 0; }), recebidas: soma2(us, function (x) { return x.recebidas || 0; }), saiu: soma2(us, function (x) { return x.saiu || 0; }), resultado: soma2(us, function (x) { return x.resultado || 0; }), depois: soma2(us, function (x) { return x.depois || 0; }), investido: soma2(us, function (x) { return x.investido || 0; }), n: us.length }; });
   return t;
 }
 function faixaAno() {
   var ano = +R.mes.slice(0, 4), t = resumoAno(ano);
   if (!t.nRec) return '';
-  var ok = t.resultado >= 0;
+  var ok = t.depois >= 0;
   return '<button class="box unit ' + (ok ? 'lucro' : 'prej') + ' mt" onclick="show(\'ano\')" style="display:block"><div class="split"><div class="lbl">' + ano + ' até agora</div><span class="st ' + (ok ? 'lucro' : 'prej') + '">' + (ok ? 'SE SUSTENTANDO NO ANO' : 'NÃO SE SUSTENTANDO NO ANO') + '</span></div>'
-    + '<div class="kpirow" style="margin-top:10px"><div>A receber no ano<b class="gr">' + brl(t.recebidas) + '</b></div><div>Custos no ano<b class="rd">' + brl(t.saiu) + '</b></div><div>Lucro bruto<b class="' + (ok ? 'gr' : 'rd') + '">' + brl(t.resultado) + '</b></div><div>Lucro líquido<b class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</b></div><div>Meses que se pagaram<b>' + t.mesesLucro + ' de ' + t.nRec + '</b></div></div></button>';
+    + '<div class="kpirow" style="margin-top:10px"><div>A receber no ano<b class="gr">' + brl(t.recebidas) + '</b></div><div>Custos no ano<b class="rd">' + brl(t.saiu) + '</b></div><div>Lucro bruto<b class="' + (t.resultado >= 0 ? 'gr' : 'rd') + '">' + brl(t.resultado) + '</b></div><div>Lucro líquido<b class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</b></div><div>Meses que se pagaram<b>' + t.mesesLucro + ' de ' + t.nRec + '</b></div></div></button>';
 }
 // Detalhe dos custos de um mês, por unidade: tudo o que entra em "Custos" (imposto + comissões + custo da unidade + provisão)
 function custoDetalhe(mes) {
@@ -1482,16 +1482,17 @@ function blocoCustoDetalhe(mes) {
 function vAno() {
   var anos = {}; Object.keys(ESTADO.fechamentos).forEach(function (k) { anos[k.slice(0, 4)] = 1; }); anos[R.mes.slice(0, 4)] = 1;
   var lista = Object.keys(anos).sort(), ano = +(vAno.sel || R.mes.slice(0, 4)), t = resumoAno(ano), fechadoAno = ESTADO.anos[ano];
-  var ok = t.resultado >= 0, st = t.nRec ? (ok ? 'lucro' : 'prej') : 'nd';
+  var ok = t.depois >= 0, st = t.nRec ? (ok ? 'lucro' : 'prej') : 'nd';   // sustentação = lucro líquido (depois do investimento): é a soma das unidades
   var h = '<div class="split"><div class="tabs" style="margin:0;border:0">' + lista.map(function (a) { return '<button class="tab' + (+a === ano ? ' on' : '') + '" onclick="vAno.sel=' + a + ';vAno()">' + a + (ESTADO.anos[a] ? ' ✓' : '') + '</button>'; }).join('') + '</div>'
     + '<div><button class="btn gh sm" onclick="window.print()">Imprimir / salvar PDF</button></div></div>';
   // Sustentação
   h += '<div class="box res ' + st + ' mt"><div class="lbl">' + (fechadoAno ? 'Balanço geral de ' + ano + ' · ano fechado em ' + fechadoAno.fechadoEm.split('-').reverse().join('/') : (t.n === 12 || R.mes === ano + '-12' ? 'Balanço geral de ' + ano : 'Sustentação de ' + ano + ' até agora')) + '</div>'
-    + '<div class="eq">'
+    + '<div class="eq e4">'
     + '<div class="eqc c-in"><div class="eqk">A receber no ano</div><div class="eqv">' + brl(t.recebidas) + '</div></div><div class="eqo">−</div>'
-    + '<div class="eqc c-out"><div class="eqk">Custos no ano</div><div class="eqv">' + brl(t.saiu) + '</div></div><div class="eqo">=</div>'
-    + '<div class="eqc res-' + st + '"><div class="eqk">' + (t.nRec ? (ok ? 'Se sustentando no ano' : 'Não se sustentando no ano') : 'Sem meses com valores') + '</div><div class="eqv big2">' + (t.nRec ? brl(t.resultado) : '—') + '</div><div class="eqd">' + (t.nRec ? t.mesesLucro + ' de ' + t.nRec + ' meses no lucro' : '') + '</div></div></div>';
-  h += '<div class="grid g5 mt">' + mini('Reserva de marketing no ano', '<span class="inv">' + brl(t.reserva) + '</span>') + mini('Investido no ano', '<span class="inv">' + brl(t.investidoTotal) + '</span>') + mini('Lucro líquido', '<span class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</span>', '') + mini('Saldo do ano anterior', brl(t.saldoAnterior)) + mini('Acumulado com o ano anterior', '<span class="' + (t.acumulado >= 0 ? 'gr' : 'rd') + '">' + brl(t.acumulado) + '</span>', '') + '</div></div>';
+    + '<div class="eqc c-out"><div class="eqk">Custos no ano</div><div class="eqv">' + brl(t.saiu) + '</div></div><div class="eqo">−</div>'
+    + '<div class="eqc"><div class="eqk">Investido no ano</div><div class="eqv inv">' + brl(t.investidoTotal) + '</div></div><div class="eqo">=</div>'
+    + '<div class="eqc res-' + st + '"><div class="eqk">' + (t.nRec ? (ok ? 'Se sustentando no ano' : 'Não se sustentando no ano') : 'Sem meses com valores') + '</div><div class="eqv big2">' + (t.nRec ? brl(t.depois) : '—') + '</div><div class="eqd">' + (t.nRec ? 'lucro líquido · lucro bruto ' + brl(t.resultado) : '') + '</div></div></div>';
+  h += '<div class="grid g5 mt">' + mini('Reserva de marketing no ano', '<span class="inv">' + brl(t.reserva) + '</span>') + mini('Lucro bruto', '<span class="' + (t.resultado >= 0 ? 'gr' : 'rd') + '">' + brl(t.resultado) + '</span>') + mini('Meses que se pagaram', t.mesesLucro + ' de ' + t.nRec) + mini('Saldo do ano anterior', brl(t.saldoAnterior)) + mini('Acumulado com o ano anterior', '<span class="' + (t.acumulado >= 0 ? 'gr' : 'rd') + '">' + brl(t.acumulado) + '</span>', '') + '</div></div>';
   // Provisão
   var pctProv = t.provisaoAcum / t.provisaoAnual, coberta = t.nRec ? t.resultado >= 0 : null;
   h += '<div class="box dk mt"><div class="lbl">Provisão de 13º e férias em ' + ano + '</div><div class="grid g4 mt">'
@@ -1528,7 +1529,7 @@ function vAno() {
     + (t.melhor ? '<div class="kpirow"><div>Melhor mês<b>' + mesLabel(t.melhor.mes) + ' · ' + brl(t.melhor.resultado) + '</b></div><div>Pior mês<b>' + mesLabel(t.pior.mes) + ' · ' + brl(t.pior.resultado) + '</b></div><div>Meses que se pagaram<b>' + t.mesesLucro + ' de ' + t.nRec + '</b></div></div>' : '') + '</div>';
   // Unidades
   h += '<div class="grid g2 mt">';
-  REGRAS.unidades.forEach(function (u) { var x = t.unidades[u], o2 = x.resultado >= 0; h += '<div class="box ' + (x.n ? (o2 ? 'bgr' : 'brd') : '') + '"><div class="split"><div class="lbl">' + u + ' em ' + ano + '</div>' + (x.n ? '<span class="st ' + (o2 ? 'lucro' : 'prej') + '">' + (o2 ? 'SE SUSTENTANDO' : 'NÃO SE SUSTENTANDO') + '</span>' : '') + '</div><div class="grid g4 mt">' + mini('Produção', brl0(x.producao)) + mini('A receber', brl0(x.recebidas)) + mini('Custos', brl0(x.saiu)) + mini('Resultado', '<span class="' + (o2 ? 'gr' : 'rd') + '">' + brl0(x.resultado) + '</span>') + '</div></div>'; });
+  REGRAS.unidades.forEach(function (u) { var x = t.unidades[u], o2 = x.depois >= 0; h += '<div class="box ' + (x.n ? (o2 ? 'bgr' : 'brd') : '') + '"><div class="split"><div class="lbl">' + u + ' em ' + ano + '</div>' + (x.n ? '<span class="st ' + (o2 ? 'lucro' : 'prej') + '">' + (o2 ? 'SE SUSTENTANDO' : 'NÃO SE SUSTENTANDO') + '</span>' : '') + '</div><table class="dre"><tr><td class="op"></td><td>A receber</td><td class="r gr">' + brl(x.recebidas) + '</td></tr><tr><td class="op">−</td><td>Custos</td><td class="r rd">' + brl(x.saiu) + '</td></tr><tr class="sub"><td class="op">=</td><td>Lucro bruto</td><td class="r ' + (x.resultado >= 0 ? 'gr' : 'rd') + '">' + brl(x.resultado) + '</td></tr><tr><td class="op">−</td><td>Investido</td><td class="r inv">' + brl(x.investido) + '</td></tr><tr class="sub"><td class="op">=</td><td>Lucro líquido</td><td class="r ' + (o2 ? 'gr' : 'rd') + '">' + brl(x.depois) + '</td></tr></table></div>'; });
   h += '</div>';
   // Fechar o ano
   if (!fechadoAno) {
