@@ -1229,18 +1229,18 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
     + '<div class="mgc ' + (res.mLiquida >= 0 ? 'c-in' : 'c-out') + '"><span>Margem líquida</span><b>' + pct(res.mLiquida, 1) + '</b></div>'
     + '<div class="mgc c-inv"><span>Investido em marketing</span><b>' + pct(res.mMkt, 1) + '</b></div></div>';
   // 2. Metas
-  // Metas medidas só pela 1ª parcela das vendas do mês: o mês precisa se pagar com ela
-  var p1 = tem ? (primeira || 0) : null;
+  // Metas medidas pelo a receber total do mês (1ª parcela + parcelas anteriores + vitalício + outras receitas) — decisão de 25/11/2026
+  var p1 = tem ? recebidas : null;
   var base = r2(comissoes + fixo + prov);
   var metaLinha = function (nome, alvo, extra) {
     var p = tem && alvo > 0 ? p1 / alvo : 0, ok = tem && p1 >= alvo;
     return '<div class="mg"><div class="mgh"><span>' + nome + '</span><b>' + brl(alvo) + '</b></div>'
-      + '<div class="mgd">operação e comissões ' + brl(base) + ' + imposto sobre a 1ª parcela ' + brl(r2(alvo * REGRAS.imposto)) + (extra ? ' + reserva de marketing ' + brl(extra) : '') + '</div>'
+      + '<div class="mgd">operação e comissões ' + brl(base) + ' + imposto sobre o a receber ' + brl(r2(alvo * REGRAS.imposto)) + (extra ? ' + reserva de marketing ' + brl(extra) : '') + '</div>'
       + '<div class="mgt"><i class="' + (ok ? 'ok' : 'no') + '" style="width:' + Math.min(100, p * 100) + '%"></i></div>'
-      + '<div class="mgf">' + (tem ? '<span class="mga">1ª parcela hoje <b>' + brl(p1) + '</b></span><span class="pill ' + (ok ? 'ok' : 'er') + '">' + (ok ? 'acima em ' : 'faltam ') + brl(Math.abs(p1 - alvo)) + '</span>' : '') + '</div></div>';
+      + '<div class="mgf">' + (tem ? '<span class="mga">a receber hoje <b>' + brl(p1) + '</b></span><span class="pill ' + (ok ? 'ok' : 'er') + '">' + (ok ? 'acima em ' : 'faltam ') + brl(Math.abs(p1 - alvo)) + '</span>' : '') + '</div></div>';
   };
-  h += '<div class="meta"><div class="metat">Meta da 1ª parcela das vendas do mês</div><div class="mgs">'
-    + metaLinha('1ª parcela mínima para não fechar no vermelho', mn.empate) + metaLinha('1ª parcela mínima para não fechar no vermelho e investir', mn.sustentavel, reserva) + '</div></div>';
+  h += '<div class="meta"><div class="metat">Meta do a receber do mês</div><div class="mgs">'
+    + metaLinha('A receber mínimo para não fechar no vermelho', mn.empate) + metaLinha('A receber mínimo para não fechar no vermelho e investir', mn.sustentavel, reserva) + '</div></div>';
   // já garantido para os próximos meses (parcelas das vendas já feitas)
   if (/^Optas consolidado/.test(titulo)) { var fut = aReceberFuturo(R.mes, 6); h += '<div class="meta"><div class="metat">Já garantido nos próximos meses</div><div class="futs">' + fut.map(function (f) { return '<div class="fut"><span>' + MESES[+f.mes.slice(5, 7) - 1].slice(0, 3) + '/' + f.mes.slice(2, 4) + '</span><b class="' + (f.valor ? 'gr' : 'mu') + '">' + brl(f.valor) + '</b></div>'; }).join('') + '</div></div>'; }
   // 3. Para onde vai o dinheiro
@@ -1637,9 +1637,9 @@ function responder(txt) {
   if (/liquid/.test(t)) return chip('Lucro líquido · ' + nome, brl(x.financeiro), sinal(x.financeiro)) + chip('Margem líquida', pct(x.mLiquida, 1), sinal(x.mLiquida));
   if (/margem/.test(t)) return chip('Margem bruta · ' + nome, pct(x.mBruta, 1), sinal(x.mBruta)) + chip('Margem líquida', pct(x.mLiquida, 1), sinal(x.mLiquida)) + chip('Investido em mkt', pct(x.mMkt, 1), 'inv');
   if (/(vermelho|minimo|mínimo|empat|precis|falta|meta)/.test(t)) {
-    var c = U ? U.custos : { fixo: R.custoFixo, provisao: R.provisao }, mn = minimos(U ? U.comissaoResultado : R.comissoesResultado, r2(c.fixo + c.provisao), x ? x.reserva : R.reservaMkt), rec = x ? (U ? (U.primeira || 0) : R.primeira) : null;
+    var c = U ? U.custos : { fixo: R.custoFixo, provisao: R.provisao }, mn = minimos(U ? U.comissaoResultado : R.comissoesResultado, r2(c.fixo + c.provisao), x ? x.reserva : R.reservaMkt), rec = x ? x.recebidas : null;
     var st = function (alvo) { return rec == null ? '' : (rec >= alvo ? ' · acima em ' + brl(rec - alvo) : ' · faltam ' + brl(alvo - rec)); };
-    return chip('1ª parcela das vendas', rec != null ? brl(rec) : '—', 'in') + chip('Não fechar no vermelho · ' + nome, brl(mn.empate) + st(mn.empate), rec != null && rec >= mn.empate ? 'in' : 'out') + chip('Não fechar no vermelho e investir', brl(mn.sustentavel) + st(mn.sustentavel), rec != null && rec >= mn.sustentavel ? 'in' : 'out');
+    return chip('A receber no mês', rec != null ? brl(rec) : '—', 'in') + chip('Não fechar no vermelho · ' + nome, brl(mn.empate) + st(mn.empate), rec != null && rec >= mn.empate ? 'in' : 'out') + chip('Não fechar no vermelho e investir', brl(mn.sustentavel) + st(mn.sustentavel), rec != null && rec >= mn.sustentavel ? 'in' : 'out');
   }
   if (/vitalic/.test(t)) return chip('A receber · vitalício', R.vit.n ? brl(R.vit.total) : '—', 'in') + chip('Recebido', R.vit.recebido != null ? brl(R.vit.recebido) : '—', 'in') + chip('Contratos rodando', String(R.vit.n), '');
   if (/(lucro|bruto|resultado|sobr|ganh)/.test(t)) return chip((x.operacional >= 0 ? 'Lucro bruto · ' : 'Prejuízo · ') + nome, brl(x.operacional), sinal(x.operacional)) + chip('Margem bruta', pct(x.mBruta, 1), sinal(x.mBruta)) + chip('Lucro líquido', brl(x.financeiro), sinal(x.financeiro));

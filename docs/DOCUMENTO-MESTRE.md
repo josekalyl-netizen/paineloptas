@@ -490,7 +490,7 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
 **Modelo de caixa (regra do usuário):**
 - A 1ª parcela de cada venda entra no mês da venda; a 2ª no mês seguinte, e assim por diante, conforme a grade.
 - **A receber no mês = 1ª parcela das vendas do mês + parcelas das vendas dos meses anteriores.**
-- A meta é o mês se pagar só com a 1ª parcela das vendas do mês ("não fechar no vermelho" e "não fechar no vermelho e investir"). As parcelas seguintes viram lucro nos meses seguintes. Nos primeiros meses o resultado fica negativo — é esperado.
+- ~~A meta é o mês se pagar só com a 1ª parcela~~ → **substituído em 12.24 item 8**: o mês se paga com o a receber total do mês.
 - O painel mostra o que já está garantido para os próximos 6 meses (parcelas das vendas já feitas).
 - ROI: retorno = comissão total contratada (todas as parcelas) das vendas da campanha.
 
@@ -572,6 +572,7 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
 4. **Salários sem mês na descrição:** ficam no mês do desconto (sem retroativo).
 5. **Vendas fora do projeto no mês atual:** só as cadastradas no ERP (produção, 1ª parcela, contratado e reserva). O PipeRun fica só para a comissão de cada vendedor até a integração completa.
 7. **ROI = (1ª parcela das vendas do mês − investido no mês) ÷ investido**, com o valor da 1ª parcela do SisWeb (o recebido, quando já veio no extrato). Geral até novembro/2026; por campanha a partir de dezembro/2026 (1ª parcela das vendas de cada campanha).
+8. **Metas do mês ("não fechar no vermelho" e "não fechar no vermelho e investir"):** medidas pelo **a receber total do mês** (1ª parcela + parcelas anteriores + vitalício + outras receitas), não só pela 1ª parcela. O ROI continua pela 1ª parcela (item 7).
 6. **Empréstimo (retiradas da Joana, boleto do apartamento, aluguel Verus):** fora do sistema, pago por fora; o painel ignora esses lançamentos.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
