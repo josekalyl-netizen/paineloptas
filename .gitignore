@@ -1,2 +1,6 @@
 __pycache__/
 .DS_Store
+# Dados do ERP com informações de clientes: ficam fora do repositório
+data/erp/
+index.html
+apps-script/Index.html

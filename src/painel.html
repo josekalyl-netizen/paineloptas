@@ -496,6 +496,21 @@ var LS_KEY = 'optas_painel_estado_v1';
 var DEMO = __DEMO__ || /[?&]demo=1/.test(location.search);
 // Investimentos reais já registrados (SMS Kolmeya · NOVO OPTAS MOGI, jan–out/2026), conferidos envio × R$ 0,0530
 var INV_BASE = __INVBASE__;
+// Propostas do ERP (Mogi e Consolação): data da venda = data de cadastro; comissão da Optas = parcelas do próprio ERP
+var ERP = __ERP__;
+// Situação da proposta (decisão de 25/11/2026):
+//  cancelada (inclusive na operadora) → registra, sai da conta
+//  cancelada sem confirmação da 1ª: 90 dias ou mais desde o cancelamento → cancelada; menos de 90 dias → válida em aberto
+//  inadimplente → válida e implantada · implantado → implantado · o resto → válida em aberto
+function statusProposta(c, ref) {
+  var s = norm(c.situacao || ''), hoje = ref || hojeISO();
+  if (/cancel/.test(s)) {
+    if (/sem confirm/.test(s) && /primeira|1a/.test(s)) { var dc = String(c.cancelado_em || ''); var dias = dc ? (new Date(hoje) - new Date(dc.slice(0, 10))) / 864e5 : 0; return dc && dias >= 90 ? 'cancelada' : 'aberta'; }
+    return 'cancelada';
+  }
+  if (/inadimpl|implant/.test(s) || (!s && c.implantacao)) return 'implantada';
+  return 'aberta';
+}
 // Versão publicada (Apps Script): sem as abas Pendências e Regras (decisão do usuário, 24/11/2026)
 var PUBLICADO = __PUBLICADO__;
 // Exemplo ILUSTRATIVO só para visualizar o layout — nunca salvo, nunca usado com dados reais.
@@ -620,7 +635,7 @@ function idadeTitular(c) {
   var ref = String(c.data_venda || c.data_inicio || hojeISO()), a = +ref.slice(0, 4) - +dn.slice(0, 4);
   if (ref.slice(5, 10) < dn.slice(5, 10)) a--; return a;
 }
-function parcelasReais(valor, rg) { return (rg && rg.parc ? rg.parc : []).map(function (x, k) { return k === 0 && rg.modalidade === 'ADESÃO' && !REGRAS.adesaoTaxaParaOptas ? 0 : r2(valor * x); }); }
+function parcelasReais(valor, rg) { if (rg && rg.valores) return rg.valores.slice(); return (rg && rg.parc ? rg.parc : []).map(function (x, k) { return k === 0 && rg.modalidade === 'ADESÃO' && !REGRAS.adesaoTaxaParaOptas ? 0 : r2(valor * x); }); }
 // Percentual de agenciamento de uma operadora numa modalidade (para tabelas e referências)
 var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 function mesLabel(k) { var p = k.split('-'); var m = MESES[+p[1] - 1]; return m.charAt(0).toUpperCase() + m.slice(1) + ' ' + p[0]; }
@@ -872,7 +887,10 @@ function calcular() {
 
   // ---------- Vitalício da carteira ----------
   R.vitalicio = soma2(REGRAS.unidades, function (u) { return R.unidades[u].vitalicio || 0; });
-  if (!(ESTADO.carteira || []).length) R.alertas.push({ sev: 'wa', cod: 'CARTEIRA', titulo: 'Carteira ativa não carregada', texto: 'O vitalício previsto considera só os contratos registrados no painel.', impacto: 'A receber · vitalício', acao: 'Enviar a lista de contratos ativos (aba Carteira ativa da planilha).' });
+  if (!DEMO && ERP.length && !ERP.some(function (c) { return c.situacao; })) R.alertas.push({ sev: 'wa', cod: 'STATUS_ERP', titulo: 'Propostas do ERP sem situação', texto: ERP.length + ' propostas importadas do ERP sem a coluna de situação (cancelada, implantada, inadimplente). Todas estão sendo tratadas como válidas; as que têm data de implantação, como implantadas.', impacto: 'Cancelamentos ainda não saem da conta (a receber, vitalício e produção dos meses anteriores).', acao: 'Exportar do ERP a situação de cada proposta e a data do cancelamento.' });
+  var semComOptas = DEMO ? [] : ERP.filter(function (c) { return !c.tabela || !c.tabela.parc.length; });
+  if (semComOptas.length) R.alertas.push({ sev: 'wa', cod: 'ERP_SEM_COMISSAO', titulo: semComOptas.length + ' proposta(s) do ERP sem comissão da Optas cadastrada', texto: semComOptas.map(function (c) { return c.numero + ' · ' + c.operadora; }).join(' | '), impacto: 'Essas propostas não geram a receber no painel.', acao: 'Cadastrar no ERP a comissão da corretora (Optas Mogi / Verus Consolação) dessas propostas.' });
+  if (!(ESTADO.carteira || []).length && (DEMO || !ERP.length)) R.alertas.push({ sev: 'wa', cod: 'CARTEIRA', titulo: 'Carteira ativa não carregada', texto: 'O vitalício previsto considera só os contratos registrados no painel.', impacto: 'A receber · vitalício', acao: 'Enviar a lista de contratos ativos (aba Carteira ativa da planilha).' });
   if (R.vit.nSemRegra) R.alertas.push({ sev: 'wa', cod: 'VIT_REGRA', titulo: R.vit.nSemRegra + ' contrato(s) da carteira sem % de vitalício', texto: brl(R.vit.semRegra) + ' de mensalidade fora do vitalício previsto.', impacto: 'A receber · vitalício', acao: 'Informar o vitalício da operadora/modalidade (Pendência 1).' });
 
   // ---------- Investimentos / ROI ----------
@@ -986,6 +1004,21 @@ function aplicarBaseInvest() {
 }
 // Meses anteriores do ano sem fechamento: custos replicados da estrutura atual (decisão de 25/11/2026) e investimento real;
 // a receber e comissões ficam em branco até chegar o fechamento de folha do mês.
+// Mês pelo ERP (vendas fora do projeto): 1ª parcela das propostas cadastradas no mês + parcelas das anteriores + vitalício
+function erpMes(mes) {
+  var o = { n: 0, porUnidade: {} }, ant = parcelasAnteriores(mes), vit = calcVitalicio(mes);
+  REGRAS.unidades.forEach(function (u) { o.porUnidade[u] = { n: 0, producao: 0, primeira: 0, contratado: 0, vidas: 0, anteriores: ant.porUnidade[u] || 0, vitalicio: vit.porUnidade[u] || 0 }; });
+  if (DEMO) return o;
+  ERP.forEach(function (c) {
+    if ((c.data_venda || '').slice(0, 7) !== mes || statusProposta(c) === 'cancelada') return;
+    var u = o.porUnidade[unidadeCanon(c.unidade)]; if (!u) return;
+    var pr = parcelasReais(c.valor_mensal, regraVenda(c));
+    u.n++; o.n++; u.producao = r2(u.producao + c.valor_mensal); u.primeira = r2(u.primeira + (pr[0] || 0)); u.contratado = r2(u.contratado + soma2(pr, function (x) { return x; })); u.vidas += +c.vidas || 0;
+  });
+  REGRAS.unidades.forEach(function (u) { var x = o.porUnidade[u]; x.recebidas = r2(r2(x.primeira + x.anteriores) + x.vitalicio); });
+  if (!o.n) REGRAS.unidades.forEach(function (u) { if (o.porUnidade[u].anteriores || o.porUnidade[u].vitalicio) o.n = -1; });
+  return o;
+}
 function aplicarBaseMeses() {
   if (DEMO) return;
   var ano = R.mes.slice(0, 4);
@@ -993,11 +1026,14 @@ function aplicarBaseMeses() {
     var mes = ano + '-' + String(m).padStart(2, '0'), f = ESTADO.fechamentos[mes];
     if (f && (f.fechado || !f.base)) continue;
     var inv = ESTADO.investimentos.filter(function (i) { return (i.data || '').slice(0, 7) === mes; }), un = {}, t = { producao: null, recebidas: null, comissoes: null, fixo: 0, provisao: 0, investido: 0 };
+    var ex = erpMes(mes);
     REGRAS.unidades.forEach(function (u) {
-      var c = custosUnidade(u, mes), iv = soma2(inv.filter(function (i) { return unidadeCanon(i.unidade) === u; }), function (i) { return +i.valor || 0; });
-      un[u] = compor({ producao: null, recebidas: null, comissoes: null, fixo: c.fixo, provisao: c.provisao, investido: iv });
+      var c = custosUnidade(u, mes), iv = soma2(inv.filter(function (i) { return unidadeCanon(i.unidade) === u; }), function (i) { return +i.valor || 0; }), e = ex.porUnidade[u];
+      un[u] = compor({ producao: ex.n ? e.producao : null, recebidas: ex.n ? e.recebidas : null, comissoes: null, fixo: c.fixo, provisao: c.provisao, investido: iv, contratado: ex.n ? e.contratado : null, primeira: e.primeira, anteriores: e.anteriores, vitalicio: e.vitalicio, vidas: e.vidas, propostas: e.n });
       t.fixo = r2(t.fixo + c.fixo); t.provisao = r2(t.provisao + c.provisao);
     });
+    if (ex.n) ['producao', 'recebidas', 'contratado', 'primeira', 'anteriores', 'vitalicio'].forEach(function (k) { t[k] = soma2(REGRAS.unidades, function (u) { return un[u][k] || 0; }); });
+    t.fonte = ex.n ? 'ERP' : '';
     t.investido = soma2(inv, function (i) { return +i.valor || 0; });
     ESTADO.fechamentos[mes] = Object.assign(compor(t), { mes: mes, unidades: un, fechado: false, base: true, versao: REGRAS.versao });
   }
@@ -1005,7 +1041,9 @@ function aplicarBaseMeses() {
 function render() {
   aplicarBaseInvest();
   R = calcular();
+  var antesBase = JSON.stringify(ESTADO.fechamentos);
   aplicarBaseMeses();
+  if (JSON.stringify(ESTADO.fechamentos) !== antesBase) R = calcular();   // meses anteriores mudaram (saldo da reserva, ano)
   document.getElementById('hdPeriodo').textContent = mesLabel(R.mes) + (FONTE && FONTE.atualizado ? ' · atualizado ' + FONTE.atualizado : '');
   document.getElementById('hdFonte').innerHTML = '<span class="dot" style="color:' + (GAS ? 'var(--green)' : 'var(--gold)') + '"></span>' + (GAS ? 'Integração ao vivo' : 'Snapshot local');
   document.getElementById('hdRegras').textContent = REGRAS.versao;
@@ -1148,10 +1186,11 @@ function vUnidade(u) {
 function compor(p) {
   var o = Object.assign({}, p), tem = p.recebidas != null;
   o.imposto = tem ? (p.imposto != null ? p.imposto : r2(p.recebidas * REGRAS.imposto)) : null;
-  o.saiu = tem ? r2(o.imposto + p.comissoes + p.fixo + p.provisao) : null;
-  o.resultado = tem ? r2(p.recebidas - o.saiu) : null;
+  var temC = tem && p.comissoes != null;   // sem as comissões do mês não há resultado
+  o.saiu = temC ? r2(o.imposto + p.comissoes + p.fixo + p.provisao) : null;
+  o.resultado = temC ? r2(p.recebidas - o.saiu) : null;
   o.reserva = r2((p.producao || 0) * REGRAS.reservaMarketing);
-  o.depois = tem ? r2(o.resultado - r2(p.investido || 0)) : null;   // lucro líquido = lucro bruto − investido real
+  o.depois = temC ? r2(o.resultado - r2(p.investido || 0)) : null;   // lucro líquido = lucro bruto − investido real
   return o;
 }
 function fotoMes() {
@@ -1180,7 +1219,7 @@ function mesesDoAno(ano) { return Object.keys(ESTADO.fechamentos).filter(functio
 function roiMes(m) { if (!m.investido || m.contratado == null) return '—'; var x = (m.contratado - m.investido) / m.investido; return '<b class="' + (x >= 0 ? 'gr' : 'rd') + '">' + pct(x) + '</b>'; }
 function resumoAno(ano) {
   var ms = mesesDoAno(ano).map(function (k) { return ESTADO.fechamentos[k]; });
-  var comRec = ms.filter(function (m) { return m.recebidas != null; });
+  var comRec = ms.filter(function (m) { return m.resultado != null; });
   var t = { meses: ms, n: ms.length, nRec: comRec.length };
   ['producao', 'recebidas', 'imposto', 'comissoes', 'fixo', 'provisao', 'saiu', 'resultado', 'reserva', 'depois', 'investido'].forEach(function (x) { t[x] = soma2(comRec, function (m) { return m[x] || 0; }); });
   t.producaoTotal = soma2(ms, function (m) { return m.producao || 0; });
@@ -1277,7 +1316,7 @@ function fecharAno(ano) {
 function mesesEntre(a, b) { return (+b.slice(0, 4) - +a.slice(0, 4)) * 12 + (+b.slice(5, 7) - +a.slice(5, 7)); }
 function carteiraCompleta() {
   var m = {};
-  ESTADO.contratos.concat(ESTADO.carteira || []).forEach(function (c) { var k = c.contrato || c.id_venda; if (k) m[k] = c; });
+  (DEMO ? [] : ERP.filter(function (c) { return statusProposta(c) !== 'cancelada'; })).concat(ESTADO.contratos, ESTADO.carteira || []).forEach(function (c) { var k = c.contrato || c.id_venda; if (k) m[k] = c; });
   return Object.keys(m).map(function (k) { return m[k]; });
 }
 function calcVitalicio(mes) {
@@ -1286,7 +1325,7 @@ function calcVitalicio(mes) {
     var inicio = String(c.data_inicio || c.data_venda || '').slice(0, 7); if (!inicio || inicio > mes) return;
     if (/cancel/i.test(c.situacao || '') && (!c.cancelado_em || String(c.cancelado_em).slice(0, 7) <= mes)) return;
     var parcela = mesesEntre(inicio, mes) + 1, valor = r2(+c.valor_mensal || 0);
-    var rg = regraVenda(c), ini = rg && rg.parc ? rg.parc.length + 1 : 1;   // vitalício começa depois da última parcela de agenciamento
+    var rg = regraVenda(c), ini = rg && rg.vitDe ? rg.vitDe : (rg && rg.parc ? rg.parc.length + 1 : 1);   // vitalício começa depois da última parcela de agenciamento
     if (parcela < ini) { o.aguardando++; return; }
     var nome = rg && rg.projeto ? rg.nome : (c.operadora || '(sem operadora)');
     var g = o.porOp[nome] = o.porOp[nome] || { qtd: 0, valor: 0, pct: rg ? rg.vit : null, previsto: 0, semRegra: 0 };

@@ -536,7 +536,14 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
 
 8. **ROI:** até novembro/2026, **ROI geral** = (comissão contratada de todas as vendas do mês − investido no mês) ÷ investido, por unidade e consolidado, sem rastrear venda a venda. A partir de dezembro/2026, ROI por campanha (cada venda ligada à campanha de origem).
 9. **Planilha "Leads GNDI" (operação do Projeto Hapvida):** fonte das vidas do projeto por vendedor (aba Painel de Implantação). **O valor por vida conta só as vidas implantadas no mês** (data da Hapvida). **A equipe Gileade não conta para a Optas.** Lida ao vivo pelo Apps Script (`optasVidasProjeto_`). Também tem: leads por campanha, funil do PipeRun por card, propostas PJ do Planium (CNPJ, vidas, vigência, data implantada), datas de implantação, fora do projeto por vendedor.
-10. **Fonte dos dados reais:** fechamento de folha mensal (vendas e vitalícios recebidos), relatórios de recebimento (o que entrou, atrasou e falta receber), acesso ao Apps Script e ao ERP.
+10. **ERP (propostas, parcelas e beneficiários de Mogi e Consolação), 25/11/2026:**
+   - Data da venda = **data de cadastro** (DtProducao).
+   - Comissão da Optas = parcelas de **Ordem 1** do ERP (corretora Optas Mogi / Verus Consolação), valor = parcela × %; substitui a grade nessas propostas. Vitalício = linhas marcadas como vitalício.
+   - Adesão (GeraComissaoPrimeira = Falso): 1ª parcela é a taxa, não entra. Na adesão as parcelas vêm com a administradora (Qualicorp, Supermed, TECGROUP).
+   - Situação: cancelada (inclusive na operadora) registra e sai da conta; cancelada sem confirmação da 1ª com 90 dias ou mais desde o cancelamento = cancelada; com menos de 90 dias = válida em aberto; inadimplente = válida e implantada; implantado = implantado; o resto = válida em aberto. **A exportação recebida não tem a coluna de situação** — até chegar, todas são válidas.
+   - Conferência: Σ parcelas da Optas no CSV R$ 1.141.906,29 − taxas de adesão R$ 50.098,65 = R$ 1.091.807,64 importados.
+   - Os dados do ERP (com clientes) ficam fora do repositório (`data/erp/`, gitignored); `python3 -I data/importar_erp.py <pasta>` gera o arquivo.
+11. **Fonte dos dados reais:** fechamento de folha mensal (vendas e vitalícios recebidos), relatórios de recebimento (o que entrou, atrasou e falta receber), acesso ao Apps Script e ao ERP.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 

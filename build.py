@@ -19,10 +19,12 @@ if vp.exists():
         if chave(v['nome']) in vid: v['vidasHap'] = vid[chave(v['nome'])]
 snap = json.dumps(snap_obj, ensure_ascii=False, separators=(',', ':'))
 inv = json.dumps(json.loads((raiz / 'data/investimentos-2026.json').read_text(encoding='utf-8')), ensure_ascii=False, separators=(',', ':'))
+erp_p = raiz / 'data/erp/propostas.json'
+erp = erp_p.read_text(encoding='utf-8') if erp_p.exists() else '[]'
 html = src.replace('__LOGO__', logo).replace('__SNAP__', snap).replace('__INVBASE__', inv)
 # index.html e preview.html: revisão (com Pendências e Regras)
 # apps-script/Index.html: versão publicada, sem Pendências e Regras
-(raiz / 'index.html').write_text(html.replace('__DEMO__', 'false').replace('__PUBLICADO__', 'false'), encoding='utf-8')
-(raiz / 'apps-script/Index.html').write_text(html.replace('__DEMO__', 'false').replace('__PUBLICADO__', 'true'), encoding='utf-8')
-(raiz / 'preview.html').write_text(html.replace('__DEMO__', 'true').replace('__PUBLICADO__', 'false'), encoding='utf-8')
+(raiz / 'index.html').write_text(html.replace('__ERP__', erp).replace('__DEMO__', 'false').replace('__PUBLICADO__', 'false'), encoding='utf-8')
+(raiz / 'apps-script/Index.html').write_text(html.replace('__ERP__', erp).replace('__DEMO__', 'false').replace('__PUBLICADO__', 'true'), encoding='utf-8')
+(raiz / 'preview.html').write_text(html.replace('__ERP__', '[]').replace('__DEMO__', 'true').replace('__PUBLICADO__', 'false'), encoding='utf-8')
 print('ok', len(html), 'bytes')
