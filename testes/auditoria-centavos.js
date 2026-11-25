@@ -109,6 +109,10 @@ const path = require('path');
         if (extratosOn()) { const L = EXTRATOS.linhas.filter(l => l.mes === R.mes && l.tipo === 'vitalicio'); ok('vitalício recebido = Σ linhas dos extratos', R.vit.recebido, L.reduce((t, l) => t + l.bruto, 0)); ok('mensalidades do vitalício = Σ linhas', R.vit.mensalRec, L.reduce((t, l) => t + l.vl_parcela, 0)); } }
       // ano
       const a = resumoAno(+R.mes.slice(0, 4)); a.meses.forEach(m => { if (m.resultado != null) { ok(m.mes + ' lucro bruto', m.resultado, m.recebidas - m.saiu); ok(m.mes + ' lucro líquido = bruto − investido', m.depois, m.resultado - (m.investido || 0)); } });
+      // detalhe dos custos (aba Ano): Σ itens = custos do mês, por unidade e no total
+      Object.keys(ESTADO.fechamentos).forEach(m => { const f = ESTADO.fechamentos[m]; if (f.resultado == null || f.exemplo) return; const cd = custoDetalhe(m); if (!cd) return;
+        REGRAS.unidades.forEach(u => { const x = f.unidades[u]; if (x && x.saiu != null) ok(m + ' ' + u + ' detalhe dos custos = custos do mês', cd.unidades[u].total, x.saiu); });
+        ok(m + ' detalhe dos custos total', cd.total, f.saiu); });
       // comissões exportadas
       const d = linhasComissao(); R.vendedores.forEach(v => { const pv = d.propostas.filter(x => x['Vendedor(a)'] === v.nome); if (pv.length) ok(v.nome + ' comissão exportada = Σ propostas', v.comissao, pv.reduce((t, x) => t + x['Comissão do vendedor (R$)'], 0)); });
       return { falhas, resumo: R.res ? { primeiraParcela: R.primeira, parcelasAnteriores: R.caixaAnt.total, aReceber: R.res.recebidas, impostos: R.res.imposto, custoOperacao: R.res.custoOp, custoOperacaoTotal: R.res.custoOpTotal, comissoes: R.res.comissoes, custosDoMes: R.res.custos, lucroBruto: R.res.operacional, margemBruta: +(R.res.mBruta * 100).toFixed(2), investido: R.res.investido, reserva: R.res.reserva, lucroLiquido: R.res.financeiro, margemLiquida: +(R.res.mLiquida * 100).toFixed(2), roi: R.roi.roi } : 'sem a receber' };

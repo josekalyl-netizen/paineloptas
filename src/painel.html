@@ -1131,6 +1131,7 @@ function aplicarBaseMeses() {
     if (ex.n) ['producao', 'recebidas', 'contratado', 'primeira', 'anteriores', 'vitalicio', 'outrasReceitas'].forEach(function (k) { t[k] = soma2(REGRAS.unidades, function (u) { return un[u][k] || 0; }); });
     t.fonte = ex.n ? 'ERP' : '';
     if (REGRAS.unidades.every(function (u) { return un[u].comissoes != null; })) t.comissoes = 0;
+    if (t.recebidas != null) t.imposto = soma2(REGRAS.unidades, function (u) { return un[u].imposto || 0; });   // imposto do total = Σ unidades (no centavo)
     t.investido = soma2(inv, function (i) { return +i.valor || 0; });
     ESTADO.fechamentos[mes] = Object.assign(compor(t), { mes: mes, unidades: un, fechado: false, base: true, versao: REGRAS.versao });
   }
@@ -1340,6 +1341,57 @@ function faixaAno() {
   return '<button class="box unit ' + (ok ? 'lucro' : 'prej') + ' mt" onclick="show(\'ano\')" style="display:block"><div class="split"><div class="lbl">' + ano + ' até agora</div><span class="st ' + (ok ? 'lucro' : 'prej') + '">' + (ok ? 'SE SUSTENTANDO NO ANO' : 'NÃO SE SUSTENTANDO NO ANO') + '</span></div>'
     + '<div class="kpirow" style="margin-top:10px"><div>A receber no ano<b class="gr">' + brl(t.recebidas) + '</b></div><div>Custos no ano<b class="rd">' + brl(t.saiu) + '</b></div><div>Lucro bruto<b class="' + (ok ? 'gr' : 'rd') + '">' + brl(t.resultado) + '</b></div><div>Lucro líquido<b class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</b></div><div>Meses que se pagaram<b>' + t.mesesLucro + ' de ' + t.nRec + '</b></div></div></button>';
 }
+// Detalhe dos custos de um mês, por unidade: tudo o que entra em "Custos" (imposto + comissões + custo da unidade + provisão)
+function custoDetalhe(mes) {
+  var d = ESTADO.fechamentos[mes]; if (!d || !d.unidades) return null;
+  var out = { mes: mes, unidades: {}, total: 0 };
+  REGRAS.unidades.forEach(function (u) {
+    var x = d.unidades[u] || {}, c = custosUnidade(u, mes), L = [], fora = [];
+    var add = function (grupo, nome, valor, obs) { L.push({ grupo: grupo, nome: nome, valor: r2(valor), obs: obs || '' }); };
+    var orig = function (i) { return i.t[1] + ' · extrato ' + i.c.extrato + ' · pago em ' + mesLabel(i.c.mes); };
+    if (x.imposto != null) add('Imposto', '15% sobre o a receber de ' + brl(x.recebidas), x.imposto);
+    add('Comissões dos vendedores', x.comissoes ? 'Comissões à parte' : 'Já descontadas nos relatórios de pagamento (nada à parte)', x.comissoes || 0);
+    if (c.fonteCustos === 'extratos') {
+      c.extrato.itens.forEach(function (i) { if (i.t[3] === 'folha') add('Folha (relatórios de pagamento)', i.c.descricao, -i.c.liquido, orig(i)); });
+    } else {
+      add('Estrutura informada', 'Salários brutos (inclui PJ da sócia ' + brl(c.pj) + ')', c.salariosBrutos);
+      add('Estrutura informada', 'Vale-refeição · ' + c.diasUteis + ' dias úteis', c.vr);
+      add('Estrutura informada', 'Vale-transporte · ' + c.diasUteis + ' dias úteis', c.vt);
+      if (c.operacional) add('Estrutura informada', 'Custo operacional', c.operacional);
+      add('Provisão', '13º salário (1/12 da folha CLT)', c.prov13);
+      add('Provisão', 'Férias + 1/3 (1/36 da folha CLT)', c.provFerias);
+      add('Provisão', 'Encargos sobre 13º e férias', c.provEncargos);
+    }
+    c.extrato.itens.forEach(function (i) {
+      if (i.t[3] === 'custo' || i.t[3] === 'custoOp') add('Lançado nos relatórios de pagamento', i.c.descricao, -i.c.liquido, orig(i));
+      else if (i.t[3] !== 'folha') fora.push({ nome: i.c.descricao, valor: i.c.liquido, como: i.t[3] === 'receita' ? 'soma no a receber' : 'não entra (' + i.t[1] + ')' });
+    });
+    var tot = soma2(L, function (l) { return l.valor; });
+    out.unidades[u] = { linhas: L, fora: fora, total: tot, guardado: x.saiu != null ? x.saiu : null, fonte: c.fonteCustos,
+      real: c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido; sobrepõe a estrutura informada)' : 'Sem salário no relatório deste mês: vale a estrutura informada + provisão' };
+    out.total = r2(out.total + tot);
+  });
+  return out;
+}
+function blocoCustoDetalhe(mes) {
+  var cd = custoDetalhe(mes); if (!cd) return '';
+  var h = '<div class="box mt" id="custoDet"><div class="lbl">Custos de ' + mesLabel(mes) + ' · detalhado <em>Consolação + Mogi = ' + brl(cd.total) + '</em></div><div class="grid g2">';
+  REGRAS.unidades.forEach(function (u) {
+    var x = cd.unidades[u], grupos = [];
+    x.linhas.forEach(function (l) { if (grupos.indexOf(l.grupo) < 0) grupos.push(l.grupo); });
+    h += '<div><div class="sec" style="margin-top:4px">' + u + ' · <span class="rd">' + brl(x.total) + '</span></div><div class="m">' + x.real + '</div><div class="tw"><table><thead><tr><th>Item</th><th class="r">Valor</th></tr></thead><tbody>';
+    grupos.forEach(function (g) {
+      var ls = x.linhas.filter(function (l) { return l.grupo === g; });
+      h += '<tr class="tot"><td>' + g + '</td><td class="r">' + brl(soma2(ls, function (l) { return l.valor; })) + '</td></tr>';
+      ls.forEach(function (l) { h += '<tr><td style="white-space:normal;padding-left:18px">' + esc(l.nome) + (l.obs ? '<br><small class="mu">' + esc(l.obs) + '</small>' : '') + '</td><td class="r ' + (l.valor < 0 ? 'gr' : 'rd') + '">' + brl(l.valor) + '</td></tr>'; });
+    });
+    h += '<tr class="tot"><td>Total de custos · ' + u + '</td><td class="r rd">' + brl(x.total) + '</td></tr></tbody></table></div>';
+    if (x.guardado != null && Math.abs(x.guardado - x.total) > 0.005) h += '<div class="m rd mt">Atenção: o mês fechado guardou ' + brl(x.guardado) + ' de custos; pelas regras de hoje dá ' + brl(x.total) + '.</div>';
+    if (x.fora.length) h += '<div class="m mt"><b>Também nos relatórios, mas não é custo:</b> ' + x.fora.map(function (f) { return esc(f.nome) + ' (' + brl(f.valor) + ', ' + f.como + ')'; }).join(' · ') + '</div>';
+    h += '</div>';
+  });
+  return h + '</div></div>';
+}
 function vAno() {
   var anos = {}; Object.keys(ESTADO.fechamentos).forEach(function (k) { anos[k.slice(0, 4)] = 1; }); anos[R.mes.slice(0, 4)] = 1;
   var lista = Object.keys(anos).sort(), ano = +(vAno.sel || R.mes.slice(0, 4)), t = resumoAno(ano), fechadoAno = ESTADO.anos[ano];
@@ -1371,17 +1423,18 @@ function vAno() {
   if (sel && ESTADO.fechamentos[sel] && ESTADO.fechamentos[sel].resultado != null) {
     var d = ESTADO.fechamentos[sel], pg = d.resultado >= 0;
     h += '<div class="mdet ' + (pg ? 'lucro' : 'prej') + '"><div class="split"><b>' + mesLabel(sel) + '</b><span class="st ' + (pg ? 'lucro' : 'prej') + '">' + (pg ? 'SE PAGOU' : 'NÃO SE PAGOU') + '</span></div><div class="kpirow">'
-      + '<div>A receber<b class="gr">' + brl(d.recebidas) + '</b></div><div>Custos<b class="rd">' + brl(d.saiu) + '</b></div><div>Lucro bruto<b class="' + (pg ? 'gr' : 'rd') + '">' + brl(d.resultado) + '</b></div>'
+      + '<div>A receber<b class="gr">' + brl(d.recebidas) + '</b></div><div class="clk" onclick="vAno.ir=1;vAno()" title="Ver o detalhe dos custos">Custos<b class="rd">' + brl(d.saiu) + ' ›</b></div><div>Lucro bruto<b class="' + (pg ? 'gr' : 'rd') + '">' + brl(d.resultado) + '</b></div>'
       + '<div>Reserva<b class="inv">' + brl(d.reserva) + '</b></div><div>Investido<b class="inv">' + brl(d.investido || 0) + '</b></div><div>Lucro líquido<b class="' + (d.depois >= 0 ? 'gr' : 'rd') + '">' + brl(d.depois) + '</b></div>'
       + '<div>Margem bruta<b>' + pct(d.recebidas ? d.resultado / d.recebidas : null, 1) + '</b></div><div>Margem líquida<b>' + pct(d.recebidas ? d.depois / d.recebidas : null, 1) + '</b></div></div></div>';
   }
   h += '</div>';
+  if (sel && ESTADO.fechamentos[sel] && ESTADO.fechamentos[sel].resultado != null) h += blocoCustoDetalhe(sel);
   // Tabela
   h += '<div class="box mt"><div class="lbl">Meses de ' + ano + '</div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">A receber</th><th class="r">Recebido (extratos)</th><th class="r">Custos</th><th class="r">Lucro bruto</th><th class="r">Reserva mkt</th><th class="r">Investido</th><th class="r">ROI</th><th class="r">Lucro líquido</th><th class="r">Acumulado</th><th>Situação</th><th></th></tr></thead><tbody>';
   var acum = t.saldoAnterior;
   t.meses.forEach(function (m) {
     var tem = m.resultado != null; if (tem) acum = r2(acum + m.depois);
-    h += '<tr class="clk' + (sel === m.mes ? ' selr' : '') + '" onclick="vAno.mes=\'' + m.mes + '\';vAno()"><td><b>' + mesLabel(m.mes) + '</b>' + (m.fechado ? '' : (m.base ? ' <span class="tag proj">pelo SisWeb</span>' : ' <span class="tag proj">aberto</span>')) + '</td><td class="r gr">' + brl(m.recebidas) + '</td><td class="r">' + brl(recebidoMes(m.mes)) + '</td><td class="r rd">' + brl(m.saiu) + '</td><td class="r ' + (tem ? (m.resultado >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.resultado) + '</b></td><td class="r inv">' + (m.producao == null ? '—' : brl(m.reserva)) + '</td><td class="r inv">' + brl(m.investido || 0) + '</td><td class="r">' + roiMes(m) + '</td><td class="r ' + (tem ? (m.depois >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.depois) + '</b></td><td class="r ' + (tem ? (acum >= 0 ? 'pos' : 'neg') : '') + '">' + (tem ? brl(acum) : '—') + '</td><td>' + (tem ? '<span class="st ' + (m.resultado >= 0 ? 'lucro' : 'prej') + '">' + (m.resultado >= 0 ? 'SE PAGOU' : 'NÃO SE PAGOU') + '</span>' : '—') + '</td><td onclick="event.stopPropagation()">'
+    h += '<tr class="clk' + (sel === m.mes ? ' selr' : '') + '" onclick="vAno.mes=\'' + m.mes + '\';vAno()"><td><b>' + mesLabel(m.mes) + '</b>' + (m.fechado ? '' : (m.base ? ' <span class="tag proj">pelo SisWeb</span>' : ' <span class="tag proj">aberto</span>')) + '</td><td class="r gr">' + brl(m.recebidas) + '</td><td class="r">' + brl(recebidoMes(m.mes)) + '</td><td class="r rd"><a href="javascript:void 0" onclick="event.stopPropagation();vAno.mes=\'' + m.mes + '\';vAno.ir=1;vAno()" title="Ver o detalhe dos custos">' + brl(m.saiu) + ' ›</a></td><td class="r ' + (tem ? (m.resultado >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.resultado) + '</b></td><td class="r inv">' + (m.producao == null ? '—' : brl(m.reserva)) + '</td><td class="r inv">' + brl(m.investido || 0) + '</td><td class="r">' + roiMes(m) + '</td><td class="r ' + (tem ? (m.depois >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.depois) + '</b></td><td class="r ' + (tem ? (acum >= 0 ? 'pos' : 'neg') : '') + '">' + (tem ? brl(acum) : '—') + '</td><td>' + (tem ? '<span class="st ' + (m.resultado >= 0 ? 'lucro' : 'prej') + '">' + (m.resultado >= 0 ? 'SE PAGOU' : 'NÃO SE PAGOU') + '</span>' : '—') + '</td><td onclick="event.stopPropagation()">'
       + (fechadoAno || m.exemplo || m.base ? '' : (m.fechado ? '<button class="btn gh sm" onclick="reabrirMes(\'' + m.mes + '\')">Reabrir</button>' : '<button class="btn sm" onclick="fecharMes(\'' + m.mes + '\')">Fechar mês</button>')) + '</td></tr>';
   });
   h += '<tr class="tot"><td>Total do ano</td><td class="r gr">' + brl(t.recebidas) + '</td><td class="r">' + brl(soma2(t.meses, function (m) { return recebidoMes(m.mes) || 0; })) + '</td><td class="r rd">' + brl(t.saiu) + '</td><td class="r ' + (ok ? 'pos' : 'neg') + '">' + brl(t.resultado) + '</td><td class="r inv">' + brl(t.reserva) + '</td><td class="r inv">' + brl(t.investidoTotal) + '</td><td class="r">' + roiMes({ investido: t.investidoTotal, contratado: t.meses.every(function (m) { return !m.investido || m.contratado != null; }) ? soma2(t.meses, function (m) { return m.contratado || 0; }) : null }) + '</td><td class="r ' + (t.depois >= 0 ? 'pos' : 'neg') + '">' + brl(t.depois) + '</td><td class="r ' + (t.acumulado >= 0 ? 'pos' : 'neg') + '">' + brl(t.acumulado) + '</td><td></td><td></td></tr></tbody></table></div>'
@@ -1396,6 +1449,7 @@ function vAno() {
     h += '<div class="box gd mt"><div class="split"><div><div class="lbl">Fechar o ano de ' + ano + '</div><div class="m">' + (podeFechar ? 'Grava o balanço geral de ' + ano + ', fecha todos os meses e leva o saldo para ' + (ano + 1) + '.' : 'Disponível a partir de dezembro de ' + ano + '.') + '</div></div><button class="btn" onclick="fecharAno(' + ano + ')"' + (podeFechar ? '' : ' disabled style="opacity:.5;cursor:not-allowed"') + '>Fechar ' + ano + '</button></div></div>';
   }
   document.getElementById('v-ano').innerHTML = h;
+  if (vAno.ir) { vAno.ir = 0; var cdEl = document.getElementById('custoDet'); if (cdEl) cdEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 }
 function fecharAno(ano) {
   if (!ESTADO.fechamentos[ano + '-12']) return;
