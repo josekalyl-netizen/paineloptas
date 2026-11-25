@@ -515,10 +515,10 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
 1. **Faixa do vendedor:** a produção do Projeto Hapvida **conta para a meta toda**. A faixa da unidade é atingida com a produção total (projeto + fora); o percentual incide sobre as vendas fora do projeto. O projeto continua pagando 15% + valor por vida.
 2. **Vitalício entra no lucro:** o vitalício do mês soma no a receber (com 15% de imposto). Usa o **recebido** quando o relatório do mês foi lançado; antes disso, o previsto da carteira. Por unidade: pela unidade do contrato; sem unidade, rateado pelo vitalício previsto de cada unidade.
 3. **Reserva de marketing não usada passa para o mês seguinte** (fôlego). Limite do mês = 15% da produção + Σ (reserva − investido) dos meses anteriores do ano com produção conhecida. O que passou do limite reduz o saldo.
-4. **Feriados:** a Optas segue São Paulo capital: nacionais + Sexta-feira Santa + Aniversário de SP (25/1) + Revolução Constitucionalista (9/7) + Corpus Christi. Carnaval não entra (ponto facultativo) até decisão em contrário.
+4. **Feriados:** a Optas segue São Paulo capital: nacionais + Sexta-feira Santa + Aniversário de SP (25/1) + Revolução Constitucionalista (9/7) + Corpus Christi. **Carnaval (segunda e terça) não é dia útil** — a Optas não trabalha.
 5. **Sócios não recebem VR nem VT** (o valor por pessoa já é dividido só pelos CLT).
 6. **Custos de janeiro a setembro:** replicam a estrutura atual (outubro), com VR/VT pelos dias úteis de cada mês.
-7. **Investimento em marketing de 2026:** só os envios de SMS (Kolmeya) do centro de custos **NOVO OPTAS MOGI**, campanha "SMS", unidade Mogi. 37 envios de janeiro a outubro, conferidos envio × R$ 0,0530; arredondamento por mês para o total bater com o relatório. Novembro sem investimento; de dezembro em diante o usuário lança no painel. Centros de custo 4.0 CONSULTORIA, CONSÓRCIO e NOVO OPTAS CONSOLAÇÃO ficam fora.
+7. **Investimento em marketing de 2026:** só os envios de SMS (Kolmeya) do centro de custos **NOVO OPTAS MOGI**, campanha "SMS", unidade Mogi. 37 envios de janeiro a outubro, conferidos envio × R$ 0,0530; arredondamento por mês para o total bater com o relatório. Novembro sem investimento; de dezembro em diante o usuário lança no painel. Outubro confirmado pelo usuário (envio de 07/10). Centros de custo 4.0 CONSULTORIA, CONSÓRCIO e NOVO OPTAS CONSOLAÇÃO ficam fora.
 
 | Mês | Investido (SMS Mogi) |
 |---|---:|

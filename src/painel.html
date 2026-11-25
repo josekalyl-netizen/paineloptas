@@ -630,7 +630,7 @@ function hojeISO() { var d = new Date(); return d.getFullYear() + '-' + String(d
    4. MOTOR DE CÁLCULO
    ===================================================================== */
 // Feriados nacionais (Lei 662/49, Lei 6.802/80, Lei 14.759/23) + Sexta-feira Santa
-// + São Paulo capital (decisão de 25/11/2026): Aniversário de SP (25/1), Revolução Constitucionalista (9/7, estadual), Corpus Christi (Lei municipal 14.485/07)
+// + São Paulo capital (decisão de 25/11/2026): Aniversário de SP (25/1), Revolução Constitucionalista (9/7, estadual), Corpus Christi (Lei municipal 14.485/07) + Carnaval (segunda e terça)
 function pascoa(a) { var b = a % 19, c = Math.floor(a / 100), d = a % 100, e = Math.floor(c / 4), f = c % 4, g = Math.floor((c + 8) / 25), h = Math.floor((c - g + 1) / 3), i = (19 * b + c - e - h + 15) % 30, k = Math.floor(d / 4), l = d % 4, m = (32 + 2 * f + 2 * k - i - l) % 7, n = Math.floor((b + 11 * i + 22 * m) / 451), mes = Math.floor((i + m - 7 * n + 114) / 31), dia = ((i + m - 7 * n + 114) % 31) + 1; return new Date(a, mes - 1, dia); }
 function feriados(ano) {
   var f = {}, add = function (m, d, n) { f[ano + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0')] = n; };
@@ -639,6 +639,7 @@ function feriados(ano) {
   var sx = pascoa(ano); sx.setDate(sx.getDate() - 2); f[isoDe(sx)] = 'Sexta-feira Santa';
   add(1, 25, 'Aniversário de São Paulo'); add(7, 9, 'Revolução Constitucionalista');
   var cc = pascoa(ano); cc.setDate(cc.getDate() + 60); f[isoDe(cc)] = 'Corpus Christi';
+  [48, 47].forEach(function (n) { var cv = pascoa(ano); cv.setDate(cv.getDate() - n); f[isoDe(cv)] = 'Carnaval'; });   // a Optas não trabalha no Carnaval (decisão de 25/11/2026)
   return f;
 }
 function diasUteis(mes) {
@@ -1750,7 +1751,7 @@ function vReg() {
     + regra('Limite de investimento', 'Limite = 15% × produção do mês + saldo dos meses anteriores do ano (reserva − investido) · Dentro se investido ≤ limite', 'A reserva não usada passa para o mês seguinte; o que passou do limite reduz o saldo.')
     + regra('Provisão de 13º e férias no ano', 'Obrigação do ano = R$ 1.623,15 × 12 · Coberta se o resultado do ano ≥ 0', 'A provisão já é descontada todo mês no resultado.')
     + regra('Balanço anual e virada de ano', 'Em dezembro: fechar o ano grava o balanço geral e o saldo (lucro líquido do ano) passa para o ano seguinte', 'Acumulado = saldo do ano anterior + lucro líquido do ano atual.')
-    + regra('VR e VT do mês', 'VR do mês = (VR de outubro ÷ 21 dias úteis) × dias úteis do mês · mesma regra para VT', 'Dias úteis = segunda a sexta menos feriados nacionais (inclui Sexta-feira Santa) e de São Paulo capital (25/1, 9/7, Corpus Christi). Por pessoa = valor por dia da unidade ÷ número de CLT (sócios não recebem VR nem VT).')
+    + regra('VR e VT do mês', 'VR do mês = (VR de outubro ÷ 21 dias úteis) × dias úteis do mês · mesma regra para VT', 'Dias úteis = segunda a sexta menos feriados nacionais (inclui Sexta-feira Santa) e de São Paulo capital (25/1, 9/7, Corpus Christi) + Carnaval (segunda e terça). Por pessoa = valor por dia da unidade ÷ número de CLT (sócios não recebem VR nem VT).')
     + regra('Arredondamento em centavos', 'Cada valor é arredondado em centavos (meio centavo para cima) no momento do cálculo · total = soma exata das linhas', 'Comissão por vendedor; a receber por proposta; imposto = 15% do a receber da unidade, rateado entre as propostas centavo a centavo; consolidado = soma das unidades.')
     + regra('A receber · vitalício', 'Vitalício do mês = Σ (valor mensal × % de vitalício) dos contratos ativos depois da última parcela de agenciamento', 'Parcela = meses desde o início do contrato + 1. Cancelados saem a partir do mês do cancelamento. Comparado com o recebido dos relatórios das operadoras.')
     + regra('Comissão do vendedor', 'Faixa = pela produção total do mês (projeto + fora) · Comissão fora = produção fora do projeto × percentual da faixa', 'Sem médias históricas.')
