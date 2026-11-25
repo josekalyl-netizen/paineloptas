@@ -55,6 +55,11 @@ for arq in sorted(pasta.glob('*.csv')):
         ck = tuple(r[101:128])
         if ck not in vistos[cod]['cd'] and r[121]:
             vistos[cod]['cd'].add(ck); cds.append({'extrato': cod, 'unidade': unidade, 'mes': ex['mes'], 'tipo': r[113], 'descricao': r[121], 'liquido': f2(brl(r[126]))})
+# Sem proposta no ERP: percentual de transição não é vitalício. Se, na mesma operadora (grupo), uma parcela posterior paga
+# percentual menor, o percentual desta parcela ainda é da grade de agenciamento (ex.: ADC 5% nas parcelas 6–7, depois 1%).
+sem = [l for l in linhas if not l['erp'] and l['tipo'] == 'vitalicio']
+for l in sem:
+    if any(o['grupo'] == l['grupo'] and o['parc'] > l['parc'] and o['pct'] < l['pct'] for o in linhas if not o['erp']): l['tipo'] = 'agenciamento'
 # Conferência: Σ líquido das linhas = ato + parcelas; acumulado + comissões + créd/déb = líquido do extrato; Σ créd/déb = total do extrato
 erros = []
 for x in extratos:

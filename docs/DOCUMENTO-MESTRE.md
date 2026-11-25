@@ -636,3 +636,12 @@ Distribuição de lucros entre W3G e sócias; média de comissões para provisio
 - Vale a partir do primeiro relatório de cada unidade; antes disso continua a estrutura informada.
 - Como a folha dos relatórios já inclui as comissões dos vendedores, no mês pela média não se soma comissão à parte nem provisão (igual aos meses com relatório).
 - Quando chega o relatório do mês, o valor real substitui a média.
+
+### Vitalício: auditoria de 2026 (25/11/2026)
+- Mês = data de previsão do extrato. Valor = líquido de cada linha (o "acumulado" é saldo transferido, não entra).
+- Conferência: os 23 extratos do CSV são os mesmos 23 do PDF (12 Mogi, 11 Consolação), e a soma das linhas bate com o total de cada extrato.
+- Vitalício = parcela além da grade de agenciamento do ERP. A parcela de 1% que ainda está dentro da grade (Bradesco Seguros parcelas 5 e 6, Porto Seguro parcelas 1 e 2) entra no a receber como parcela, não como vitalício.
+- Sem proposta no ERP: percentual de transição não é vitalício (ADC Benefícios 5% nas parcelas 6–7, depois 1%).
+- Recorrentes diferentes de 1%: Unimed CNU 2%, Prudential 5% e 10%, Unicor 2,5%.
+- Mogi não tem extrato com previsão em novembro/2026, e Consolação não tem em outubro/2026.
+- Total de 2026: Mogi 20.394,97 · Consolação 53.881,67 · total 74.276,64.
