@@ -235,7 +235,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--peach);border-co
 .yc.clk{cursor:pointer}.yc.clk:hover{background:var(--tint-2);border-radius:8px}.yc.sel{background:var(--peach);border-radius:8px}
 .yc em{font-style:normal;font-weight:800;font-size:12px;height:16px}.yc em.ok{color:var(--green)}.yc em.no{color:var(--red)}
 .mdet{margin-top:14px;border-radius:12px;padding:12px 14px;background:var(--tint-2)}.mdet.lucro{background:var(--green-t)}.mdet.prej{background:var(--red-t)}
-tr.clk{cursor:pointer}tr.clk:hover td{background:var(--tint-2)}tr.selr td{background:var(--peach)}
+tr.clk{cursor:pointer}a.lk{color:inherit;text-decoration:none;font-weight:600}a.lk:hover{text-decoration:underline}tr.clk:hover td{background:var(--tint-2)}tr.selr td{background:var(--peach)}
 td.inv,.r.inv{color:var(--inv)}td.gr{color:var(--green)}td.rd{color:var(--red)}
 .hb{display:grid;grid-template-columns:minmax(110px,180px) 1fr 120px 56px;gap:10px;align-items:center;padding:6px 0;font-size:13px;border-bottom:1px solid var(--tint)}
 .hb b{text-align:right;font-family:var(--head);font-weight:800}.hb em{font-style:normal;font-size:12px;color:var(--mute);text-align:right}
@@ -1379,6 +1379,49 @@ function custoDetalhe(mes) {
   });
   return out;
 }
+// Detalhe do a receber de um mês, por unidade: de onde vem cada valor (mesma conta do erpMes)
+function receberDetalhe(mes) {
+  var d = ESTADO.fechamentos[mes]; if (!d || !d.unidades || DEMO) return null;
+  var out = { mes: mes, unidades: {}, total: 0 }, ant = parcelasAnteriores(mes);
+  var vrec = (ESTADO.vitRecebido || []).filter(function (x) { return String(x.mes || '').slice(0, 7) === mes; }).concat(vitDosExtratos(mes));
+  var ref = function (c) { return [c.numero || c.contrato || c.id_venda || c.id, c.operadora, c.cliente].filter(Boolean).join(' · '); };
+  REGRAS.unidades.forEach(function (u) {
+    var L = [], add = function (grupo, nome, valor, obs) { if (valor) L.push({ grupo: grupo, nome: nome, valor: r2(valor), obs: obs || '' }); };
+    ERP.forEach(function (c) {
+      if ((c.data_venda || '').slice(0, 7) !== mes || statusProposta(c) === 'cancelada' || unidadeCanon(c.unidade) !== u) return;
+      var pr = parcelasReais(c.valor_mensal, regraVenda(c)).map(function (v, k) { return valorParcelaERP(c, k, v); });
+      add('1ª parcela das vendas do mês', ref(c), pr[0] || 0, 'mensalidade ' + brl(c.valor_mensal));
+    });
+    if (R && mes === R.mes && R.unidades[u].primeiraProjeto) add('1ª parcela das vendas do mês', 'Projeto Hapvida · vendas do mês', R.unidades[u].primeiraProjeto, '100% da 1ª mensalidade · ainda sem relatório de pagamento');
+    ant.itens.forEach(function (i) { if (i.unidade === u) add('Parcelas de vendas anteriores', ref(i.c), i.valor, i.parcela + 'ª parcela · venda de ' + mesLabel(String(i.c.data_venda || i.c.data_inicio).slice(0, 7))); });
+    var vo = {}; vrec.forEach(function (x) { if (unidadeCanon(x.unidade) !== u) return; var g = vo[x.operadora] = vo[x.operadora] || { v: 0, n: 0 }; g.v = r2(g.v + (+x.valor || 0)); g.n++; });
+    Object.keys(vo).sort().forEach(function (o) { add('Vitalício recebido', o, vo[o].v, vo[o].n + ' parcela' + (vo[o].n > 1 ? 's' : '') + ' nos relatórios de pagamento'); });
+    if (R && mes === R.mes) { var semU = r2((R.vitUnidade[u] || 0) - soma2(Object.keys(vo), function (o) { return vo[o].v; })); add('Vitalício recebido', 'Recebido sem unidade no relatório (rateado)', semU); }
+    lancExtratos(mes, u).itens.forEach(function (i) { if (i.a === 'receita') add('Créditos dos relatórios de pagamento', i.c.descricao, i.c.liquido, i.t[1] + ' · extrato ' + i.c.extrato + ' · pago em ' + mesLabel(i.c.mes)); });
+    var x = d.unidades[u] || {}, tot = soma2(L, function (l) { return l.valor; });
+    out.unidades[u] = { linhas: L, total: tot, guardado: x.recebidas != null ? x.recebidas : null };
+    out.total = r2(out.total + tot);
+  });
+  return out;
+}
+function blocoReceberDetalhe(mes) {
+  var rd = receberDetalhe(mes); if (!rd) return '';
+  var h = '<div class="box mt" id="recDet"><div class="lbl">A receber de ' + mesLabel(mes) + ' · detalhado <em>Consolação + Mogi = ' + brl(rd.total) + '</em></div><div class="grid g2">';
+  REGRAS.unidades.forEach(function (u) {
+    var x = rd.unidades[u], grupos = [];
+    x.linhas.forEach(function (l) { if (grupos.indexOf(l.grupo) < 0) grupos.push(l.grupo); });
+    h += '<div><div class="sec" style="margin-top:4px">' + u + ' · <span class="gr">' + brl(x.total) + '</span></div><div class="tw"><table><thead><tr><th>De onde vem</th><th class="r">Valor</th></tr></thead><tbody>';
+    grupos.forEach(function (g) {
+      var ls = x.linhas.filter(function (l) { return l.grupo === g; });
+      h += '<tr class="tot"><td>' + g + ' · ' + ls.length + '</td><td class="r">' + brl(soma2(ls, function (l) { return l.valor; })) + '</td></tr>';
+      ls.forEach(function (l) { h += '<tr><td style="white-space:normal;padding-left:18px">' + esc(l.nome) + (l.obs ? '<br><small class="mu">' + esc(l.obs) + '</small>' : '') + '</td><td class="r ' + (l.valor < 0 ? 'rd' : 'gr') + '">' + brl(l.valor) + '</td></tr>'; });
+    });
+    h += '<tr class="tot"><td>Total a receber · ' + u + '</td><td class="r gr">' + brl(x.total) + '</td></tr></tbody></table></div>';
+    if (x.guardado != null && Math.abs(x.guardado - x.total) > 0.005) h += '<div class="m rd mt">Atenção: o mês guardou ' + brl(x.guardado) + ' a receber; o detalhe soma ' + brl(x.total) + '.</div>';
+    h += '</div>';
+  });
+  return h + '</div></div>';
+}
 function blocoCustoDetalhe(mes) {
   var cd = custoDetalhe(mes); if (!cd) return '';
   var h = '<div class="box mt" id="custoDet"><div class="lbl">Custos de ' + mesLabel(mes) + ' · detalhado <em>Consolação + Mogi = ' + brl(cd.total) + '</em></div><div class="grid g2">';
@@ -1393,7 +1436,6 @@ function blocoCustoDetalhe(mes) {
     });
     h += '<tr class="tot"><td>Total de custos · ' + u + '</td><td class="r rd">' + brl(x.total) + '</td></tr></tbody></table></div>';
     if (x.guardado != null && Math.abs(x.guardado - x.total) > 0.005) h += '<div class="m rd mt">Atenção: o mês fechado guardou ' + brl(x.guardado) + ' de custos; pelas regras de hoje dá ' + brl(x.total) + '.</div>';
-    if (x.fora.length) h += '<div class="m mt"><b>Também nos relatórios, mas não é custo (valores sem sinal vão para o a receber):</b> ' + x.fora.map(function (f) { return esc(f.nome) + ' (' + brl(f.valor) + ', ' + f.como + ')'; }).join(' · ') + '</div>';
     h += '</div>';
   });
   return h + '</div></div>';
@@ -1429,18 +1471,18 @@ function vAno() {
   if (sel && ESTADO.fechamentos[sel] && ESTADO.fechamentos[sel].resultado != null) {
     var d = ESTADO.fechamentos[sel], pg = d.resultado >= 0;
     h += '<div class="mdet ' + (pg ? 'lucro' : 'prej') + '"><div class="split"><b>' + mesLabel(sel) + '</b><span class="st ' + (pg ? 'lucro' : 'prej') + '">' + (pg ? 'SE PAGOU' : 'NÃO SE PAGOU') + '</span></div><div class="kpirow">'
-      + '<div>A receber<b class="gr">' + brl(d.recebidas) + '</b></div><div class="clk" onclick="vAno.ir=1;vAno()" title="Ver o detalhe dos custos">Custos<b class="rd">' + brl(d.saiu) + ' ›</b></div><div>Lucro bruto<b class="' + (pg ? 'gr' : 'rd') + '">' + brl(d.resultado) + '</b></div>'
+      + '<div class="clk" onclick="vAno.ir=2;vAno()" title="Ver de onde vem o a receber">A receber<b class="gr">' + brl(d.recebidas) + ' ›</b></div><div class="clk" onclick="vAno.ir=1;vAno()" title="Ver o detalhe dos custos">Custos<b class="rd">' + brl(d.saiu) + ' ›</b></div><div>Lucro bruto<b class="' + (pg ? 'gr' : 'rd') + '">' + brl(d.resultado) + '</b></div>'
       + '<div>Reserva<b class="inv">' + brl(d.reserva) + '</b></div><div>Investido<b class="inv">' + brl(d.investido || 0) + '</b></div><div>Lucro líquido<b class="' + (d.depois >= 0 ? 'gr' : 'rd') + '">' + brl(d.depois) + '</b></div>'
       + '<div>Margem bruta<b>' + pct(d.recebidas ? d.resultado / d.recebidas : null, 1) + '</b></div><div>Margem líquida<b>' + pct(d.recebidas ? d.depois / d.recebidas : null, 1) + '</b></div></div></div>';
   }
   h += '</div>';
-  if (sel && ESTADO.fechamentos[sel] && ESTADO.fechamentos[sel].resultado != null) h += blocoCustoDetalhe(sel);
+  if (sel && ESTADO.fechamentos[sel] && ESTADO.fechamentos[sel].resultado != null) h += blocoReceberDetalhe(sel) + blocoCustoDetalhe(sel);
   // Tabela
   h += '<div class="box mt"><div class="lbl">Meses de ' + ano + '</div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">A receber</th><th class="r">Recebido (extratos)</th><th class="r">Custos</th><th class="r">Lucro bruto</th><th class="r">Reserva mkt</th><th class="r">Investido</th><th class="r">ROI</th><th class="r">Lucro líquido</th><th class="r">Acumulado</th><th>Situação</th><th></th></tr></thead><tbody>';
   var acum = t.saldoAnterior;
   t.meses.forEach(function (m) {
     var tem = m.resultado != null; if (tem) acum = r2(acum + m.depois);
-    h += '<tr class="clk' + (sel === m.mes ? ' selr' : '') + '" onclick="vAno.mes=\'' + m.mes + '\';vAno()"><td><b>' + mesLabel(m.mes) + '</b>' + (m.fechado ? '' : (m.base ? ' <span class="tag proj">pelo SisWeb</span>' : ' <span class="tag proj">aberto</span>')) + '</td><td class="r gr">' + brl(m.recebidas) + '</td><td class="r">' + brl(recebidoMes(m.mes)) + '</td><td class="r rd"><a href="javascript:void 0" onclick="event.stopPropagation();vAno.mes=\'' + m.mes + '\';vAno.ir=1;vAno()" title="Ver o detalhe dos custos">' + brl(m.saiu) + ' ›</a></td><td class="r ' + (tem ? (m.resultado >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.resultado) + '</b></td><td class="r inv">' + (m.producao == null ? '—' : brl(m.reserva)) + '</td><td class="r inv">' + brl(m.investido || 0) + '</td><td class="r">' + roiMes(m) + '</td><td class="r ' + (tem ? (m.depois >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.depois) + '</b></td><td class="r ' + (tem ? (acum >= 0 ? 'pos' : 'neg') : '') + '">' + (tem ? brl(acum) : '—') + '</td><td>' + (tem ? '<span class="st ' + (m.resultado >= 0 ? 'lucro' : 'prej') + '">' + (m.resultado >= 0 ? 'SE PAGOU' : 'NÃO SE PAGOU') + '</span>' : '—') + '</td><td onclick="event.stopPropagation()">'
+    h += '<tr class="clk' + (sel === m.mes ? ' selr' : '') + '" onclick="vAno.mes=\'' + m.mes + '\';vAno()"><td><b>' + mesLabel(m.mes) + '</b>' + (m.fechado ? '' : (m.base ? ' <span class="tag proj">pelo SisWeb</span>' : ' <span class="tag proj">aberto</span>')) + '</td><td class="r gr">' + (m.recebidas != null && !DEMO ? '<a class="lk" href="javascript:void 0" onclick="event.stopPropagation();vAno.mes=\'' + m.mes + '\';vAno.ir=2;vAno()" title="Ver de onde vem o a receber">' + brl(m.recebidas) + ' ›</a>' : brl(m.recebidas)) + '</td><td class="r">' + brl(recebidoMes(m.mes)) + '</td><td class="r rd"><a class="lk" href="javascript:void 0" onclick="event.stopPropagation();vAno.mes=\'' + m.mes + '\';vAno.ir=1;vAno()" title="Ver o detalhe dos custos">' + brl(m.saiu) + ' ›</a></td><td class="r ' + (tem ? (m.resultado >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.resultado) + '</b></td><td class="r inv">' + (m.producao == null ? '—' : brl(m.reserva)) + '</td><td class="r inv">' + brl(m.investido || 0) + '</td><td class="r">' + roiMes(m) + '</td><td class="r ' + (tem ? (m.depois >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.depois) + '</b></td><td class="r ' + (tem ? (acum >= 0 ? 'pos' : 'neg') : '') + '">' + (tem ? brl(acum) : '—') + '</td><td>' + (tem ? '<span class="st ' + (m.resultado >= 0 ? 'lucro' : 'prej') + '">' + (m.resultado >= 0 ? 'SE PAGOU' : 'NÃO SE PAGOU') + '</span>' : '—') + '</td><td onclick="event.stopPropagation()">'
       + (fechadoAno || m.exemplo || m.base ? '' : (m.fechado ? '<button class="btn gh sm" onclick="reabrirMes(\'' + m.mes + '\')">Reabrir</button>' : '<button class="btn sm" onclick="fecharMes(\'' + m.mes + '\')">Fechar mês</button>')) + '</td></tr>';
   });
   h += '<tr class="tot"><td>Total do ano</td><td class="r gr">' + brl(t.recebidas) + '</td><td class="r">' + brl(soma2(t.meses, function (m) { return recebidoMes(m.mes) || 0; })) + '</td><td class="r rd">' + brl(t.saiu) + '</td><td class="r ' + (ok ? 'pos' : 'neg') + '">' + brl(t.resultado) + '</td><td class="r inv">' + brl(t.reserva) + '</td><td class="r inv">' + brl(t.investidoTotal) + '</td><td class="r">' + roiMes({ investido: t.investidoTotal, contratado: t.meses.every(function (m) { return !m.investido || m.contratado != null; }) ? soma2(t.meses, function (m) { return m.contratado || 0; }) : null }) + '</td><td class="r ' + (t.depois >= 0 ? 'pos' : 'neg') + '">' + brl(t.depois) + '</td><td class="r ' + (t.acumulado >= 0 ? 'pos' : 'neg') + '">' + brl(t.acumulado) + '</td><td></td><td></td></tr></tbody></table></div>'
@@ -1455,7 +1497,7 @@ function vAno() {
     h += '<div class="box gd mt"><div class="split"><div><div class="lbl">Fechar o ano de ' + ano + '</div><div class="m">' + (podeFechar ? 'Grava o balanço geral de ' + ano + ', fecha todos os meses e leva o saldo para ' + (ano + 1) + '.' : 'Disponível a partir de dezembro de ' + ano + '.') + '</div></div><button class="btn" onclick="fecharAno(' + ano + ')"' + (podeFechar ? '' : ' disabled style="opacity:.5;cursor:not-allowed"') + '>Fechar ' + ano + '</button></div></div>';
   }
   document.getElementById('v-ano').innerHTML = h;
-  if (vAno.ir) { vAno.ir = 0; var cdEl = document.getElementById('custoDet'); if (cdEl) cdEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  if (vAno.ir) { var cdEl = document.getElementById(vAno.ir === 2 ? 'recDet' : 'custoDet'); vAno.ir = 0; if (cdEl) cdEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 }
 function fecharAno(ano) {
   if (!ESTADO.fechamentos[ano + '-12']) return;

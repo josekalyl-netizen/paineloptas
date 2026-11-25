@@ -116,6 +116,8 @@ const path = require('path');
       // ano
       const a = resumoAno(+R.mes.slice(0, 4)); a.meses.forEach(m => { if (m.resultado != null) { ok(m.mes + ' lucro bruto', m.resultado, m.recebidas - m.saiu); ok(m.mes + ' lucro líquido = bruto − investido', m.depois, m.resultado - (m.investido || 0)); } });
       // detalhe dos custos (aba Ano): Σ itens = custos do mês, por unidade e no total
+      // a receber detalhado: Σ de onde vem = a receber guardado do mês, por unidade
+      Object.keys(ESTADO.fechamentos).forEach(m => { const rd = receberDetalhe(m); if (!rd) return; REGRAS.unidades.forEach(u => { const x = rd.unidades[u]; if (x.guardado != null) ok(m + ' ' + u + ' a receber detalhado', x.total, x.guardado); ok(m + ' ' + u + ' Σ linhas do a receber', x.total, x.linhas.reduce((t, l) => t + l.valor, 0)); }); });
       Object.keys(ESTADO.fechamentos).forEach(m => { const f = ESTADO.fechamentos[m]; if (f.resultado == null || f.exemplo) return; const cd = custoDetalhe(m); if (!cd) return;
         REGRAS.unidades.forEach(u => { const x = f.unidades[u]; if (x && x.saiu != null) ok(m + ' ' + u + ' detalhe dos custos = custos do mês', cd.unidades[u].total, x.saiu); });
         ok(m + ' detalhe dos custos total', cd.total, f.saiu); });
