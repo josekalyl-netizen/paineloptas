@@ -535,7 +535,7 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
 | **Total** | **87.926,48** |
 
 8. **ROI:** até novembro/2026, **ROI geral** = (comissão contratada de todas as vendas do mês − investido no mês) ÷ investido, por unidade e consolidado, sem rastrear venda a venda. A partir de dezembro/2026, ROI por campanha (cada venda ligada à campanha de origem).
-9. **Planilha "Leads GNDI" (operação do Projeto Hapvida):** fonte das vidas do projeto por vendedor (aba Painel de Implantação: Previsão = Em contrato + Ag. pagamento, mais Implantado no mês pela data da Hapvida; Standby fica fora). Lida ao vivo pelo Apps Script (`optasVidasProjeto_`). Também tem: leads por campanha, funil do PipeRun por card, propostas PJ do Planium (CNPJ, vidas, vigência, data implantada), datas de implantação, fora do projeto por vendedor.
+9. **Planilha "Leads GNDI" (operação do Projeto Hapvida):** fonte das vidas do projeto por vendedor (aba Painel de Implantação). **O valor por vida conta só as vidas implantadas no mês** (data da Hapvida). **A equipe Gileade não conta para a Optas.** Lida ao vivo pelo Apps Script (`optasVidasProjeto_`). Também tem: leads por campanha, funil do PipeRun por card, propostas PJ do Planium (CNPJ, vidas, vigência, data implantada), datas de implantação, fora do projeto por vendedor.
 10. **Fonte dos dados reais:** fechamento de folha mensal (vendas e vitalícios recebidos), relatórios de recebimento (o que entrou, atrasou e falta receber), acesso ao Apps Script e ao ERP.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA

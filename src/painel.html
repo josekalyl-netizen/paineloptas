@@ -716,7 +716,7 @@ function calcular() {
       var x = addV(v.nome, u);
       x.prodHap = r2(+v.hap || 0); x.prodFora = r2(+v.fora || 0);
       x.meta = v.meta || null;
-      if (v.vidasHap != null) x.vidasFonte = +v.vidasHap;   // vidas do Projeto Hapvida (planilha de leads: Em contrato + Ag. pagamento + Implantado)
+      if (v.vidasHap != null) x.vidasFonte = +v.vidasHap;   // vidas IMPLANTADAS do Projeto Hapvida no mês (planilha de leads)
     });
   }
   if (semUnidade.length) R.alertas.push({ sev: 'er', cod: 'UNIDADE', titulo: semUnidade.length + ' vendedor(es) sem unidade reconhecida', texto: 'Registros: ' + semUnidade.join(', ') + '.', impacto: 'Comissão do vendedor (faixa depende da unidade) e resultado por unidade', acao: 'Corrigir a equipe no painel gerencial (Consolação ou Mogi).' });
@@ -1753,7 +1753,7 @@ function vReg() {
     + card('Reserva de marketing', '15%', 'Sobre a produção mensal (soma das mensalidades dos contratos efetivos). Destinação do resultado, não despesa.', { box: 'dk' })
     + card('Vitalício', 'depois da última parcela', 'Começa no mês seguinte à última parcela de agenciamento e segue enquanto o contrato estiver ativo, com o % da grade.', { box: 'dk' }) + '</div>';
   h += '<div class="sec">Fórmulas do sistema <small>cada regra nova entra aqui</small></div><div class="grid g2">'
-    + regra('Vendedor no Projeto Hapvida', 'Comissão = 15% da mensalidade das vendas do projeto + valor por vida: 25 a 34 vidas R$ 20 · 35 a 49 R$ 25 · 50 ou mais R$ 35 (sobre todas as vidas do mês; abaixo de 25 vidas não paga)', 'Vendas fora do projeto seguem a faixa da unidade. A faixa é atingida com a produção total do vendedor (projeto + fora) e o percentual incide sobre as vendas fora do projeto.')
+    + regra('Vendedor no Projeto Hapvida', 'Comissão = 15% da mensalidade das vendas do projeto + valor por vida: 25 a 34 vidas R$ 20 · 35 a 49 R$ 25 · 50 ou mais R$ 35 (sobre todas as vidas IMPLANTADAS no mês; abaixo de 25 não paga)', 'Vendas fora do projeto seguem a faixa da unidade. A faixa é atingida com a produção total do vendedor (projeto + fora) e o percentual incide sobre as vendas fora do projeto.')
     + regra('Custo da operação', 'Custo da operação = custos fixos (salários, VR, VT, operação) + provisão 13º/férias', '')
     + regra('Custo de operação total', 'Custo de operação total = custo da operação + impostos (15% do a receber)', '')
     + regra('Lucro bruto', 'Lucro bruto = a receber das operadoras − comissões dos vendedores − custo de operação total', 'Positivo = LUCRO BRUTO; negativo = PREJUÍZO. Margem bruta = lucro bruto ÷ a receber.')

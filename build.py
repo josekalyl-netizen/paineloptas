@@ -14,7 +14,7 @@ if vp.exists():
     def chave(n):
         n = unicodedata.normalize('NFD', n).encode('ascii', 'ignore').decode().lower().replace('.', ' ').split()
         return n[0] + ' ' + (n[1][0] if len(n) > 1 else '')
-    vid = {chave(k): v['previsao'] + v['implantado'] for k, v in json.loads(vp.read_text(encoding='utf-8'))['vendedores'].items()}
+    vid = {chave(k): v['implantado'] for k, v in json.loads(vp.read_text(encoding='utf-8'))['vendedores'].items()}
     for v in snap_obj.get('vendedores', []):
         if chave(v['nome']) in vid: v['vidasHap'] = vid[chave(v['nome'])]
 snap = json.dumps(snap_obj, ensure_ascii=False, separators=(',', ':'))

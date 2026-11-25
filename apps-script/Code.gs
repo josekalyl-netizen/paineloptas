@@ -55,7 +55,7 @@ function optasDadosIntegrados_() {
 
 /**
  * Vidas do Projeto Hapvida por vendedor no mês vigente, lidas da aba "Painel de Implantação":
- * vidas = Previsão (Em contrato + Aguardando pagamento) + Implantado. Standby fica fora.
+ * vidas = só as IMPLANTADAS no mês (data da Hapvida) — decisão de 25/11/2026. Equipe Gileade não conta.
  * Grava em cada vendedor do tvDadosWeb o campo vidasHap (casando "Wanderleia G." com "Wanderleia Gugel Soares").
  */
 function optasVidasProjeto_(d) {
@@ -72,7 +72,7 @@ function optasVidasProjeto_(d) {
   var vidas = {};
   v.forEach(function (row) {
     var nome = row[0]; if (!nome || /^(EQUIPE|TOTAL|Vendedor)/i.test(nome)) return;
-    vidas[chave(nome)] = num(row[ini + 4]) + num(row[ini + 8]);   // Previsão (vidas) + Implantado (vidas)
+    vidas[chave(nome)] = num(row[ini + 8]);   // Implantado (vidas)
   });
   d.vendedores.forEach(function (x) { var k = chave(x.nome); if (vidas[k] != null) x.vidasHap = vidas[k]; });
 }
