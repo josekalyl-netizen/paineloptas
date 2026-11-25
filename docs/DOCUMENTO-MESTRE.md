@@ -551,7 +551,12 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
    - Vitalício do mês = vitalício recebido nos extratos da unidade (bruto); sem extrato no mês, o previsto do ERP.
    - Créditos/débitos = salários, benefícios, férias/13º, rescisões, comissão do gestor (Valdecir 40%), adiantamentos de parcela, estornos, boletos de clientes, campanhas/premiações e SMS.
    - Médias por mês: unidades pelo ERP (data de cadastro); vendedores pelos meses gravados no painel.
-12. **Fonte dos dados reais:** fechamento de folha mensal (vendas e vitalícios recebidos), relatórios de recebimento (o que entrou, atrasou e falta receber), acesso ao Apps Script e ao ERP.
+12. **Respostas sobre os extratos (25/11/2026):**
+   - Desconto administrativo de 8,5% **faz parte dos 15%** (metade desconta do corretor final, metade a W3G paga): o painel não desconta à parte; o a receber segue bruto e o imposto de 15% cobre.
+   - "AD nª PARC" = adiantamento da 1ª parcela para o corretor Optas (equipe Valdecir em Mogi, Joana em Consolação).
+   - SMS descontado no extrato ("LEADS – 44.716 SMS") é o mesmo custo do investimento já lançado: não duplica.
+   - Créditos/débitos e "Comissão Valdecir 40%": aguardando o usuário definir como tratar cada tipo.
+13. **Fonte dos dados reais:** fechamento de folha mensal (vendas e vitalícios recebidos), relatórios de recebimento (o que entrou, atrasou e falta receber), acesso ao Apps Script e ao ERP.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
