@@ -25,8 +25,9 @@ P, Q, B = ler('Proposta'), ler('Parcela'), ler('Beneficiario')
 chave = lambda x: (x['PropostaNumero'], x['IdOperadora'], x['IdModalidade'])
 # Na adesão, as parcelas vêm com a administradora (Qualicorp, Supermed, TECGROUP...) no lugar da operadora
 chaveP = lambda p: (p['PropostaNumero'], p['IdAdministradora'] if p['TxtModalidade'] == 'Adesao' and p.get('IdAdministradora') not in ('', '0', None) else p['IdOperadora'], p['IdModalidade'])
-parc, tit = {}, {}
+parc, tit, vencs = {}, {}, {}
 for q in Q:
+    vencs.setdefault(chave(q), {}).setdefault(int(q['Parcela']), iso(q['DtVencimento']))   # vencimento de cada parcela no SisWeb
     if q['Ordem'] != '1': continue
     parc.setdefault(chave(q), []).append(q)
 for b in B:
@@ -39,6 +40,7 @@ for p in P:
         cand = [c for c in alt if c[1] in (p.get('IdAdministradora'), p['IdOperadora'])] or (alt if len(alt) == 1 else [])
         qs = parc.get(cand[0], []) if cand else []
     if not qs: sem.append(p['PropostaNumero'])
+    vk = vencs.get(chave(qs[0]), {}) if qs else {}
     adesao_taxa = p['GeraComissaoPrimeira'] == 'False'
     ag, vit = {}, {}
     for q in qs:
@@ -50,6 +52,7 @@ for p in P:
               'parc': [ag.get(i, (0.0, 0))[0] for i in range(1, ult + 1)], 'valores': [ag.get(i, (0, 0.0))[1] for i in range(1, ult + 1)],
               'vit': (sorted(v[0] for v in vit.values())[0] if vit else 0), 'vitDe': (min(vit) if vit else None)}
     tabela['ag'] = round(sum(tabela['parc']), 6)
+    tabela['venc'] = [vk.get(i, '') for i in range(1, ult + 1)]   # data de vencimento do SisWeb por parcela
     out.append({'id': 'erp-' + '-'.join(k), 'contrato': 'erp-' + '-'.join(k), 'numero': p['PropostaNumero'], 'origem_dado': 'ERP',
                 'unidade': 'Mogi' if 'Mogi' in p['TxtLoja'] else ('Consolação' if 'Consola' in p['TxtLoja'] else p['TxtLoja']),
                 'operadora': p['TxtOperadora'], 'administradora': p['TxtAdministradora'] if p['TxtModalidade'] == 'Adesao' else '', 'modalidade': tabela['modalidade'], 'modalidade_erp': p['TxtModalidade'], 'produto': p['TxtSubProduto'],

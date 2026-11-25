@@ -72,7 +72,7 @@ const path = require('path');
       if (!DEMO && ERP.length && extratosOn()) { const Lv = livroReceber(), hoje = hojeISO();
         Lv.itens.forEach(it => { const id = it.c.id + '|' + it.parcela;
           if (it.situacao === 'recebida') ok('livro ' + id + ' recebido', it.valor, EXTRATOS.linhas.filter(l => l.erp === it.c.id && l.parc === it.parcela).reduce((t, l) => t + l.bruto, 0));
-          else { const d = diasEntre(it.prevista, hoje); if ((d <= 0 ? 'em dia' : d < 90 ? 'atrasada' : 'perdida') !== it.situacao) falhas.push('livro ' + id + ' situação'); } });
+          else { if (it.c.tabela.venc && it.c.tabela.venc[it.parcela - 1] && it.prevista !== it.c.tabela.venc[it.parcela - 1]) falhas.push('livro ' + id + ' prevista ≠ vencimento SisWeb'); const d = diasEntre(it.prevista, hoje); if ((d <= 0 ? 'em dia' : d < 90 ? 'atrasada' : 'perdida') !== it.situacao) falhas.push('livro ' + id + ' situação'); } });
         const dp = deParaERP(), tudo = Lv.itens.reduce((t, it) => t + it.valor, 0); ok('livro = recebidas + em dia + atrasadas + perdidas', tudo, dp.vPagas + dp.vEmDia + dp.vAtrasadas + dp.vPerdidas);
         const ar = itensAReceber(); ok('aba A receber = em dia + atrasadas (+ projeto)', ar.reduce((t, x) => t + x.valor, 0), dp.vEmDia + dp.vAtrasadas + ar.filter(x => x.tipo === 'projeto').reduce((t, x) => t + x.valor, 0)); }
       if (extratosOn()) EXTRATOS.extratos.forEach(x => { const L = EXTRATOS.linhas.filter(l => l.extrato === x.codigo), C = EXTRATOS.creditos_debitos.filter(c => c.extrato === x.codigo);
@@ -98,8 +98,8 @@ const path = require('path');
       // ROI
       const ro = R.roi;
       if (ro.modo === 'geral') { ok('ROI geral investido = investido do mês', ro.invAtrib, R.investido);
-        const rts = REGRAS.unidades.map(u => R.unidades[u].contratado); if (rts.some(x => x != null)) ok('ROI geral retorno = Σ contratado das unidades', ro.retorno, rts.reduce((t, x) => t + (x || 0), 0));
-        if (R.ag.base) ok('ROI geral retorno = contratado de todas as vendas (projeto + fora do ERP)', ro.retorno, R.ag.contratado + REGRAS.unidades.reduce((t, u) => t + (R.unidades[u].foraERP ? R.unidades[u].foraERP.contratado : 0), 0));
+        const rts = REGRAS.unidades.map(u => R.unidades[u].primeira); if (rts.some(x => x != null)) ok('ROI geral retorno = Σ 1ª parcela das unidades', ro.retorno, rts.reduce((t, x) => t + (x || 0), 0));
+        if (R.ag.base) ok('ROI geral retorno = 1ª parcela de todas as vendas (projeto + fora do SisWeb)', ro.retorno, R.ag.valor + REGRAS.unidades.reduce((t, u) => t + (R.unidades[u].foraERP ? R.unidades[u].foraERP.primeira : 0), 0));
         if (ro.invAtrib > 0 && ro.retorno != null && Math.abs(ro.roi - (ro.retorno - ro.invAtrib) / ro.invAtrib) > 1e-12) falhas.push('ROI geral');
         REGRAS.unidades.forEach(u => { const x = ro.porUnidade[u]; ok(u + ' ROI investido', x.investido, R.invUnidade[u]); }); }
       else if (ro.invAtrib > 0) { if (Math.abs(ro.roi - (ro.retorno - ro.invAtrib) / ro.invAtrib) > 1e-12) falhas.push('ROI'); ok('retorno = Σ campanhas', ro.retorno, Object.values(ro.porCamp).reduce((t, g) => t + g.retorno, 0)); }

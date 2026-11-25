@@ -595,8 +595,8 @@ var ESTADO_DEMO = {
     var f = {};
     b.forEach(function (m, i) {
       var mes = '2026-' + String(i + 1).padStart(2, '0'), un = {};
-      ['Consolação', 'Mogi'].forEach(function (u, k) { var c = custosUnidade(u, mes); un[u] = compor({ producao: m[k][0], recebidas: Math.round(m[k][1] * [1.12, 1.2, 1.08, 1.02, 1.25, 1.22, 1.05, 1.3, 1.15, 1.28][i]), comissoes: m[k][2], fixo: c.fixo, provisao: c.provisao, investido: m[k][3], contratado: r2(m[k][0] * 2.4) }); });
-      var t = {}; ['producao', 'recebidas', 'comissoes', 'fixo', 'provisao', 'investido', 'contratado'].forEach(function (x) { t[x] = r2(un['Consolação'][x] + un['Mogi'][x]); });
+      ['Consolação', 'Mogi'].forEach(function (u, k) { var c = custosUnidade(u, mes); un[u] = compor({ producao: m[k][0], recebidas: Math.round(m[k][1] * [1.12, 1.2, 1.08, 1.02, 1.25, 1.22, 1.05, 1.3, 1.15, 1.28][i]), comissoes: m[k][2], fixo: c.fixo, provisao: c.provisao, investido: m[k][3], contratado: r2(m[k][0] * 2.4), primeira: r2(m[k][0] * 0.9) }); });
+      var t = {}; ['producao', 'recebidas', 'comissoes', 'fixo', 'provisao', 'investido', 'contratado', 'primeira'].forEach(function (x) { t[x] = r2(un['Consolação'][x] + un['Mogi'][x]); });
       f[mes] = Object.assign(compor(t), { mes: mes, unidades: un, fechado: true, fechadoEm: mes + '-28', exemplo: true });
     });
     return f;
@@ -1068,18 +1068,19 @@ function calcularROI(R) {
   var organico = { propostas: 0, mensalidades: 0, retorno: 0 };
   (R.ag.propostas || []).forEach(function (p) {
     var c = campanhaDe(p.c.campanha || p.c.origem || '', nomes);
-    if (!c) { organico.propostas++; organico.mensalidades = r2(organico.mensalidades + p.valor); organico.retorno = r2(organico.retorno + (p.agTotal || 0)); return; }
-    var g = porCamp[norm(c)]; g.propostas.push(p); g.mensalidades = r2(g.mensalidades + p.valor); g.vidas += +p.c.vidas || 0; g.retorno = r2(g.retorno + (p.agTotal || 0));
+    if (!c) { organico.propostas++; organico.mensalidades = r2(organico.mensalidades + p.valor); organico.retorno = r2(organico.retorno + (p.aReceber || 0)); return; }
+    var g = porCamp[norm(c)]; g.propostas.push(p); g.mensalidades = r2(g.mensalidades + p.valor); g.vidas += +p.c.vidas || 0; g.retorno = r2(g.retorno + (p.aReceber || 0));
   });
   Object.keys(porCamp).forEach(function (k) { var g = porCamp[k]; g.roi = g.investido > 0 && g.propostas.length ? (g.retorno - g.investido) / g.investido : null; });
   var atrib = Object.keys(porCamp).filter(function (k) { return porCamp[k].propostas.length; });
   var invAtrib = soma2(atrib, function (k) { return porCamp[k].investido; }), retorno = soma2(atrib, function (k) { return porCamp[k].retorno; });
   var reserva = R.reservaDisponivel;
-  // Até novembro/2026: ROI geral = investido no mês × comissão contratada de TODAS as vendas do mês (sem rastrear venda a venda)
+  // ROI = (1ª parcela das vendas do mês − investido no mês) ÷ investido (decisão de 25/11/2026: valor do SisWeb; recebido quando já veio no extrato)
+  // Até novembro/2026: geral (todas as vendas do mês); a partir de dezembro/2026: por campanha
   var geral = mes < REGRAS.roiPorCampanhaDesde, porUnidade = {};
   if (geral) {
-    REGRAS.unidades.forEach(function (u) { var iv = R.invUnidade[u] || 0, rt = R.unidades[u].contratado; porUnidade[u] = { investido: iv, retorno: rt, roi: iv > 0 && rt != null ? (rt - iv) / iv : null }; });
-    var rts = REGRAS.unidades.map(function (u) { return R.unidades[u].contratado; });
+    REGRAS.unidades.forEach(function (u) { var iv = R.invUnidade[u] || 0, rt = R.unidades[u].primeira; porUnidade[u] = { investido: iv, retorno: rt, roi: iv > 0 && rt != null ? (rt - iv) / iv : null }; });
+    var rts = REGRAS.unidades.map(function (u) { return R.unidades[u].primeira; });
     invAtrib = total; retorno = rts.some(function (x) { return x != null; }) ? soma2(rts, function (x) { return x || 0; }) : null;
   }
   return { mes: mes, modo: geral ? 'geral' : 'campanha', porUnidade: porUnidade, dias: dias, diaRef: diaRef, diasRest: Math.max(0, dias - diaRef), inv: inv, total: total, media: diaRef ? total / diaRef : 0, porCat: porCat, porCamp: porCamp, organico: organico,
@@ -1294,8 +1295,8 @@ function compor(p) {
 }
 function fotoMes() {
   var un = {};
-  REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; un[u] = compor({ producao: U.producao, recebidas: U.recebidas, comissoes: U.comissaoResultado, fixo: U.custos.fixo, provisao: U.custos.provisao, investido: U.investido, imposto: U.res ? U.res.imposto : null, contratado: U.contratado }); });
-  return Object.assign(compor({ producao: R.producao, recebidas: R.recebidas, comissoes: R.comissoesResultado, fixo: R.custoFixo, provisao: R.provisao, investido: R.investido, imposto: R.res ? R.res.imposto : null, aReceber: R.ag.base ? r2(R.ag.valor) : null, contratado: R.roi.retorno != null && R.roi.modo === 'geral' ? R.roi.retorno : (R.ag.base ? R.ag.contratado : null) }),
+  REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; un[u] = compor({ producao: U.producao, recebidas: U.recebidas, comissoes: U.comissaoResultado, fixo: U.custos.fixo, provisao: U.custos.provisao, investido: U.investido, imposto: U.res ? U.res.imposto : null, contratado: U.contratado, primeira: U.primeira }); });
+  return Object.assign(compor({ producao: R.producao, recebidas: R.recebidas, comissoes: R.comissoesResultado, fixo: R.custoFixo, provisao: R.provisao, investido: R.investido, imposto: R.res ? R.res.imposto : null, aReceber: R.ag.base ? r2(R.ag.valor) : null, contratado: R.ag.base ? R.ag.contratado : null, primeira: R.primeira }),
     { mes: R.mes, unidades: un, versao: REGRAS.versao, fechado: false, vendedores: R.vendedores.map(function (v) { return { nome: v.nome, unidade: v.unidade, prodHap: v.prodHap, prodFora: v.prodFora, vidas: v.vidasProjeto, comissao: v.comissao }; }) });
 }
 // O mês corrente é gravado automaticamente enquanto estiver aberto; mês fechado não muda mais.
@@ -1314,8 +1315,8 @@ function fecharMes(mes) {
 }
 function reabrirMes(mes) { if (!confirm('Reabrir ' + mesLabel(mes) + '? Os números voltam a ser atualizados.')) return; ESTADO.fechamentos[mes].fechado = false; delete ESTADO.fechamentos[mes].fechadoEm; salvarEstado(); render(); show('ano'); }
 function mesesDoAno(ano) { return Object.keys(ESTADO.fechamentos).filter(function (k) { return k.slice(0, 4) === String(ano); }).sort(); }
-// ROI do mês (geral até nov/2026): (comissão contratada das vendas do mês − investido) ÷ investido
-function roiMes(m) { if (!m.investido || m.contratado == null) return '—'; var x = (m.contratado - m.investido) / m.investido; return '<b class="' + (x >= 0 ? 'gr' : 'rd') + '">' + pct(x) + '</b>'; }
+// ROI do mês: (1ª parcela das vendas do mês − investido) ÷ investido
+function roiMes(m) { var rt = m.primeira != null ? m.primeira : null; if (!m.investido || rt == null) return '—'; var x = (rt - m.investido) / m.investido; return '<b class="' + (x >= 0 ? 'gr' : 'rd') + '">' + pct(x) + '</b>'; }
 function resumoAno(ano) {
   var ms = mesesDoAno(ano).map(function (k) { return ESTADO.fechamentos[k]; });
   var comRec = ms.filter(function (m) { return m.resultado != null; });
@@ -1479,7 +1480,7 @@ function livroReceber() {
     if (statusProposta(c) === 'cancelada') return;
     var vals = (c.tabela && c.tabela.valores) || [], ult = c.data_venda, ini = c.data_venda.slice(0, 7);
     vals.forEach(function (v, k) {
-      var pg = pago[c.id + '|' + (k + 1)], prevista = isoMais(ult, 30);
+      var vs = c.tabela.venc && c.tabela.venc[k], pg = pago[c.id + '|' + (k + 1)], prevista = vs || isoMais(ult, 30);   // vencimento do SisWeb; sem ele, 30 dias do último pagamento
       var it = { c: c, unidade: unidadeCanon(c.unidade), parcela: k + 1, comp: addMes(ini, k), esperado: v, prevista: prevista, valor: v, situacao: '', dias: 0 };
       if (pg) { it.situacao = 'recebida'; it.recebidaEm = pg.data; it.valor = pg.bruto; it.liquido = pg.liquido; ult = pg.data; }
       else { ult = prevista; if (!v) return; var d = diasEntre(prevista, hoje); it.dias = d; it.situacao = d <= 0 ? 'em dia' : d < 90 ? 'atrasada' : 'perdida'; }
@@ -1527,7 +1528,7 @@ function vARec() {
   var ord = L.slice().sort(function (a, b) { return a.prevista < b.prevista ? -1 : a.prevista > b.prevista ? 1 : b.valor - a.valor; });
   h += '<div class="box mt"><div class="lbl">Proposta a proposta</div><div class="tw rol"><table><thead><tr><th>Data prevista</th><th>Situação</th><th>Unidade</th><th>Cliente</th><th>Operadora</th><th>Proposta</th><th>Cadastro</th><th class="r">Parcela</th><th>Mês da parcela</th><th class="r">Valor</th></tr></thead><tbody>'
     + ord.map(function (x) { return '<tr><td>' + x.prevista.split('-').reverse().join('/') + '</td><td>' + (x.situacao === 'atrasada' ? '<span class="pill er">atrasada ' + x.dias + ' dias</span>' : '<span class="pill ok">em dia</span>') + '</td><td>' + x.unidade + '</td><td>' + esc(x.cliente) + '</td><td>' + esc(x.operadora) + '</td><td>' + esc(x.proposta) + '</td><td>' + x.cadastro.split('-').reverse().join('/') + '</td><td class="r">' + x.parcela + 'ª</td><td>' + mesLabel(x.comp) + '</td><td class="r ' + (x.situacao === 'atrasada' ? 'rd' : 'gr') + '">' + brl(x.valor) + '</td></tr>'; }).join('')
-    + '</tbody></table></div><div class="m mt">Data prevista = 30 dias depois do último pagamento da proposta (sem pagamento: 30 dias depois do cadastro). Passou da data → atrasada e vai para o próximo recebimento. Sem receber em 90 dias → sai da conta do mês e o mês fica com o que realmente entrou.</div></div>';
+    + '</tbody></table></div><div class="m mt">Data prevista = vencimento da parcela no SisWeb (sem vencimento: 30 dias depois do último pagamento). Passou da data → atrasada e vai para o próximo recebimento. Sem receber em 90 dias → sai da conta do mês e o mês fica com o que realmente entrou.</div></div>';
   // fora da conta
   var perd = livroReceber().itens.filter(function (it) { return it.situacao === 'perdida'; });
   if (perd.length) h += '<div class="box mt"><div class="lbl">Não recebidas em 90 dias <em>fora da conta · ' + perd.length + ' parcelas · ' + brl(soma2(perd, function (x) { return x.valor; })) + '</em></div><div class="tw rol"><table><thead><tr><th>Data prevista</th><th>Unidade</th><th>Cliente</th><th>Operadora</th><th>Proposta</th><th class="r">Parcela</th><th>Mês da parcela</th><th class="r">Valor</th></tr></thead><tbody>'
@@ -1882,7 +1883,7 @@ function vRoi() {
   h += '<div class="box res ' + st2 + '"><div class="lbl">' + (geral ? 'ROI geral' : 'ROI por campanha') + ' <em>' + mesLabel(R.mes) + (geral ? ' · investido × todas as vendas do mês' : '') + '</em></div>'
     + '<div class="bigv ' + st2 + '" style="margin-top:12px">' + (rv != null ? pct(rv) : '—') + '</div>'
     + '<div class="mins"><div class="mrow"><span>' + (geral ? 'Investido no mês' : 'Investido em campanhas com venda') + '</span><b class="inv">' + brl(o.invAtrib) + '</b></div>'
-    + '<div class="mrow"><span>' + (geral ? 'Retorno (comissão contratada de todas as vendas do mês)' : 'Retorno (comissão contratada das vendas das campanhas)') + '</span><b class="gr">' + brl(o.retorno) + '</b></div>'
+    + '<div class="mrow"><span>' + (geral ? 'Retorno (1ª parcela de todas as vendas do mês)' : 'Retorno (1ª parcela das vendas das campanhas)') + '</span><b class="gr">' + brl(o.retorno) + '</b></div>'
     + '<div class="mrow"><span>Retorno para cada R$ 1,00 investido</span><b>' + (o.retornoPorReal != null ? brl(o.retornoPorReal) : '—') + '</b></div>'
     + (geral ? REGRAS.unidades.map(function (u) { var x = o.porUnidade[u]; return '<div class="mrow"><span>' + u + ' · investido ' + brl(x.investido) + ' · retorno ' + brl(x.retorno) + '</span><b class="' + (x.roi == null ? '' : (x.roi >= 0 ? 'gr' : 'rd')) + '">' + (x.roi != null ? pct(x.roi) : '—') + '</b></div>'; }).join('') : '')
     + '</div></div>';
@@ -2066,7 +2067,7 @@ function vReg() {
     + regra('Se a operação se pagou', 'Mês se pagou quando o lucro bruto ≥ 0 · acumulado do ano = saldo do ano anterior + lucro líquido dos meses', '')
     + regra('Cores', 'Verde = dinheiro que entra · vermelho = dinheiro que sai · amarelo = investimento', '')
     + regra('Qual comissão se aplica a cada venda', '1º tabela gravada na data da venda → 2º regra do projeto (Projeto Hapvida) → 3º tabela da operadora', 'Hapvida fora do projeto usa 350% + 2%. Mudanças futuras de tabela não alteram vendas antigas.')
-    + regra('ROI geral · até novembro/2026', 'ROI geral = (comissão contratada de todas as vendas do mês − investido no mês) ÷ investido · por unidade e no consolidado', 'A partir de dezembro/2026: ROI por campanha, ligando cada venda à campanha de origem.')
+    + regra('ROI geral · até novembro/2026', 'ROI = (1ª parcela das vendas do mês, valor do SisWeb − investido no mês) ÷ investido · por unidade e no consolidado', 'A partir de dezembro/2026: ROI por campanha, ligando cada venda à campanha de origem.')
     + regra('Limite de investimento', 'Limite = 15% × produção do mês + saldo dos meses anteriores do ano (reserva − investido) · Dentro se investido ≤ limite', 'A reserva não usada passa para o mês seguinte; o que passou do limite reduz o saldo.')
     + regra('Provisão de 13º e férias no ano', 'Obrigação do ano = R$ 1.623,15 × 12 · Coberta se o resultado do ano ≥ 0', 'A provisão já é descontada todo mês no resultado.')
     + regra('Balanço anual e virada de ano', 'Em dezembro: fechar o ano grava o balanço geral e o saldo (lucro líquido do ano) passa para o ano seguinte', 'Acumulado = saldo do ano anterior + lucro líquido do ano atual.')
