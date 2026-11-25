@@ -514,31 +514,33 @@ var CD_TIPOS = [
   ['H', 'Adiantamento de 1ª parcela (AD nª PARC)', /^AD \d/, 'custo'],
   ['S', '10% sobre parcela', /^10%.*PARC/, 'custo'],
   ['G', 'Vale', /VALE/, 'custo'],
-  ['V', 'Retiradas e aluguel (Verus / Joana)', /RETIRADA|ALUGUEL/, 'pendente'],
+  ['V', 'Empréstimo (retiradas Joana · aluguel Verus)', /RETIRADA|ALUGUEL/, 'emprestimo'],
   ['D', 'Boleto de cliente', /BOLETO/, 'custoOp'],
   ['F', 'Acerto de parcela / folha', /ACERTO/, 'receita'],
   ['K', 'Rescisão', /RESCIS/, 'custo'],
-  ['M', 'Férias', /FERIAS/, 'pendente'],
-  ['L', '13º salário', /13.? SALARIO|13º/, 'pendente'],
-  ['A', 'Salário', /SALARIO/, 'pendente'],
-  ['C', 'Benefícios do mês', /BENEFICIO/, 'pendente'],
+  ['M', 'Férias', /FERIAS/, 'folha'],
+  ['L', '13º salário', /13.? SALARIO|13º/, 'folha'],
+  ['A', 'Salário', /SALARIO/, 'folha'],
+  ['C', 'Benefícios do mês', /BENEFICIO/, 'folha'],
   ['E', 'Campanha de operadora', /CAMPANHA/, 'receita'],
   ['P', 'Premiação de operadora', /PREMIA/, 'receita'],
   ['N', 'Diferença de desconto da 1ª parcela', /DIFEREN/, 'receita'],
   ['O', 'Devolução de desconto da 1ª parcela', /DEVOLU/, 'receita'],
   ['U', 'Taxa de implantação', /TX\. IMP|TAXA/, 'custo']
 ];
-var CD_ACAO = { receita: 'soma no a receber', custo: 'custo da unidade', custoOp: 'custo de operação', ignora: 'ignorado', pendente: 'aguardando decisão' };
+var CD_ACAO = { receita: 'soma no a receber', custo: 'custo da unidade', custoOp: 'custo de operação', ignora: 'ignorado', folha: 'folha (real até setembro/2026; depois, estrutura)', emprestimo: 'empréstimo (fora do resultado)', pendente: 'aguardando decisão' };
 function tipoCD(desc) { var d = norm(desc).toUpperCase(); for (var i = 0; i < CD_TIPOS.length; i++) if (CD_TIPOS[i][2].test(d)) return CD_TIPOS[i]; return ['?', 'Sem classificação', null, 'pendente']; }
 // Lançamentos do mês (mês do pagamento do extrato) por unidade
 function lancExtratos(mes, u) {
-  var o = { receitas: 0, custos: 0, pendente: 0, itens: [] };
+  var o = { receitas: 0, custos: 0, folha: 0, emprestimo: 0, pendente: 0, itens: [] };
   if (!extratosOn()) return o;
   EXTRATOS.creditos_debitos.forEach(function (c) {
     if (c.mes !== mes || unidadeCanon(c.unidade) !== u) return;
     var t = tipoCD(c.descricao); o.itens.push({ c: c, t: t });
     if (t[3] === 'receita') o.receitas = r2(o.receitas + c.liquido);
     else if (t[3] === 'custo' || t[3] === 'custoOp') o.custos = r2(o.custos - c.liquido);
+    else if (t[3] === 'folha') o.folha = r2(o.folha - c.liquido);
+    else if (t[3] === 'emprestimo') o.emprestimo = r2(o.emprestimo + c.liquido);
     else if (t[3] === 'pendente') o.pendente = r2(o.pendente - c.liquido);
   });
   return o;
@@ -723,10 +725,12 @@ function custosUnidade(u, mes) {
   var encTot = sum(Object.keys(REGRAS.encargos), function (k) { return REGRAS.encargos[k]; });
   var p13 = r2(clt / 12), pFer = r2(clt / 3 / 12), pEnc = r2((p13 + pFer) * encTot); // centavos, como no documento-mestre
   var lx = lancExtratos(mes, u);
-  return { unidade: u, mes: mes, diasUteis: du, vrDia: vrDia, vtDia: vtDia, vrPessoaDia: vrDia / c.clt, vtPessoaDia: vtDia / c.clt,
+  // Até setembro/2026 (antes do mês-base da estrutura): folha real dos extratos no lugar da estrutura repetida; de outubro em diante, a estrutura (decisão de 25/11/2026)
+  var real = mes < base && extratosOn() && EXTRATOS.extratos.some(function (x) { return x.mes === mes && unidadeCanon(x.unidade) === u; });
+  return { unidade: u, fonteCustos: real ? 'extratos' : 'estrutura', mes: mes, diasUteis: du, vrDia: vrDia, vtDia: vtDia, vrPessoaDia: vrDia / c.clt, vtPessoaDia: vtDia / c.clt,
            salariosBrutos: c.salariosBrutos, pj: c.pjSocia, clt: clt, vr: vr, vt: vt, operacional: c.operacional, fixoEstrutura: fixo,
-           extrato: lx, fixo: r2(fixo + lx.custos),   // + custos lançados nos extratos do mês (custo da unidade e de operação)
-           prov13: p13, provFerias: pFer, provEncargos: pEnc, provisao: p13 + pFer + pEnc, cltPessoas: c.clt };
+           extrato: lx, fixo: real ? r2(lx.folha + lx.custos) : r2(fixo + lx.custos),   // + custos lançados nos extratos do mês (custo da unidade e de operação)
+           prov13: real ? 0 : p13, provFerias: real ? 0 : pFer, provEncargos: real ? 0 : pEnc, provisao: real ? 0 : p13 + pFer + pEnc, cltPessoas: c.clt };
 }
 
 function faixaComissao(unidade, producao) {
@@ -1084,11 +1088,13 @@ function aplicarBaseMeses() {
     var ex = erpMes(mes);
     REGRAS.unidades.forEach(function (u) {
       var c = custosUnidade(u, mes), iv = soma2(inv.filter(function (i) { return unidadeCanon(i.unidade) === u; }), function (i) { return +i.valor || 0; }), e = ex.porUnidade[u];
-      un[u] = compor({ producao: ex.n ? e.producao : null, recebidas: ex.n ? e.recebidas : null, comissoes: null, fixo: c.fixo, provisao: c.provisao, investido: iv, contratado: ex.n ? e.contratado : null, primeira: e.primeira, anteriores: e.anteriores, vitalicio: e.vitalicio, outrasReceitas: e.outrasReceitas, vidas: e.vidas, propostas: e.n });
+      // folha real do extrato já inclui as comissões dos vendedores (salário variável): comissões do mês = 0 à parte
+      un[u] = compor({ producao: ex.n ? e.producao : null, recebidas: ex.n ? e.recebidas : null, comissoes: c.fonteCustos === 'extratos' ? 0 : null, fonteCustos: c.fonteCustos, fixo: c.fixo, provisao: c.provisao, investido: iv, contratado: ex.n ? e.contratado : null, primeira: e.primeira, anteriores: e.anteriores, vitalicio: e.vitalicio, outrasReceitas: e.outrasReceitas, vidas: e.vidas, propostas: e.n });
       t.fixo = r2(t.fixo + c.fixo); t.provisao = r2(t.provisao + c.provisao);
     });
     if (ex.n) ['producao', 'recebidas', 'contratado', 'primeira', 'anteriores', 'vitalicio', 'outrasReceitas'].forEach(function (k) { t[k] = soma2(REGRAS.unidades, function (u) { return un[u][k] || 0; }); });
     t.fonte = ex.n ? 'ERP' : '';
+    if (REGRAS.unidades.every(function (u) { return un[u].comissoes != null; })) t.comissoes = 0;
     t.investido = soma2(inv, function (i) { return +i.valor || 0; });
     ESTADO.fechamentos[mes] = Object.assign(compor(t), { mes: mes, unidades: un, fechado: false, base: true, versao: REGRAS.versao });
   }
@@ -1459,6 +1465,15 @@ function vRec() {
   h += '<div class="box mt"><div class="lbl">Recebido de propostas que não estão no ERP <em>vendas anteriores e vitalício da carteira</em></div><div class="tw"><table><thead><tr><th>Ano do cadastro</th><th>Tipo</th><th class="r">Linhas</th><th class="r">Líquido</th></tr></thead><tbody>'
     + Object.keys(porAno).sort().map(function (k) { var p = k.split('|'); return '<tr><td>' + p[0] + '</td><td>' + (p[1] === 'vitalicio' ? 'Vitalício' : 'Agenciamento') + '</td><td class="r">' + porAno[k].n + '</td><td class="r gr">' + brl(porAno[k].v) + '</td></tr>'; }).join('')
     + '</tbody></table></div></div>';
+  // Tipos de crédito/débito e o que o painel faz com cada um
+  var porTipo = {}; X.creditos_debitos.forEach(function (c) { var t = tipoCD(c.descricao), k = t[0]; porTipo[k] = porTipo[k] || { t: t, n: 0, v: 0 }; porTipo[k].n++; porTipo[k].v = r2(porTipo[k].v + c.liquido); });
+  h += '<div class="box mt"><div class="lbl">Créditos e débitos por tipo</div><div class="tw"><table><thead><tr><th></th><th>Tipo</th><th>Como entra</th><th class="r">Lançamentos</th><th class="r">Total</th></tr></thead><tbody>'
+    + Object.keys(porTipo).sort().map(function (k) { var x = porTipo[k]; return '<tr><td><b>' + k + '</b></td><td>' + x.t[1] + '</td><td>' + CD_ACAO[x.t[3]] + '</td><td class="r">' + x.n + '</td><td class="r ' + (x.v < 0 ? 'rd' : 'gr') + '">' + brl(x.v) + '</td></tr>'; }).join('')
+    + '</tbody></table></div></div>';
+  var emp = X.creditos_debitos.filter(function (c) { return tipoCD(c.descricao)[3] === 'emprestimo'; });
+  if (emp.length) h += '<div class="box mt"><div class="lbl">Empréstimos <em>a abater da operação · fora do resultado</em></div><div class="tw"><table><thead><tr><th>Mês</th><th>Unidade</th><th>Lançamento</th><th class="r">Valor</th></tr></thead><tbody>'
+    + emp.map(function (c) { return '<tr><td>' + mesLabel(c.mes) + '</td><td>' + c.unidade + '</td><td style="white-space:normal">' + esc(c.descricao) + (/ALUGUEL/i.test(c.descricao) ? (c.liquido < 0 ? ' <span class="m">(empréstimo)</span>' : ' <span class="m">(empréstimo quitado)</span>') : ' <span class="m">(empréstimo a abater da operação)</span>') + '</td><td class="r">' + brl(c.liquido) + '</td></tr>'; }).join('')
+    + '<tr class="tot"><td colspan="3">Saldo a abater da operação</td><td class="r"><b>' + brl(soma2(emp, function (c) { return c.liquido; })) + '</b></td></tr></tbody></table></div></div>';
   // Créditos e débitos
   h += '<div class="box mt"><div class="lbl">Créditos e débitos dos extratos</div><div class="tw rol"><table><thead><tr><th>Pagamento</th><th>Unidade</th><th>Descrição</th><th class="r">Valor</th></tr></thead><tbody>'
     + X.creditos_debitos.slice().sort(function (a, b) { return a.mes < b.mes ? 1 : -1; }).map(function (c) { return '<tr><td>' + mesLabel(c.mes) + '</td><td>' + c.unidade + '</td><td style="white-space:normal">' + esc(c.descricao) + '</td><td class="r ' + (c.liquido < 0 ? 'rd' : 'gr') + '">' + brl(c.liquido) + '</td></tr>'; }).join('')

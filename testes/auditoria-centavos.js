@@ -74,7 +74,10 @@ const path = require('path');
         meses.forEach(m => REGRAS.unidades.forEach(u => { const cs = EXTRATOS.creditos_debitos.filter(c => c.mes === m && unidadeCanon(c.unidade) === u), lx = lancExtratos(m, u);
           ok(m + ' ' + u + ' receitas dos extratos', lx.receitas, cs.filter(c => tipoCD(c.descricao)[3] === 'receita').reduce((t, c) => t + c.liquido, 0));
           ok(m + ' ' + u + ' custos dos extratos', lx.custos, -cs.filter(c => /^custo/.test(tipoCD(c.descricao)[3])).reduce((t, c) => t + c.liquido, 0));
-          ok(m + ' ' + u + ' custo fixo = estrutura + extratos', custosUnidade(u, m).fixo, custosUnidade(u, m).fixoEstrutura + lx.custos); }));
+          const cu = custosUnidade(u, m), real = m < REGRAS.beneficios.baseMes && EXTRATOS.extratos.some(x => x.mes === m && unidadeCanon(x.unidade) === u);
+          ok(m + ' ' + u + ' folha dos extratos', lx.folha, -cs.filter(c => tipoCD(c.descricao)[3] === 'folha').reduce((t, c) => t + c.liquido, 0));
+          ok(m + ' ' + u + ' custo fixo (' + (real ? 'folha real + extratos' : 'estrutura + extratos') + ')', cu.fixo, real ? lx.folha + lx.custos : cu.fixoEstrutura + lx.custos);
+          if (real && cu.provisao !== 0) falhas.push(m + ' ' + u + ' provisão deveria ser zero com folha real'); }));
         const semTipo = EXTRATOS.creditos_debitos.filter(c => tipoCD(c.descricao)[0] === '?'); if (semTipo.length) falhas.push(semTipo.length + ' crédito(s)/débito(s) sem classificação'); }
       // reserva: saldo dos meses anteriores e limite
       { const an = Object.keys(ESTADO.fechamentos).filter(k => k.slice(0, 4) === R.mes.slice(0, 4) && k < R.mes && ESTADO.fechamentos[k].producao != null);
