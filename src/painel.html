@@ -570,7 +570,7 @@ function lancExtratos(mes, u) {
 }
 function extratosOn() { return !DEMO && EXTRATOS && EXTRATOS.extratos && EXTRATOS.extratos.length; }
 // Vitalício recebido nos extratos (mês do pagamento), por unidade e operadora
-function vitDosExtratos(mes) { if (!extratosOn()) return []; return EXTRATOS.linhas.filter(function (l) { return l.mes === mes && l.tipo === 'vitalicio'; }).map(function (l) { return { mes: mes, operadora: l.operadora, unidade: l.unidade, valor: l.bruto, liquido: l.liquido, origem: 'extrato' }; }); }
+function vitDosExtratos(mes) { if (!extratosOn()) return []; return EXTRATOS.linhas.filter(function (l) { return l.mes === mes && l.tipo === 'vitalicio'; }).map(function (l) { return { mes: mes, operadora: l.operadora, unidade: l.unidade, valor: l.bruto, liquido: l.liquido, mensal: l.vl_parcela, desp: l.desp_adm, origem: 'extrato' }; }); }
 // Situação da proposta (decisão de 25/11/2026):
 //  cancelada (inclusive na operadora) → registra, sai da conta
 //  cancelada sem confirmação da 1ª: 90 dias ou mais desde o cancelamento → cancelada; menos de 90 dias → válida em aberto
@@ -915,16 +915,14 @@ function calcular() {
   var pTot = sum(REGRAS.unidades, function (u) { return prodU[u]; }), rat = REGRAS.unidades.map(function (u) { return { u: u, x: 0 }; });
   ratear(rat, livre, function (o) { return pTot ? livre * prodU[o.u] / pTot : livre / REGRAS.unidades.length; }, 'x');
   R.invUnidade = {}; REGRAS.unidades.forEach(function (u, k) { R.invUnidade[u] = r2(invU[k].v + rat[k].x); });
-  // Vitalício do mês entra no a receber (decisão de 25/11/2026): recebido quando o relatório do mês foi lançado; senão, previsto da carteira.
-  // O que não tem unidade é rateado pelo vitalício previsto de cada unidade (ou pela produção).
+  // Vitalício do mês no a receber: SÓ o que os relatórios de pagamento mostram como recebido; sem previsão (decisão de 25/11/2026).
+  // O recebido sem unidade (lançamento manual) é rateado pelo recebido de cada unidade (ou pela produção).
   R.vit = calcVitalicio(R.mes);
-  R.vitFonte = R.vit.recebido != null ? 'recebido' : 'previsto';
-  // por unidade: o recebido vale para a unidade que tem recebimento lançado no mês; as outras usam o previsto
-  R.vitFonteU = {}; REGRAS.unidades.forEach(function (u) { R.vitFonteU[u] = R.vit.recebidoPorUnidade[u] != null || (R.vit.recebido != null && R.vit.recebidoSemUnidade && !Object.keys(R.vit.recebidoPorUnidade).length) ? 'recebido' : 'previsto'; });
-  var vitU = REGRAS.unidades.map(function (u) { return { u: u, x: 0 }; }), vitBaseU = {}; REGRAS.unidades.forEach(function (u) { vitBaseU[u] = R.vitFonteU[u] === 'recebido' ? (R.vit.recebidoPorUnidade[u] || 0) : (R.vit.porUnidade[u] || 0); });
-  var vitLivre = r2((R.vit.recebido != null ? R.vit.recebidoSemUnidade : 0) + (REGRAS.unidades.some(function (u) { return R.vitFonteU[u] === 'previsto'; }) ? R.vit.semUnidade : 0)), prevTot = sum(REGRAS.unidades, function (u) { return R.vit.porUnidade[u] || 0; });
-  ratear(vitU, vitLivre, function (o) { return prevTot ? vitLivre * (R.vit.porUnidade[o.u] || 0) / prevTot : (pTot ? vitLivre * prodU[o.u] / pTot : vitLivre / REGRAS.unidades.length); }, 'x');
-  R.vitUnidade = {}; REGRAS.unidades.forEach(function (u, k) { R.vitUnidade[u] = r2((vitBaseU[u] || 0) + vitU[k].x); });
+  R.vitFonte = 'recebido';
+  R.vitFonteU = {}; REGRAS.unidades.forEach(function (u) { R.vitFonteU[u] = 'recebido'; });
+  var vitU = REGRAS.unidades.map(function (u) { return { u: u, x: 0 }; }), vitLivre = R.vit.recebidoSemUnidade || 0, recTot = sum(REGRAS.unidades, function (u) { return R.vit.recebidoPorUnidade[u] || 0; });
+  ratear(vitU, vitLivre, function (o) { return recTot ? vitLivre * (R.vit.recebidoPorUnidade[o.u] || 0) / recTot : (pTot ? vitLivre * prodU[o.u] / pTot : vitLivre / REGRAS.unidades.length); }, 'x');
+  R.vitUnidade = {}; REGRAS.unidades.forEach(function (u, k) { R.vitUnidade[u] = r2((R.vit.recebidoPorUnidade[u] || 0) + vitU[k].x); });
   // Vendas fora do projeto no mês atual: só as cadastradas no ERP (decisão de 25/11/2026); o PipeRun fica só para a comissão de cada vendedor
   var erpAtual = DEMO || !ERP.length ? null : erpMes(R.mes);
   R.foraFonte = erpAtual ? 'ERP' : 'painel gerencial';
@@ -1104,7 +1102,7 @@ function aplicarBaseInvest() {
 // Mês pelo ERP (vendas fora do projeto): 1ª parcela das propostas cadastradas no mês + parcelas das anteriores + vitalício
 function erpMes(mes) {
   var o = { n: 0, porUnidade: {} }, ant = parcelasAnteriores(mes), vit = calcVitalicio(mes);
-  REGRAS.unidades.forEach(function (u) { o.porUnidade[u] = { n: 0, producao: 0, primeira: 0, contratado: 0, vidas: 0, anteriores: ant.porUnidade[u] || 0, vitalicio: vit.porUnidade[u] || 0 }; });
+  REGRAS.unidades.forEach(function (u) { o.porUnidade[u] = { n: 0, producao: 0, primeira: 0, contratado: 0, vidas: 0, anteriores: ant.porUnidade[u] || 0, vitalicio: vit.recebidoPorUnidade[u] || 0 }; });   // vitalício: só o recebido
   if (DEMO) return o;
   ERP.forEach(function (c) {
     if ((c.data_venda || '').slice(0, 7) !== mes || statusProposta(c) === 'cancelada') return;
@@ -1166,7 +1164,7 @@ function vGeral() {
   var q = [
     ['Produção do mês', brl(R.producao), '', '', ''],
     ['A receber no mês', R.recebidas != null ? brl(R.recebidas) : '—', '', '', R.recebidas != null ? 'in' : 'mu', R.recebidas != null ? sub('1ª parcela ' + brl(R.primeira) + ' · anteriores ' + brl(R.caixaAnt.total), 'ok') : ''],
-    ['A receber · vitalício', R.vit.n ? brl(R.vit.total) : '—', '', '', R.vit.n ? 'in' : 'mu', R.vit.recebido != null ? sub('recebido ' + brl(R.vit.recebido), R.vit.recebido >= R.vit.total ? 'ok' : 'no') : ''],
+    ['Vitalício recebido', R.vit.recebido != null ? brl(R.vit.recebido) : '—', '', '', R.vit.recebido != null ? 'in' : 'mu', R.vit.mensalRec ? sub(pct(R.vit.recebido / R.vit.mensalRec, 2) + ' das mensalidades', 'ok') : ''],
     ['Comissões dos vendedores', brl(R.comissoes), '', '', 'out'],
     ['Custo da operação', brl(r2(R.custoFixo + R.provisao)), '', '', 'out'],
     ['Impostos', x ? brl(x.imposto) : '—', '', '', x ? 'out' : 'mu'],
@@ -1440,7 +1438,8 @@ function calcVitalicio(mes) {
   o.recebido = rec.length ? soma2(rec, function (x) { return +x.valor || 0; }) : null;
   o.recebidoPorUnidade = {}; o.recebidoSemUnidade = 0;
   rec.forEach(function (x) { var uc = unidadeCanon(x.unidade); if (uc) o.recebidoPorUnidade[uc] = r2((o.recebidoPorUnidade[uc] || 0) + (+x.valor || 0)); else o.recebidoSemUnidade = r2(o.recebidoSemUnidade + (+x.valor || 0)); });
-  rec.forEach(function (x) { var g = o.porOp[x.operadora] = o.porOp[x.operadora] || { qtd: 0, valor: 0, pct: null, previsto: 0, semRegra: 0 }; g.recebido = r2((g.recebido || 0) + (+x.valor || 0)); });
+  rec.forEach(function (x) { var g = o.porOp[x.operadora] = o.porOp[x.operadora] || { qtd: 0, valor: 0, pct: null, previsto: 0, semRegra: 0 }; g.recebido = r2((g.recebido || 0) + (+x.valor || 0)); g.linhas = (g.linhas || 0) + 1; if (x.mensal != null) { g.mensalRec = r2((g.mensalRec || 0) + x.mensal); g.liqRec = r2((g.liqRec || 0) + (+x.liquido || 0)); } });
+  o.linhas = rec.length; o.mensalRec = soma2(rec.filter(function (x) { return x.mensal != null; }), function (x) { return x.mensal; }); o.liqRec = soma2(rec.filter(function (x) { return x.mensal != null; }), function (x) { return +x.liquido || 0; });
   o.imposto = r2(o.total * REGRAS.imposto); o.liquido = r2(o.total - o.imposto);
   return o;
 }
@@ -1578,33 +1577,32 @@ function vRec() {
   el.innerHTML = h;
 }
 function vVit() {
-  var v = R.vit, ano = +R.mes.slice(0, 4), dif = v.recebido != null ? r2(v.recebido - v.total) : null;
+  // Só o recebido (relatórios de pagamento): % de vitalício = recebido ÷ mensalidade das parcelas pagas. Sem previsão (decisão de 25/11/2026).
+  var v = R.vit, ano = +R.mes.slice(0, 4), pc = function (rec, men) { return men ? pct(rec / men, 2) : '—'; };
   var h = '<div class="grid g4">'
-    + card('Previsto no mês', v.n ? brl(v.total) : '—', v.n ? v.n + ' contratos rodando' : '', { cls: 'or' })
-    + card('Recebido no mês', v.recebido != null ? brl(v.recebido) : '—', '')
-    + card('Diferença', dif != null ? brl(dif) : '—', '', { cls: dif == null ? 'mu' : (dif >= 0 ? 'gr' : 'rd') })
-    + card('Líquido previsto', v.n ? brl(v.liquido) : '—', v.n ? 'imposto ' + brl(v.imposto) : '')
+    + card('Recebido no mês', v.recebido != null ? brl(v.recebido) : '—', v.recebido != null ? v.linhas + ' parcelas de vitalício · bruto' : 'nenhum relatório de pagamento no mês', { cls: 'in', box: 'bgr' })
+    + card('Líquido recebido', v.mensalRec ? brl(v.liqRec) : '—', v.mensalRec ? 'depois do desconto administrativo' : '')
+    + card('% de vitalício recebido', pc(v.recebido, v.mensalRec), v.mensalRec ? 'sobre ' + brl(v.mensalRec) + ' de mensalidades' : '')
+    + card('Fonte', 'Relatórios', 'de pagamento · só o que entrou, sem previsão')
     + '</div>';
-  var ks = Object.keys(v.porOp).sort(function (a, b) { return (v.porOp[b].previsto || 0) - (v.porOp[a].previsto || 0); });
-  h += '<div class="box mt"><div class="lbl">Por operadora · ' + mesLabel(R.mes) + '</div>';
+  var ks = Object.keys(v.porOp).filter(function (k) { return v.porOp[k].recebido != null; }).sort(function (a, b) { return v.porOp[b].recebido - v.porOp[a].recebido; });
+  h += '<div class="box mt"><div class="lbl">Por operadora · ' + mesLabel(R.mes) + ' <em>recebido nos relatórios de pagamento</em></div>';
   if (ks.length) {
-    h += '<div class="tw"><table><thead><tr><th>Operadora</th><th class="r">Contratos</th><th class="r">Mensalidades</th><th class="r">%</th><th class="r">Previsto</th><th class="r">Recebido</th><th class="r">Diferença</th></tr></thead><tbody>';
-    ks.forEach(function (k) { var g = v.porOp[k], d = g.recebido != null ? r2(g.recebido - g.previsto) : null;
-      h += '<tr><td><b>' + esc(k) + '</b></td><td class="r">' + (g.qtd || '—') + '</td><td class="r">' + brl(g.valor) + '</td><td class="r">' + (g.pct != null ? pct(g.pct, 1) : '<span class="tag pend">pendente</span>') + '</td><td class="r"><b>' + brl(g.previsto) + '</b></td><td class="r">' + (g.recebido != null ? brl(g.recebido) : '—') + '</td><td class="r ' + (d == null ? '' : d >= 0 ? 'pos' : 'neg') + '">' + (d != null ? brl(d) : '—') + '</td></tr>'; });
-    var tr = soma2(ks, function (k) { return v.porOp[k].recebido || 0; });
-    h += '<tr class="tot"><td>Total</td><td class="r">' + soma2(ks, function (k) { return v.porOp[k].qtd; }) + '</td><td class="r">' + brl(soma2(ks, function (k) { return v.porOp[k].valor; })) + '</td><td></td><td class="r">' + brl(v.total) + '</td><td class="r">' + (v.recebido != null ? brl(v.recebido) : '—') + '</td><td class="r">' + (dif != null ? brl(dif) : '—') + '</td></tr></tbody></table></div>';
-  } else h += '<div class="empty">Sem contratos na carteira.</div>';
+    h += '<div class="tw"><table><thead><tr><th>Operadora</th><th class="r">Parcelas pagas</th><th class="r">Mensalidades</th><th class="r">% recebido</th><th class="r">Recebido</th><th class="r">Líquido</th></tr></thead><tbody>';
+    ks.forEach(function (k) { var g = v.porOp[k];
+      h += '<tr><td><b>' + esc(k) + '</b></td><td class="r">' + g.linhas + '</td><td class="r">' + (g.mensalRec != null ? brl(g.mensalRec) : '—') + '</td><td class="r">' + pc(g.recebido, g.mensalRec) + '</td><td class="r gr"><b>' + brl(g.recebido) + '</b></td><td class="r">' + (g.liqRec != null ? brl(g.liqRec) : '—') + '</td></tr>'; });
+    h += '<tr class="tot"><td>Total</td><td class="r">' + v.linhas + '</td><td class="r">' + brl(v.mensalRec) + '</td><td class="r">' + pc(v.recebido, v.mensalRec) + '</td><td class="r">' + brl(v.recebido) + '</td><td class="r">' + brl(v.liqRec) + '</td></tr></tbody></table></div>';
+  } else h += '<div class="empty">Nenhum vitalício recebido neste mês.</div>';
   h += '</div>';
   // mês a mês
-  h += '<div class="box mt"><div class="lbl">' + ano + ' mês a mês</div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">Contratos rodando</th><th class="r">Previsto</th><th class="r">Recebido</th><th class="r">Diferença</th></tr></thead><tbody>';
-  var tp = 0, trc = 0, temR = false;
+  h += '<div class="box mt"><div class="lbl">' + ano + ' mês a mês <em>recebido</em></div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">Parcelas pagas</th><th class="r">Mensalidades</th><th class="r">% recebido</th><th class="r">Recebido</th><th class="r">Líquido</th></tr></thead><tbody>';
+  var tl = 0, tm = 0, tr = 0, tq = 0;
   for (var m = 1; m <= 12; m++) {
     var k = ano + '-' + String(m).padStart(2, '0'); if (k > R.mes) break;
-    var x = calcVitalicio(k), d2 = x.recebido != null ? r2(x.recebido - x.total) : null;
-    tp = r2(tp + x.total); if (x.recebido != null) { trc = r2(trc + x.recebido); temR = true; }
-    h += '<tr' + (k === R.mes ? ' style="background:var(--peach)"' : '') + '><td><b>' + mesLabel(k) + '</b></td><td class="r">' + (x.n || '—') + '</td><td class="r">' + (x.n ? brl(x.total) : '—') + '</td><td class="r">' + (x.recebido != null ? brl(x.recebido) : '—') + '</td><td class="r ' + (d2 == null ? '' : d2 >= 0 ? 'pos' : 'neg') + '">' + (d2 != null ? brl(d2) : '—') + '</td></tr>';
+    var x = calcVitalicio(k); if (x.recebido != null) { tl += x.linhas; tm = r2(tm + x.mensalRec); tr = r2(tr + x.recebido); tq = r2(tq + x.liqRec); }
+    h += '<tr' + (k === R.mes ? ' style="background:var(--peach)"' : '') + '><td><b>' + mesLabel(k) + '</b></td><td class="r">' + (x.recebido != null ? x.linhas : '—') + '</td><td class="r">' + (x.mensalRec ? brl(x.mensalRec) : '—') + '</td><td class="r">' + (x.recebido != null ? pc(x.recebido, x.mensalRec) : '—') + '</td><td class="r gr">' + (x.recebido != null ? brl(x.recebido) : '—') + '</td><td class="r">' + (x.mensalRec ? brl(x.liqRec) : '—') + '</td></tr>';
   }
-  h += '<tr class="tot"><td>Total</td><td></td><td class="r">' + brl(tp) + '</td><td class="r">' + (temR ? brl(trc) : '—') + '</td><td class="r">' + (temR ? brl(r2(trc - tp)) : '—') + '</td></tr></tbody></table></div></div>';
+  h += '<tr class="tot"><td>Total</td><td class="r">' + tl + '</td><td class="r">' + brl(tm) + '</td><td class="r">' + pc(tr, tm) + '</td><td class="r">' + brl(tr) + '</td><td class="r">' + brl(tq) + '</td></tr></tbody></table></div></div>';
   document.getElementById('v-vit').innerHTML = h;
 }
 
@@ -1641,9 +1639,9 @@ function responder(txt) {
     var st = function (alvo) { return rec == null ? '' : (rec >= alvo ? ' · acima em ' + brl(rec - alvo) : ' · faltam ' + brl(alvo - rec)); };
     return chip('A receber no mês', rec != null ? brl(rec) : '—', 'in') + chip('Não fechar no vermelho · ' + nome, brl(mn.empate) + st(mn.empate), rec != null && rec >= mn.empate ? 'in' : 'out') + chip('Não fechar no vermelho e investir', brl(mn.sustentavel) + st(mn.sustentavel), rec != null && rec >= mn.sustentavel ? 'in' : 'out');
   }
-  if (/vitalic/.test(t)) return chip('A receber · vitalício', R.vit.n ? brl(R.vit.total) : '—', 'in') + chip('Recebido', R.vit.recebido != null ? brl(R.vit.recebido) : '—', 'in') + chip('Contratos rodando', String(R.vit.n), '');
+  if (/vitalic/.test(t)) return chip('Vitalício recebido', R.vit.recebido != null ? brl(R.vit.recebido) : '—', 'in') + chip('% recebido', R.vit.mensalRec ? pct(R.vit.recebido / R.vit.mensalRec, 2) : '—', '') + chip('Parcelas pagas', String(R.vit.linhas || 0), '');
   if (/(lucro|bruto|resultado|sobr|ganh)/.test(t)) return chip((x.operacional >= 0 ? 'Lucro bruto · ' : 'Prejuízo · ') + nome, brl(x.operacional), sinal(x.operacional)) + chip('Margem bruta', pct(x.mBruta, 1), sinal(x.mBruta)) + chip('Lucro líquido', brl(x.financeiro), sinal(x.financeiro));
-  if (/(receb|agencia)/.test(t)) return chip('A receber · ' + nome, x ? brl(x.recebidas) : '—', 'in') + (un ? '' : chip('Vitalício', R.vit.n ? brl(R.vit.total) : '—', 'in'));
+  if (/(receb|agencia)/.test(t)) return chip('A receber · ' + nome, x ? brl(x.recebidas) : '—', 'in') + (un ? '' : chip('Vitalício recebido', R.vit.recebido != null ? brl(R.vit.recebido) : '—', 'in'));
   if (/impost/.test(t)) return chip('Impostos · ' + nome, x ? brl(x.imposto) : '—', 'out');
   if (/comiss/.test(t)) return chip('Comissões · ' + nome, brl(U ? U.comissao : R.comissoes), 'out');
   if (/custo/.test(t)) return chip('Custo da operação · ' + nome, x ? brl(x.custoOp) : '—', 'out') + chip('Custo de operação total', x ? brl(x.custoOpTotal) : '—', 'out') + chip('Custos do mês', x ? brl(x.custos) : '—', 'out');

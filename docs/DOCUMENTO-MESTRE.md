@@ -575,6 +575,8 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
 8. **Metas do mês ("não fechar no vermelho" e "não fechar no vermelho e investir"):** medidas pelo **a receber total do mês** (1ª parcela + parcelas anteriores + vitalício + outras receitas), não só pela 1ª parcela. O ROI continua pela 1ª parcela (item 7).
 9. **Comissões dos vendedores:** não é preciso folha. Os relatórios de pagamento (extratos SisWeb) já mostram o que foi pago de comissão aos vendedores; no resultado de cada mês fechado a comissão à parte é zero, com ou sem salário lançado no extrato (janeiro, setembro e outubro passam a ter resultado). No mês corrente, enquanto o extrato não chega, fica a estimativa pela faixa do vendedor.
 10. **Vendedor de cada venda:** vendas até novembro/2026 não são atribuídas a nenhum corretor. A partir de dezembro/2026 a Optas informa o vendedor responsável de cada venda.
+11. **Vitalício: só o recebido.** Sai o previsto. O vitalício do mês (no a receber, nas metas, no ano e na aba Vitalício) é só o que os relatórios de pagamento mostram como pago. A aba mostra, por operadora e mês a mês, parcelas pagas, mensalidades, % de vitalício recebido (recebido ÷ mensalidades), recebido bruto e líquido. Unidade sem relatório no mês = vitalício zero até o relatório chegar.
+12. **Relatório de todo dia 5:** a Optas recebe um novo relatório de pagamento todo dia 5 e o envia para atualizar o painel; ele vale para o mês que está começando (mês do pagamento).
 6. **Empréstimo (retiradas da Joana, boleto do apartamento, aluguel Verus):** fora do sistema, pago por fora; o painel ignora esses lançamentos.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA

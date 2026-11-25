@@ -36,8 +36,8 @@ const path = require('path');
       ok('parcelas anteriores', R.caixaAnt.total, ant);
       U.forEach(u => { if (u.recebidas != null) ok(u.custos.unidade + ' a receber = 1ª parcela + anteriores + vitalício + outras receitas', u.recebidas, (u.primeira || 0) + (u.anteriores || 0) + (u.vitalicio || 0) + (u.outrasReceitas || 0)); });
       if (R.recebidas != null) { ok('a receber = 1ª parcela + anteriores + vitalício + outras receitas', R.recebidas, R.primeira + R.caixaAnt.total + R.vitalicio + U.reduce((t, u) => t + (u.outrasReceitas || 0), 0));
-        { const v = R.vit, us = REGRAS.unidades; const esp = us.reduce((t, u) => t + (R.vitFonteU[u] === 'recebido' ? (v.recebidoPorUnidade[u] || 0) : (v.porUnidade[u] || 0)), 0) + (v.recebido != null ? v.recebidoSemUnidade : 0) + (us.some(u => R.vitFonteU[u] === 'previsto') ? v.semUnidade : 0);
-          ok('vitalício no a receber (recebido por unidade, senão previsto)', R.vitalicio, esp); } ok('1ª parcela = Σ unidades', R.primeira, U.reduce((t, u) => t + (u.primeira || 0), 0)); }
+        { const v = R.vit, us = REGRAS.unidades; const esp = us.reduce((t, u) => t + (v.recebidoPorUnidade[u] || 0), 0) + (v.recebidoSemUnidade || 0);
+          ok('vitalício no a receber = só o recebido', R.vitalicio, esp); } ok('1ª parcela = Σ unidades', R.primeira, U.reduce((t, u) => t + (u.primeira || 0), 0)); }
       // investimento
       ok('investido = Σ lançamentos', R.investido, ESTADO.investimentos.filter(i => (i.data || '').slice(0, 7) === R.mes).reduce((t, i) => t + (+i.valor || 0), 0));
       ok('investido = Σ unidades', R.investido, U.reduce((t, u) => t + u.investido, 0));
@@ -105,6 +105,8 @@ const path = require('path');
       else if (ro.invAtrib > 0) { if (Math.abs(ro.roi - (ro.retorno - ro.invAtrib) / ro.invAtrib) > 1e-12) falhas.push('ROI'); ok('retorno = Σ campanhas', ro.retorno, Object.values(ro.porCamp).reduce((t, g) => t + g.retorno, 0)); }
       // vitalício
       ok('vitalício = Σ contratos', R.vit.total, R.vit.contratos.reduce((t, x) => t + x.vit, 0));
+      if (R.vit.recebido != null) { ok('vitalício recebido = Σ por operadora', R.vit.recebido, Object.keys(R.vit.porOp).reduce((t, k) => t + (R.vit.porOp[k].recebido || 0), 0));
+        if (extratosOn()) { const L = EXTRATOS.linhas.filter(l => l.mes === R.mes && l.tipo === 'vitalicio'); ok('vitalício recebido = Σ linhas dos extratos', R.vit.recebido, L.reduce((t, l) => t + l.bruto, 0)); ok('mensalidades do vitalício = Σ linhas', R.vit.mensalRec, L.reduce((t, l) => t + l.vl_parcela, 0)); } }
       // ano
       const a = resumoAno(+R.mes.slice(0, 4)); a.meses.forEach(m => { if (m.resultado != null) { ok(m.mes + ' lucro bruto', m.resultado, m.recebidas - m.saiu); ok(m.mes + ' lucro líquido = bruto − investido', m.depois, m.resultado - (m.investido || 0)); } });
       // comissões exportadas
