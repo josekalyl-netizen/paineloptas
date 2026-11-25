@@ -52,6 +52,7 @@ const path = require('path');
         if (x.recebidas) { if (Math.abs(x.mBruta - x.operacional / x.recebidas) > 1e-12) falhas.push(n + ' margem bruta'); if (Math.abs(x.mLiquida - x.financeiro / x.recebidas) > 1e-12) falhas.push(n + ' margem líquida'); if (Math.abs(x.mMkt - x.investido / x.recebidas) > 1e-12) falhas.push(n + ' margem mkt'); } };
       U.forEach(u => chk(u.custos.unidade, u.res)); chk('consolidado', R.res);
       if (R.res) ['recebidas', 'imposto', 'comissoes', 'reserva', 'fixo', 'provisao', 'custoOp', 'custoOpTotal', 'custos', 'operacional', 'investido', 'financeiro'].forEach(k => ok('consolidado ' + k + ' = Σ unidades', R.res[k], U.reduce((t, u) => t + u.res[k], 0)));
+      U.forEach(u => ok(u.custos.unidade + ' comissão no resultado (0 com folha do extrato)', u.res ? u.res.comissoes : 0, u.res ? (u.custos.fonteCustos === 'extratos' ? 0 : u.comissao) : 0));
       ok('reserva = Σ unidades', R.reservaMkt, U.reduce((t, u) => t + u.reservaMkt, 0));
       // mínimos: menor 1ª parcela que zera o lucro bruto / cobre a reserva
       const lb = (rec, x) => r2(rec - r2(rec * REGRAS.imposto) - x.comissoes - x.custoOp);
@@ -74,7 +75,7 @@ const path = require('path');
         meses.forEach(m => REGRAS.unidades.forEach(u => { const cs = EXTRATOS.creditos_debitos.filter(c => c.mes === m && unidadeCanon(c.unidade) === u), lx = lancExtratos(m, u);
           ok(m + ' ' + u + ' receitas dos extratos', lx.receitas, cs.filter(c => tipoCD(c.descricao)[3] === 'receita').reduce((t, c) => t + c.liquido, 0));
           ok(m + ' ' + u + ' custos dos extratos', lx.custos, -cs.filter(c => /^custo/.test(tipoCD(c.descricao)[3])).reduce((t, c) => t + c.liquido, 0));
-          const cu = custosUnidade(u, m), real = m < REGRAS.beneficios.baseMes && EXTRATOS.extratos.some(x => x.mes === m && unidadeCanon(x.unidade) === u);
+          const cu = custosUnidade(u, m), real = cs.some(c => tipoCD(c.descricao)[3] === 'folha');
           ok(m + ' ' + u + ' folha dos extratos', lx.folha, -cs.filter(c => tipoCD(c.descricao)[3] === 'folha').reduce((t, c) => t + c.liquido, 0));
           ok(m + ' ' + u + ' custo fixo (' + (real ? 'folha real + extratos' : 'estrutura + extratos') + ')', cu.fixo, real ? lx.folha + lx.custos : cu.fixoEstrutura + lx.custos);
           if (real && cu.provisao !== 0) falhas.push(m + ' ' + u + ' provisão deveria ser zero com folha real'); }));

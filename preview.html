@@ -528,7 +528,7 @@ var CD_TIPOS = [
   ['O', 'Devolução de desconto da 1ª parcela', /DEVOLU/, 'receita'],
   ['U', 'Taxa de implantação', /TX\. IMP|TAXA/, 'custo']
 ];
-var CD_ACAO = { receita: 'soma no a receber', custo: 'custo da unidade', custoOp: 'custo de operação', ignora: 'ignorado', folha: 'folha (real até setembro/2026; depois, estrutura)', emprestimo: 'empréstimo (fora do resultado)', pendente: 'aguardando decisão' };
+var CD_ACAO = { receita: 'soma no a receber', custo: 'custo da unidade', custoOp: 'custo de operação', ignora: 'ignorado', folha: 'folha (sobrepõe a estrutura no mês do desconto)', emprestimo: 'empréstimo (fora do resultado)', pendente: 'aguardando decisão' };
 function tipoCD(desc) { var d = norm(desc).toUpperCase(); for (var i = 0; i < CD_TIPOS.length; i++) if (CD_TIPOS[i][2].test(d)) return CD_TIPOS[i]; return ['?', 'Sem classificação', null, 'pendente']; }
 // Lançamentos do mês (mês do pagamento do extrato) por unidade
 function lancExtratos(mes, u) {
@@ -725,8 +725,7 @@ function custosUnidade(u, mes) {
   var encTot = sum(Object.keys(REGRAS.encargos), function (k) { return REGRAS.encargos[k]; });
   var p13 = r2(clt / 12), pFer = r2(clt / 3 / 12), pEnc = r2((p13 + pFer) * encTot); // centavos, como no documento-mestre
   var lx = lancExtratos(mes, u);
-  // Até setembro/2026 (antes do mês-base da estrutura): folha real dos extratos no lugar da estrutura repetida; de outubro em diante, a estrutura (decisão de 25/11/2026)
-  var real = mes < base && extratosOn() && EXTRATOS.extratos.some(function (x) { return x.mes === mes && unidadeCanon(x.unidade) === u; });
+  var real = lx.folha !== 0;   // a folha do extrato sobrepõe a estrutura no mês do desconto; sem folha no extrato, vale a estrutura (decisão de 25/11/2026)
   return { unidade: u, fonteCustos: real ? 'extratos' : 'estrutura', mes: mes, diasUteis: du, vrDia: vrDia, vtDia: vtDia, vrPessoaDia: vrDia / c.clt, vtPessoaDia: vtDia / c.clt,
            salariosBrutos: c.salariosBrutos, pj: c.pjSocia, clt: clt, vr: vr, vt: vt, operacional: c.operacional, fixoEstrutura: fixo,
            extrato: lx, fixo: real ? r2(lx.folha + lx.custos) : r2(fixo + lx.custos),   // + custos lançados nos extratos do mês (custo da unidade e de operação)
@@ -922,10 +921,12 @@ function calcular() {
     U.recebidas = R.ag.base || U.anteriores || U.vitalicio || U.outrasReceitas ? r2(r2(r2((U.primeira || 0) + U.anteriores) + U.vitalicio) + U.outrasReceitas) : null;
     U.reservaMkt = r2(U.producao * REGRAS.reservaMarketing);
     U.investido = R.invUnidade[u];
-    U.res = resultado(U.recebidas, U.comissao, U.custos.fixo, U.custos.provisao, U.producao, null, U.investido);
+    // folha do extrato já inclui as comissões dos vendedores: no resultado, comissão à parte = 0
+    U.comissaoResultado = U.custos.fonteCustos === 'extratos' ? 0 : U.comissao;
+    U.res = resultado(U.recebidas, U.comissaoResultado, U.custos.fixo, U.custos.provisao, U.producao, null, U.investido);
     prodTot = r2(prodTot + U.producao); comTot = r2(comTot + U.comissao);
   });
-  R.producao = prodTot; R.comissoes = comTot;
+  R.producao = prodTot; R.comissoes = comTot; R.comissoesResultado = soma2(REGRAS.unidades, function (u) { return R.unidades[u].comissaoResultado; });
   var recU = REGRAS.unidades.map(function (u) { return R.unidades[u].recebidas; });
   R.recebidasInformadas = recU.filter(function (x) { return x != null; }).length;
   R.recebidas = R.recebidasInformadas === REGRAS.unidades.length ? soma2(recU) : null;
@@ -1139,7 +1140,7 @@ function vGeral() {
     ['Lucro líquido', x ? brl(x.financeiro) : '—', '', '', x ? (x.financeiro >= 0 ? 'in' : 'out') : 'mu', x ? sub('margem ' + pct(x.mLiquida, 1), x.mLiquida >= 0 ? 'ok' : 'no') : ''],
     ['ROI', ro.roi != null ? pct(ro.roi) : '—', '', '', ro.roi != null ? (ro.roi >= 0 ? 'in' : 'out') : 'mu', ro.roi != null ? sub(brl(ro.retornoPorReal) + ' de retorno por R$ 1') : '']
   ];
-  var h = blocoResultado('Optas consolidado · Consolação + Mogi', R.res, R.recebidas, R.comissoes, R.custoFixo, R.provisao, null, R.producao, R.investido, R.primeira, R.caixaAnt.total, R.vitalicio, soma2(REGRAS.unidades, function (u) { return R.unidades[u].outrasReceitas || 0; }));
+  var h = blocoResultado('Optas consolidado · Consolação + Mogi', R.res, R.recebidas, R.comissoesResultado, R.custoFixo, R.provisao, null, R.producao, R.investido, R.primeira, R.caixaAnt.total, R.vitalicio, soma2(REGRAS.unidades, function (u) { return R.unidades[u].outrasReceitas || 0; }));
   h += '<div class="grid g2 mt">';
   REGRAS.unidades.forEach(function (u) {
     var U = R.unidades[u], r = U.res, st = r ? (r.operacional >= 0 ? 'lucro' : 'prej') : 'nd';
@@ -1221,7 +1222,7 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
 
 function vUnidade(u) {
   var U = R.unidades[u], c = U.custos;
-  var h = blocoResultado('Unidade ' + u, U.res, U.recebidas, U.comissao, c.fixo, c.provisao, null, U.producao, U.investido, U.primeira || 0, U.anteriores || 0, U.vitalicio || 0, U.outrasReceitas || 0);
+  var h = blocoResultado('Unidade ' + u, U.res, U.recebidas, U.comissaoResultado, c.fixo, c.provisao, null, U.producao, U.investido, U.primeira || 0, U.anteriores || 0, U.vitalicio || 0, U.outrasReceitas || 0);
   h += '<div class="grid g4 mt">'
     + card('Produção', brl(U.producao), 'Hapvida ' + brl(U.prodHap) + ' · fora ' + brl(U.prodFora), { tag: T.real })
     + card('Comissões dos vendedores', brl(U.comissao), U.vendedores + ' vendedores', { tag: T.real })
@@ -1257,8 +1258,8 @@ function compor(p) {
 }
 function fotoMes() {
   var un = {};
-  REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; un[u] = compor({ producao: U.producao, recebidas: U.recebidas, comissoes: U.comissao, fixo: U.custos.fixo, provisao: U.custos.provisao, investido: U.investido, imposto: U.res ? U.res.imposto : null, contratado: U.contratado }); });
-  return Object.assign(compor({ producao: R.producao, recebidas: R.recebidas, comissoes: R.comissoes, fixo: R.custoFixo, provisao: R.provisao, investido: R.investido, imposto: R.res ? R.res.imposto : null, aReceber: R.ag.base ? r2(R.ag.valor) : null, contratado: R.roi.retorno != null && R.roi.modo === 'geral' ? R.roi.retorno : (R.ag.base ? R.ag.contratado : null) }),
+  REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; un[u] = compor({ producao: U.producao, recebidas: U.recebidas, comissoes: U.comissaoResultado, fixo: U.custos.fixo, provisao: U.custos.provisao, investido: U.investido, imposto: U.res ? U.res.imposto : null, contratado: U.contratado }); });
+  return Object.assign(compor({ producao: R.producao, recebidas: R.recebidas, comissoes: R.comissoesResultado, fixo: R.custoFixo, provisao: R.provisao, investido: R.investido, imposto: R.res ? R.res.imposto : null, aReceber: R.ag.base ? r2(R.ag.valor) : null, contratado: R.roi.retorno != null && R.roi.modo === 'geral' ? R.roi.retorno : (R.ag.base ? R.ag.contratado : null) }),
     { mes: R.mes, unidades: un, versao: REGRAS.versao, fechado: false, vendedores: R.vendedores.map(function (v) { return { nome: v.nome, unidade: v.unidade, prodHap: v.prodHap, prodFora: v.prodFora, vidas: v.vidasProjeto, comissao: v.comissao }; }) });
 }
 // O mês corrente é gravado automaticamente enquanto estiver aberto; mês fechado não muda mais.
@@ -1540,7 +1541,7 @@ function responder(txt) {
   if (/liquid/.test(t)) return chip('Lucro líquido · ' + nome, brl(x.financeiro), sinal(x.financeiro)) + chip('Margem líquida', pct(x.mLiquida, 1), sinal(x.mLiquida));
   if (/margem/.test(t)) return chip('Margem bruta · ' + nome, pct(x.mBruta, 1), sinal(x.mBruta)) + chip('Margem líquida', pct(x.mLiquida, 1), sinal(x.mLiquida)) + chip('Investido em mkt', pct(x.mMkt, 1), 'inv');
   if (/(vermelho|minimo|mínimo|empat|precis|falta|meta)/.test(t)) {
-    var c = U ? U.custos : { fixo: R.custoFixo, provisao: R.provisao }, mn = minimos(U ? U.comissao : R.comissoes, r2(c.fixo + c.provisao), x ? x.reserva : R.reservaMkt), rec = x ? (U ? (U.primeira || 0) : R.primeira) : null;
+    var c = U ? U.custos : { fixo: R.custoFixo, provisao: R.provisao }, mn = minimos(U ? U.comissaoResultado : R.comissoesResultado, r2(c.fixo + c.provisao), x ? x.reserva : R.reservaMkt), rec = x ? (U ? (U.primeira || 0) : R.primeira) : null;
     var st = function (alvo) { return rec == null ? '' : (rec >= alvo ? ' · acima em ' + brl(rec - alvo) : ' · faltam ' + brl(alvo - rec)); };
     return chip('1ª parcela das vendas', rec != null ? brl(rec) : '—', 'in') + chip('Não fechar no vermelho · ' + nome, brl(mn.empate) + st(mn.empate), rec != null && rec >= mn.empate ? 'in' : 'out') + chip('Não fechar no vermelho e investir', brl(mn.sustentavel) + st(mn.sustentavel), rec != null && rec >= mn.sustentavel ? 'in' : 'out');
   }
