@@ -212,6 +212,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--peach);border-co
 .mg{background:var(--tint-2);border-radius:12px;padding:12px 14px}
 .mgh{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink-2)}
 .mgd{font-size:12px;color:var(--mute);margin-top:2px}
+.mga{font-size:12.5px;color:var(--ink-2);margin-right:auto}
 .mgh b{font-family:var(--head);font-weight:800;color:var(--ink)}
 .mgt{height:10px;background:var(--line);border-radius:999px;overflow:hidden;margin:10px 0 8px}
 .mgt i{display:block;height:100%;border-radius:999px}.mgt i.ok{background:var(--green)}.mgt i.no{background:var(--or)}
@@ -1021,7 +1022,7 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
       + (/^Optas consolidado/.test(titulo) && R.ag.naoCalc > 0 ? '<div class="plan no">+ ' + brl(R.ag.naoCalc) + ' de vendas fora da conta</div>' : '') + '</div>'
     + '<div class="eqo">−</div>'
     + '<div class="eqc c-out"><div class="eqk">Custos do mês</div><div class="eqv">' + (tem ? brl(custos) : '—') + '</div>'
-      + (res ? '<div class="eqd">operação e comissões <b>' + brl(r2(res.custoOp + res.comissoes)) + '</b> · imposto <b>' + brl(res.imposto) + '</b></div>' : '') + '</div>'
+      + (res ? '<div class="eqd">operação e comissões <b>' + brl(r2(res.custoOp + res.comissoes)) + '</b> · imposto sobre o a receber <b>' + brl(res.imposto) + '</b></div>' : '') + '</div>'
     + '<div class="eqo">=</div>'
     + '<div class="eqc res-' + st + '"><div class="eqk">' + (res && res.operacional < 0 ? 'Prejuízo' : 'Lucro bruto') + '</div><div class="eqv big2">' + (res ? brl(res.operacional) : '—') + '</div><div class="eqd">' + (res ? 'margem bruta ' + pct(res.mBruta, 1) : (aviso || '')) + '</div></div>'
     + '</div>';
@@ -1037,12 +1038,12 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
   var metaLinha = function (nome, alvo, extra) {
     var p = tem && alvo > 0 ? p1 / alvo : 0, ok = tem && p1 >= alvo;
     return '<div class="mg"><div class="mgh"><span>' + nome + '</span><b>' + brl(alvo) + '</b></div>'
-      + '<div class="mgd">operação e comissões ' + brl(base) + ' + imposto ' + brl(r2(alvo * REGRAS.imposto)) + (extra ? ' + reserva ' + brl(extra) : '') + '</div>'
+      + '<div class="mgd">operação e comissões ' + brl(base) + ' + imposto sobre a 1ª parcela ' + brl(r2(alvo * REGRAS.imposto)) + (extra ? ' + reserva de marketing ' + brl(extra) : '') + '</div>'
       + '<div class="mgt"><i class="' + (ok ? 'ok' : 'no') + '" style="width:' + Math.min(100, p * 100) + '%"></i></div>'
-      + '<div class="mgf">' + (tem ? '<span class="pill ' + (ok ? 'ok' : 'er') + '">' + (ok ? 'acima em ' : 'faltam ') + brl(Math.abs(p1 - alvo)) + '</span>' : '') + '</div></div>';
+      + '<div class="mgf">' + (tem ? '<span class="mga">1ª parcela hoje <b>' + brl(p1) + '</b></span><span class="pill ' + (ok ? 'ok' : 'er') + '">' + (ok ? 'acima em ' : 'faltam ') + brl(Math.abs(p1 - alvo)) + '</span>' : '') + '</div></div>';
   };
-  h += '<div class="meta"><div class="metat">1ª parcela das vendas do mês · quanto precisa</div><div class="mgs">'
-    + metaLinha('Não fechar no vermelho', mn.empate) + metaLinha('Não fechar no vermelho e investir', mn.sustentavel, reserva) + '</div></div>';
+  h += '<div class="meta"><div class="metat">Meta da 1ª parcela das vendas do mês</div><div class="mgs">'
+    + metaLinha('1ª parcela mínima para não fechar no vermelho', mn.empate) + metaLinha('1ª parcela mínima para não fechar no vermelho e investir', mn.sustentavel, reserva) + '</div></div>';
   // já garantido para os próximos meses (parcelas das vendas já feitas)
   if (/^Optas consolidado/.test(titulo)) { var fut = aReceberFuturo(R.mes, 6); h += '<div class="meta"><div class="metat">Já garantido nos próximos meses</div><div class="futs">' + fut.map(function (f) { return '<div class="fut"><span>' + MESES[+f.mes.slice(5, 7) - 1].slice(0, 3) + '/' + f.mes.slice(2, 4) + '</span><b class="' + (f.valor ? 'gr' : 'mu') + '">' + brl(f.valor) + '</b></div>'; }).join('') + '</div></div>'; }
   // 3. Para onde vai o dinheiro
