@@ -15,7 +15,13 @@ const path = require('path');
       U.forEach(u => { const n = u.custos.unidade, vs = R.vendedores.filter(v => v.unidade === n);
         ok(n + ' produção = Σ vendedores', u.producao, vs.reduce((t, v) => t + v.producao, 0));
         ok(n + ' comissões = Σ vendedores', u.comissao, vs.reduce((t, v) => t + v.comissao, 0));
-        vs.forEach(v => ok(v.nome + ' comissão = produção × faixa', v.comissao, r2(v.producao * v.pct))); });
+        vs.forEach(v => {
+          // fora do projeto: faixa da unidade sobre a produção fora · projeto: 15% + valor por vida a partir de 25 vidas
+          const f = faixaComissao(v.unidade, v.prodFora); ok(v.nome + ' faixa', v.pct, f.pct); ok(v.nome + ' comissão fora', v.comFora, r2(v.prodFora * f.pct));
+          ok(v.nome + ' 15% projeto', v.comProjeto, r2(v.prodHap * 0.15));
+          if (v.vidasProjeto != null) { const vid = R.ag.propostas.filter(p => projeto(p.c.projeto) && p.c.vendedor === v.nome).reduce((t, p) => t + (+p.c.vidas || 0), 0); ok(v.nome + ' vidas projeto', v.vidasProjeto, vid);
+            const val = vid >= 50 ? 35 : vid >= 35 ? 25 : vid >= 25 ? 20 : 0; ok(v.nome + ' valor por vida', v.bonusVidas, vid * val); }
+          ok(v.nome + ' comissão total', v.comissao, v.comFora + v.comProjeto + (v.bonusVidas || 0)); }); });
       ok('produção = Σ unidades', R.producao, U.reduce((t, u) => t + u.producao, 0));
       ok('comissões = Σ unidades', R.comissoes, U.reduce((t, u) => t + u.comissao, 0));
       // propostas

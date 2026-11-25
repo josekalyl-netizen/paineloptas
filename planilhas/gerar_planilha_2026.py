@@ -63,8 +63,8 @@ ws.column_dimensions['A'].width=26; ws.column_dimensions['B'].width=110
 # ---------- 2. Vendas
 ws=wb.create_sheet('Vendas 2026')
 titulo(ws,'Vendas 2026','Uma linha por venda. Linha 4 é exemplo. Preencha a partir da linha 5. "Mês" é calculado sozinho.')
-cols=['Data da venda','Unidade','Vendedor(a)','Projeto Hapvida?','Operadora','Modalidade','Valor mensal do plano (R$)','Situação','Nº contrato / proposta','Campanha / origem','Observações','Mês (auto)','Cliente (titular PF / empresa PME)','CPF (PF) / CNPJ (PME)','Vidas','Produto / condição (copart., região, cartão, 0 a 18 anos)']
-cab(ws,3,cols,[14,13,20,12,18,11,16,14,18,22,26,9,30,20,8,30])
+cols=['Data da venda','Unidade','Vendedor(a)','Projeto Hapvida?','Operadora','Modalidade','Valor mensal do plano (R$)','Situação','Nº contrato / proposta','Campanha / origem','Observações','Mês (auto)','Cliente (titular PF / empresa PME)','CPF (PF) / CNPJ (PME)','Vidas','Produto / condição (copart., região, cartão)','Data de nascimento do titular (PF/Adesão)']
+cab(ws,3,cols,[14,13,20,12,18,11,16,14,18,22,26,9,30,20,8,30,16])
 ex=[dt.date(2026,1,15),'Mogi','Wanderleia G.','Não','Bradesco','PME',1800.00,'Implantado','PRP-000123','Meta Ads Bradesco PME','Exemplo — pode apagar']
 for c,v in {13:'Empresa Exemplo Ltda',14:'11.222.333/0001-81',15:6}.items():
     x=ws.cell(row=4,column=c,value=v); x.font=EXF; x.fill=EX; x.border=BD
@@ -73,7 +73,7 @@ for c,v in enumerate(ex,1):
 ws['A4'].number_format=DATE; ws['G4'].number_format=BRL
 NV=2000; R1,R2=5,5+NV-1
 entrada(ws,R1,R2,1,11,{1:DATE,7:BRL})
-entrada(ws,R1,R2,13,16)
+entrada(ws,R1,R2,13,17,{17:DATE})
 for r in range(4,R2+1):
     x=ws.cell(row=r,column=12,value=f'=IF(A{r}="","",MONTH(A{r}))'); x.font=N; x.fill=GRAY; x.border=BD; x.alignment=Alignment(horizontal='center')
 lista(ws,f'B{R1}:B{R2}',['Consolação','Mogi'])

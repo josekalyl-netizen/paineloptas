@@ -254,7 +254,11 @@
     0
    ],
    "vit": 0,
-   "padrao": false
+   "padrao": false,
+   "idade": [
+    0,
+    18
+   ]
   },
   {
    "tipo": "Saúde",
@@ -268,7 +272,11 @@
     0.2
    ],
    "vit": 0,
-   "padrao": true
+   "padrao": true,
+   "idade": [
+    19,
+    150
+   ]
   },
   {
    "tipo": "Saúde",
@@ -531,10 +539,11 @@
     1,
     0.9,
     0.8,
-    0.4
+    0.2
    ],
    "vit": 0.01,
-   "padrao": false
+   "padrao": false,
+   "obs": "total 290% confirmado pelo usuário; 4ª parcela ajustada para 20%"
   },
   {
    "tipo": "Saúde",
@@ -584,10 +593,11 @@
     1,
     0.9,
     0.8,
-    0.4
+    0.2
    ],
    "vit": 0.01,
-   "padrao": false
+   "padrao": false,
+   "obs": "total 290% confirmado pelo usuário; 4ª parcela ajustada para 20%"
   },
   {
    "tipo": "Saúde",

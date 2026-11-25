@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 4.0  
+**Versão:** 4.1  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -501,6 +501,14 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
 - **Amil PME: vitalício de 1%** (confirmado pelo usuário em 25/11/2026; a grade V3 omitiu — é o único erro da grade).
 
 **Dúvidas em aberto:** Hapvida PME e NotreDame PME têm total 290% na grade, mas as parcelas somam 310% (100/90/80/40); início do vitalício; taxa da adesão; Prevent Senior 0 a 18 anos (0%) depende da idade do titular.
+
+## 12.22. Respostas de 25/11/2026 (v4.1)
+
+1. **Hapvida PME e NotreDame PME: 290%** — parcelas 100/90/80/20.
+2. **Adesão:** a 1ª parcela (taxa de angariação) **não vem para a Optas**.
+3. **Vitalício começa depois da última parcela de agenciamento** (ex.: Bradesco PME a partir da 5ª; Amil PME a partir da 4ª).
+4. **Prevent Senior não comissiona titulares de 0 a 18 anos**; a idade vem da data de nascimento do cliente (documentação). Sem data: usa 19+ e gera alerta.
+5. **Vendedor no Projeto Hapvida:** 15% da mensalidade + valor por vida sobre todas as vidas do mês quando atinge 25 (25 a 34 → R$ 20; 35 a 49 → R$ 25; 50+ → R$ 35); abaixo de 25 vidas não paga por vida. Vendas fora do projeto seguem a faixa da unidade calculada sobre a produção fora do projeto (a confirmar).
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
