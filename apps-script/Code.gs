@@ -8,6 +8,7 @@
  *  2. Propriedades do script (Configurações do projeto → Propriedades do script):
  *       OPTAS_KEY     = chave de acesso exigida na URL (?k=...)
  *       OPTAS_TV_KEY  = chave usada hoje em tvDadosWeb('gerencial', <chave>)
+ *       OPTAS_PLANILHA_LEADS = ID da planilha "Leads GNDI" (opcional; sem ela usa a planilha ativa)
  *  3. Implantar → Nova implantação → App da Web.
  *     URL de acesso: .../exec?k=<OPTAS_KEY>
  */
@@ -42,12 +43,38 @@ function optasDadosIntegrados_() {
     if (typeof tvDadosWeb === 'function') {
       var k = PropertiesService.getScriptProperties().getProperty('OPTAS_TV_KEY');
       var d = tvDadosWeb('gerencial', k);
-      return typeof d === 'string' ? JSON.parse(d) : d;
+      d = typeof d === 'string' ? JSON.parse(d) : d;
+      try { optasVidasProjeto_(d); } catch (e2) { console.error('optasVidasProjeto_: ' + e2); }
+      return d;
     }
   } catch (err) {
     console.error('optasDadosIntegrados_: ' + err);
   }
   return null; // o painel usa o snapshot embutido e sinaliza a indisponibilidade
+}
+
+/**
+ * Vidas do Projeto Hapvida por vendedor no mês vigente, lidas da aba "Painel de Implantação":
+ * vidas = Previsão (Em contrato + Aguardando pagamento) + Implantado. Standby fica fora.
+ * Grava em cada vendedor do tvDadosWeb o campo vidasHap (casando "Wanderleia G." com "Wanderleia Gugel Soares").
+ */
+function optasVidasProjeto_(d) {
+  if (!d || !d.vendedores) return;
+  var id = PropertiesService.getScriptProperties().getProperty('OPTAS_PLANILHA_LEADS');
+  var ss = id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss && ss.getSheetByName('Painel de Implantação'); if (!sh) return;
+  var v = sh.getDataRange().getDisplayValues();
+  var ini = -1;
+  for (var r = 0; r < 5 && ini < 0; r++) for (var c = 0; c < v[r].length; c++) if (/VIGENTE/i.test(v[r][c])) { ini = c; break; }
+  if (ini < 0) return;
+  var num = function (x) { var n = parseInt(String(x).replace(/\D/g, ''), 10); return isNaN(n) ? 0 : n; };
+  var chave = function (n) { var p = String(n).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\./g, ' ').split(/\s+/).filter(String); return p[0] + ' ' + (p[1] ? p[1][0] : ''); };
+  var vidas = {};
+  v.forEach(function (row) {
+    var nome = row[0]; if (!nome || /^(EQUIPE|TOTAL|Vendedor)/i.test(nome)) return;
+    vidas[chave(nome)] = num(row[ini + 4]) + num(row[ini + 8]);   // Previsão (vidas) + Implantado (vidas)
+  });
+  d.vendedores.forEach(function (x) { var k = chave(x.nome); if (vidas[k] != null) x.vidasHap = vidas[k]; });
 }
 
 function optasEstadoSalvar(json) {

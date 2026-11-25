@@ -1,0 +1,17 @@
+{
+ "mes": "2026-11",
+ "fonte": "Planilha Leads GNDI · aba Painel de Implantação · 25/11/2026 10:01",
+ "regra": "vidas = Previsão (Em contrato + Aguardando pagamento) + Implantado no mês; Standby fica fora",
+ "vendedores": {
+  "Wanderleia Gugel Soares": {"previsao": 8, "implantado": 21},
+  "Elaine Aparecida Martinez": {"previsao": 6, "implantado": 9},
+  "Kevelin Diniz": {"previsao": 3, "implantado": 9},
+  "Isabela Alves": {"previsao": 2, "implantado": 8},
+  "Karoline Souza da Silva": {"previsao": 3, "implantado": 10},
+  "Victor Brito Marino": {"previsao": 4, "implantado": 4},
+  "Gabrielly de Jesus Santos": {"previsao": 10, "implantado": 2},
+  "Vitor Henrique Souza dos Santos": {"previsao": 3, "implantado": 4},
+  "Samia Pereira Mesquita": {"previsao": 1, "implantado": 10},
+  "Guilherme Kaique": {"previsao": 4, "implantado": 0}
+ }
+}

@@ -716,6 +716,7 @@ function calcular() {
       var x = addV(v.nome, u);
       x.prodHap = r2(+v.hap || 0); x.prodFora = r2(+v.fora || 0);
       x.meta = v.meta || null;
+      if (v.vidasHap != null) x.vidasFonte = +v.vidasHap;   // vidas do Projeto Hapvida (planilha de leads: Em contrato + Ag. pagamento + Implantado)
     });
   }
   if (semUnidade.length) R.alertas.push({ sev: 'er', cod: 'UNIDADE', titulo: semUnidade.length + ' vendedor(es) sem unidade reconhecida', texto: 'Registros: ' + semUnidade.join(', ') + '.', impacto: 'Comissão do vendedor (faixa depende da unidade) e resultado por unidade', acao: 'Corrigir a equipe no painel gerencial (Consolação ou Mogi).' });
@@ -723,6 +724,7 @@ function calcular() {
   // Vidas do Projeto Hapvida por vendedor (das propostas do mês)
   var vidasPj = null;
   if (usarContratos) { vidasPj = {}; contratosMes.forEach(function (c) { if (projeto(c.projeto)) vidasPj[norm(c.vendedor)] = (vidasPj[norm(c.vendedor)] || 0) + (+c.vidas || 0); }); }
+  else if (Object.keys(vend).some(function (k) { return vend[k].vidasFonte != null; })) { vidasPj = {}; Object.keys(vend).forEach(function (k) { if (vend[k].vidasFonte != null) vidasPj[norm(vend[k].nome)] = vend[k].vidasFonte; }); }
   var semVidas = [];
   Object.keys(vend).forEach(function (k) {
     var v = vend[k]; v.producao = r2(v.prodHap + v.prodFora);
@@ -732,7 +734,7 @@ function calcular() {
     // Projeto Hapvida: 15% da mensalidade + valor por vida (a partir de 25 vidas no mês)
     var pv = REGRAS.projetoVendedor;
     v.comProjeto = r2(v.prodHap * pv.pct);
-    v.vidasProjeto = vidasPj ? (vidasPj[norm(v.nome)] || 0) : null;
+    v.vidasProjeto = !vidasPj ? null : (usarContratos ? (vidasPj[norm(v.nome)] || 0) : (vidasPj[norm(v.nome)] != null ? vidasPj[norm(v.nome)] : (v.prodHap ? null : 0)));
     var fx = v.vidasProjeto != null ? pv.porVida.filter(function (x) { return v.vidasProjeto >= x.de; }).pop() : null;
     v.valorVida = fx ? fx.valor : 0;
     v.bonusVidas = v.vidasProjeto != null ? r2(v.vidasProjeto * v.valorVida) : null;

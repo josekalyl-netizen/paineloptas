@@ -6,7 +6,18 @@ raiz = pathlib.Path(__file__).parent
 src = (raiz / 'src/painel.html').read_text(encoding='utf-8')
 logo = base64.b64encode((raiz / 'assets/logo-optas.png').read_bytes()).decode()
 snap_path = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else raiz / 'data/snapshot.json'
-snap = json.dumps(json.loads(snap_path.read_text(encoding='utf-8')), ensure_ascii=False, separators=(',', ':'))
+snap_obj = json.loads(snap_path.read_text(encoding='utf-8'))
+# Vidas do Projeto Hapvida por vendedor (planilha de leads). Nome curto do painel ("Wanderleia G.") = 1º nome + inicial do 2º.
+vp = raiz / 'data/vidas-projeto.json'
+if vp.exists():
+    import unicodedata
+    def chave(n):
+        n = unicodedata.normalize('NFD', n).encode('ascii', 'ignore').decode().lower().replace('.', ' ').split()
+        return n[0] + ' ' + (n[1][0] if len(n) > 1 else '')
+    vid = {chave(k): v['previsao'] + v['implantado'] for k, v in json.loads(vp.read_text(encoding='utf-8'))['vendedores'].items()}
+    for v in snap_obj.get('vendedores', []):
+        if chave(v['nome']) in vid: v['vidasHap'] = vid[chave(v['nome'])]
+snap = json.dumps(snap_obj, ensure_ascii=False, separators=(',', ':'))
 inv = json.dumps(json.loads((raiz / 'data/investimentos-2026.json').read_text(encoding='utf-8')), ensure_ascii=False, separators=(',', ':'))
 html = src.replace('__LOGO__', logo).replace('__SNAP__', snap).replace('__INVBASE__', inv)
 # index.html e preview.html: revisão (com Pendências e Regras)
