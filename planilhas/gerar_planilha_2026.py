@@ -100,7 +100,7 @@ def lin(vals):
 lin(['Saúde','Projeto Hapvida','PF e PME','',None,1.0,1.0,None,None,None,None,'',None])
 for g in gr['grade']:
     pc=g['parc']; dem=' · '.join(f"{k+6}ª {round(x*100)}%" for k,x in enumerate(pc[5:]) if x)
-    lin([g['tipo'],g['op'],{'ADESÃO':'Adesão','PET':'Pet'}.get(g['mod'],g['mod']),g.get('prod') or '',(f"{g['faixa'][0]:02d} a {g['faixa'][1]}" if g.get('faixa') else ''),sum(pc)]+[(pc[k] if k<len(pc) and pc[k] else None) for k in range(5)]+[dem,g['vit'] or None])
+    lin([g['tipo'],g['op'],{'ADESÃO':'Adesão','PET':'Pet'}.get(g['mod'],g['mod']),g.get('prod') or '',(f"{g['faixa'][0]:02d} a {g['faixa'][1]}" if g.get('faixa') else ''),sum(pc)]+[(pc[k] if k<len(pc) and pc[k] else None) for k in range(5)]+[dem,('tem · % pendente' if g['vit'] is None else (g['vit'] or None))])
 ws.cell(row=r+1,column=1,value='Adesão: a 1ª parcela é a taxa de angariação cobrada do cliente.').font=NOTE
 ws.freeze_panes='C4'
 

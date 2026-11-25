@@ -426,8 +426,9 @@
     0.8,
     0.7
    ],
-   "vit": 0,
-   "padrao": false
+   "vit": null,
+   "padrao": false,
+   "obs": "tem vitalício (confirmado pelo usuário em 25/11/2026); percentual pendente"
   },
   {
    "tipo": "Saúde",

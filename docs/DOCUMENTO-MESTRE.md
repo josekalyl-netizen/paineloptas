@@ -498,7 +498,9 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
 
 **Adesão:** a 1ª parcela é a taxa de angariação cobrada do cliente; por informação anterior do usuário, não entra no a receber da Optas (a confirmar).
 
-**Dúvidas em aberto:** Hapvida PME e NotreDame PME têm total 290% na grade, mas as parcelas somam 310% (100/90/80/40); início do vitalício; taxa da adesão; Prevent Senior 0 a 18 anos (0%) depende da idade do titular.
+- **Amil PME tem vitalício** (confirmado em 25/11/2026); o percentual não está na grade e está pendente.
+
+**Dúvidas em aberto:** percentual do vitalício da Amil PME; Hapvida PME e NotreDame PME têm total 290% na grade, mas as parcelas somam 310% (100/90/80/40); início do vitalício; taxa da adesão; Prevent Senior 0 a 18 anos (0%) depende da idade do titular.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 

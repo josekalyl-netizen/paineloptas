@@ -412,7 +412,7 @@ var REGRAS = {
     {"tipo": "Saúde", "op": "Unihosp", "mod": "PF", "parc": [1, 0.5, 0.3, 0.2, 0.2], "vit": 0},
     {"tipo": "Saúde", "op": "Alice", "mod": "PME", "parc": [1, 0.7, 0.7], "vit": 0.01, "faixa": [2, 29]},
     {"tipo": "Saúde", "op": "Ameplan", "mod": "PME", "parc": [1, 0.4, 0.25, 0.2], "vit": 0.01, "faixa": [2, 99]},
-    {"tipo": "Saúde", "op": "Amil", "mod": "PME", "parc": [1, 0.8, 0.7], "vit": 0, "faixa": [2, 99]},
+    {"tipo": "Saúde", "op": "Amil", "mod": "PME", "parc": [1, 0.8, 0.7], "vit": null, "faixa": [2, 99]},
     {"tipo": "Saúde", "op": "Ana Costa", "mod": "PME", "parc": [1, 0.5, 0.3], "vit": 0, "faixa": [2, 99]},
     {"tipo": "Saúde", "op": "Biovida", "mod": "PME", "parc": [1, 0.5, 0.4, 0.4, 0.2], "vit": 0, "faixa": [2, 99]},
     {"tipo": "Saúde", "op": "Bluemed", "mod": "PME", "parc": [1, 0.6, 0.2], "vit": 0, "faixa": [2, 99]},
@@ -601,7 +601,7 @@ function regraVenda(c) {
   if (vidas) { var cv = cands.filter(function (g) { return !g.faixa || (vidas >= g.faixa[0] && vidas <= g.faixa[1]); }); if (!cv.length) return { nome: nome, ag: null, foraFaixa: true, modalidade: mod }; cands = cv; }
   if (cands.length > 1) { var pd = cands.filter(function (g) { return g.padrao; }); if (pd.length) cands = pd; else prov = true; }
   var g = cands[0];
-  return { nome: nome, ag: g.parc.reduce(function (t, x) { return t + x; }, 0), parc: g.parc, vit: g.vit || 0, modalidade: mod, produto: g.prod || '', faixa: g.faixa || null, provisorio: prov };
+  return { nome: nome, ag: g.parc.reduce(function (t, x) { return t + x; }, 0), parc: g.parc, vit: g.vit == null ? null : g.vit, modalidade: mod, produto: g.prod || '', faixa: g.faixa || null, provisorio: prov };
 }
 // Parcelas de uma venda em reais (centavos): [1ª, 2ª, ...]
 function parcelasReais(valor, rg) { return (rg && rg.parc ? rg.parc : []).map(function (x, k) { return k === 0 && rg.modalidade === 'ADESÃO' && !REGRAS.adesaoTaxaParaOptas ? 0 : r2(valor * x); }); }
@@ -1603,7 +1603,7 @@ function copiarAlertas() {
 }
 
 var PENDENCIAS = [
-  ['1', 'Grade de comissão', 'Hapvida PME e NotreDame PME: total 290% na grade, mas as parcelas somam 310%. Taxa da adesão (1ª parcela) vem ou não para a Optas.', 'Usa as parcelas impressas; taxa da adesão fora do a receber.'],
+  ['1', 'Grade de comissão', 'Percentual do vitalício da Amil PME (a grade não informa). Hapvida PME e NotreDame PME: total 290% na grade, mas as parcelas somam 310%. Taxa da adesão (1ª parcela) vem ou não para a Optas.', 'Usa as parcelas impressas; taxa da adesão fora do a receber.'],
   ['2', 'Início do vitalício', 'A grade lista o vitalício separado das parcelas: começa na 4ª parcela ou depois da última parcela de agenciamento?', 'Começa na 4ª parcela.'],
   ['3', 'Acúmulo da reserva de marketing', 'A verba não utilizada acumula para o mês seguinte ou expira no fechamento?', 'Saldo calculado só dentro do mês.'],
   ['7', 'Validação contábil dos encargos', 'FPAS/terceiros, RAT, incidências efetivas e encargos já incluídos nos R$ 39.185,43.', 'Provisão de R$ 1.623,15 é estimativa gerencial.'],
@@ -1633,7 +1633,7 @@ function vReg() {
   var linhaG = function (nome, g, destaque) {
     var parc = g.parc, dem = parc.slice(5).map(function (x, k) { return x ? (k + 6) + 'ª ' + pct(x) : ''; }).filter(Boolean).join(' · ');
     return '<tr' + (destaque ? ' style="background:var(--peach)"' : '') + '><td><b>' + nome + '</b></td><td>' + esc(g.prod || '') + '</td><td>' + (g.faixa ? String(g.faixa[0]).padStart(2, '0') + ' a ' + g.faixa[1] : '') + '</td><td class="r"><b>' + pct(parc.reduce(function (t, x) { return t + x; }, 0)) + '</b></td>'
-      + [0, 1, 2, 3, 4].map(function (k) { return '<td class="r">' + pp(parc[k]) + '</td>'; }).join('') + '<td class="m">' + (dem || '—') + '</td><td class="r">' + (g.vit ? pct(g.vit) : '—') + '</td></tr>';
+      + [0, 1, 2, 3, 4].map(function (k) { return '<td class="r">' + pp(parc[k]) + '</td>'; }).join('') + '<td class="m">' + (dem || '—') + '</td><td class="r">' + (g.vit == null ? '<span class="tag pend">tem · % pendente</span>' : g.vit ? pct(g.vit) : '—') + '</td></tr>';
   };
   var cab = '<thead><tr><th>Operadora</th><th>Produto</th><th>Vidas</th><th class="r">Total</th><th class="r">1ª</th><th class="r">2ª</th><th class="r">3ª</th><th class="r">4ª</th><th class="r">5ª</th><th>Demais</th><th class="r">Vitalício</th></tr></thead>';
   h += '<div class="tw"><table class="gt">' + cab + '<tbody>';
