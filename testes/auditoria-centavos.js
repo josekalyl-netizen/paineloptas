@@ -71,11 +71,11 @@ const path = require('path');
         ok('extrato ' + x.codigo + ' linhas', L.reduce((t, l) => t + l.liquido, 0), x.comissoes_liquido); ok('extrato ' + x.codigo + ' créd/déb', C.reduce((t, c) => t + c.liquido, 0), x.creditos_debitos);
         ok('extrato ' + x.codigo + ' líquido', x.acumulado + x.comissoes_liquido + x.creditos_debitos, x.liquido); });
       // créditos/débitos: receitas e custos por tipo, unidade e mês = soma independente dos lançamentos
-      if (extratosOn()) { const meses = [...new Set(EXTRATOS.creditos_debitos.map(c => c.mes))];
-        meses.forEach(m => REGRAS.unidades.forEach(u => { const cs = EXTRATOS.creditos_debitos.filter(c => c.mes === m && unidadeCanon(c.unidade) === u), lx = lancExtratos(m, u);
+      if (extratosOn()) { const meses = [...new Set(EXTRATOS.creditos_debitos.map(c => mesDevido(c)))];
+        meses.forEach(m => REGRAS.unidades.forEach(u => { const cs = EXTRATOS.creditos_debitos.filter(c => mesDevido(c) === m && unidadeCanon(c.unidade) === u), lx = lancExtratos(m, u);
           ok(m + ' ' + u + ' receitas dos extratos', lx.receitas, cs.filter(c => tipoCD(c.descricao)[3] === 'receita').reduce((t, c) => t + c.liquido, 0));
           ok(m + ' ' + u + ' custos dos extratos', lx.custos, -cs.filter(c => /^custo/.test(tipoCD(c.descricao)[3])).reduce((t, c) => t + c.liquido, 0));
-          const cu = custosUnidade(u, m), real = cs.some(c => tipoCD(c.descricao)[3] === 'folha');
+          const cu = custosUnidade(u, m), real = cs.some(c => tipoCD(c.descricao)[0] === 'A');
           ok(m + ' ' + u + ' folha dos extratos', lx.folha, -cs.filter(c => tipoCD(c.descricao)[3] === 'folha').reduce((t, c) => t + c.liquido, 0));
           ok(m + ' ' + u + ' custo fixo (' + (real ? 'folha real + extratos' : 'estrutura + extratos') + ')', cu.fixo, real ? lx.folha + lx.custos : cu.fixoEstrutura + lx.custos);
           if (real && cu.provisao !== 0) falhas.push(m + ' ' + u + ' provisão deveria ser zero com folha real'); }));

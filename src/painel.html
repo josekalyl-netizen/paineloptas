@@ -528,15 +528,36 @@ var CD_TIPOS = [
   ['O', 'Devolução de desconto da 1ª parcela', /DEVOLU/, 'receita'],
   ['U', 'Taxa de implantação', /TX\. IMP|TAXA/, 'custo']
 ];
-var CD_ACAO = { receita: 'soma no a receber', custo: 'custo da unidade', custoOp: 'custo de operação', ignora: 'ignorado', folha: 'folha (sobrepõe a estrutura no mês do desconto)', emprestimo: 'empréstimo (fora do resultado)', pendente: 'aguardando decisão' };
+var CD_ACAO = { receita: 'soma no a receber', custo: 'custo da unidade', custoOp: 'custo de operação', ignora: 'ignorado', folha: 'folha (sobrepõe a estrutura no mês devido)', emprestimo: 'empréstimo (fora do resultado)', pendente: 'aguardando decisão' };
 function tipoCD(desc) { var d = norm(desc).toUpperCase(); for (var i = 0; i < CD_TIPOS.length; i++) if (CD_TIPOS[i][2].test(d)) return CD_TIPOS[i]; return ['?', 'Sem classificação', null, 'pendente']; }
-// Lançamentos do mês (mês do pagamento do extrato) por unidade
+// Mês devido (decisão de 25/11/2026): salário, benefícios, férias, 13º, rescisão e vale entram no mês a que se referem
+// ("SALÁRIOS - SETEMBRO 2026" → setembro; "SALÁRIO - JOANA 07/09" → setembro), não no mês em que o extrato descontou.
+// Sem mês na descrição → mês do desconto. O resto (boletos, estornos, AD, Valdecir, receitas) fica no mês do desconto.
+var CD_COMPETENCIA = { A: 1, C: 1, M: 1, L: 1, K: 1, G: 1 };
+var MESES_N = ['JANEIRO', 'FEVEREIRO', 'MARCO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+function mesDevido(c) {
+  if (c._md) return c._md;
+  var m = c.mes, t = tipoCD(c.descricao)[0];
+  if (CD_COMPETENCIA[t]) {
+    var d = norm(c.descricao).toUpperCase(), mm = 0, aa = 0, x;
+    for (var i = 0; i < 12 && !mm; i++) { x = d.match(new RegExp('\\b' + MESES_N[i] + '\\b(?:\\s*(?:DE\\s*)?(20\\d\\d))?')); if (x) { mm = i + 1; aa = x[1] ? +x[1] : 0; } }
+    if (!mm && (x = d.match(/\b(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\b(?!\/?\d)/))) mm = +x[2];
+    if (mm) {
+      var ay = +c.mes.slice(0, 4), am = +c.mes.slice(5, 7);
+      if (!aa) aa = mm > am ? ay - 1 : ay;   // sem ano: o mês mais recente até o do desconto
+      m = aa + '-' + String(mm).padStart(2, '0');
+    }
+  }
+  return (c._md = m);
+}
+// Lançamentos do mês por unidade (mês devido para folha/rescisão/vale; mês do desconto para o resto)
 function lancExtratos(mes, u) {
-  var o = { receitas: 0, custos: 0, folha: 0, emprestimo: 0, pendente: 0, itens: [] };
+  var o = { receitas: 0, custos: 0, folha: 0, salario: 0, emprestimo: 0, pendente: 0, itens: [] };
   if (!extratosOn()) return o;
   EXTRATOS.creditos_debitos.forEach(function (c) {
-    if (c.mes !== mes || unidadeCanon(c.unidade) !== u) return;
+    if (mesDevido(c) !== mes || unidadeCanon(c.unidade) !== u) return;
     var t = tipoCD(c.descricao); o.itens.push({ c: c, t: t });
+    if (t[0] === 'A') o.salario = r2(o.salario - c.liquido);
     if (t[3] === 'receita') o.receitas = r2(o.receitas + c.liquido);
     else if (t[3] === 'custo' || t[3] === 'custoOp') o.custos = r2(o.custos - c.liquido);
     else if (t[3] === 'folha') o.folha = r2(o.folha - c.liquido);
@@ -725,7 +746,9 @@ function custosUnidade(u, mes) {
   var encTot = sum(Object.keys(REGRAS.encargos), function (k) { return REGRAS.encargos[k]; });
   var p13 = r2(clt / 12), pFer = r2(clt / 3 / 12), pEnc = r2((p13 + pFer) * encTot); // centavos, como no documento-mestre
   var lx = lancExtratos(mes, u);
-  var real = lx.folha !== 0;   // a folha do extrato sobrepõe a estrutura no mês do desconto; sem folha no extrato, vale a estrutura (decisão de 25/11/2026)
+  // a folha do extrato sobrepõe a estrutura no mês devido quando há salário lançado para o mês;
+  // sem salário no extrato, vale a estrutura (que já inclui benefícios e provisões) — decisões de 25/11/2026
+  var real = lx.salario !== 0;
   return { unidade: u, fonteCustos: real ? 'extratos' : 'estrutura', mes: mes, diasUteis: du, vrDia: vrDia, vtDia: vtDia, vrPessoaDia: vrDia / c.clt, vtPessoaDia: vtDia / c.clt,
            salariosBrutos: c.salariosBrutos, pj: c.pjSocia, clt: clt, vr: vr, vt: vt, operacional: c.operacional, fixoEstrutura: fixo,
            extrato: lx, fixo: real ? r2(lx.folha + lx.custos) : r2(fixo + lx.custos),   // + custos lançados nos extratos do mês (custo da unidade e de operação)
@@ -1473,11 +1496,11 @@ function vRec() {
     + '</tbody></table></div></div>';
   var emp = X.creditos_debitos.filter(function (c) { return tipoCD(c.descricao)[3] === 'emprestimo'; });
   if (emp.length) h += '<div class="box mt"><div class="lbl">Empréstimos <em>a abater da operação · fora do resultado</em></div><div class="tw"><table><thead><tr><th>Mês</th><th>Unidade</th><th>Lançamento</th><th class="r">Valor</th></tr></thead><tbody>'
-    + emp.map(function (c) { return '<tr><td>' + mesLabel(c.mes) + '</td><td>' + c.unidade + '</td><td style="white-space:normal">' + esc(c.descricao) + (/ALUGUEL/i.test(c.descricao) ? (c.liquido < 0 ? ' <span class="m">(empréstimo)</span>' : ' <span class="m">(empréstimo quitado)</span>') : ' <span class="m">(empréstimo a abater da operação)</span>') + '</td><td class="r">' + brl(c.liquido) + '</td></tr>'; }).join('')
+    + emp.map(function (c) { return '<tr><td>' + mesLabel(c.mes) + (mesDevido(c) !== c.mes ? '<br><small class="mu">conta em ' + mesLabel(mesDevido(c)) + '</small>' : '') + '</td><td>' + c.unidade + '</td><td style="white-space:normal">' + esc(c.descricao) + (/ALUGUEL/i.test(c.descricao) ? (c.liquido < 0 ? ' <span class="m">(empréstimo)</span>' : ' <span class="m">(empréstimo quitado)</span>') : ' <span class="m">(empréstimo a abater da operação)</span>') + '</td><td class="r">' + brl(c.liquido) + '</td></tr>'; }).join('')
     + '<tr class="tot"><td colspan="3">Saldo a abater da operação</td><td class="r"><b>' + brl(soma2(emp, function (c) { return c.liquido; })) + '</b></td></tr></tbody></table></div></div>';
   // Créditos e débitos
   h += '<div class="box mt"><div class="lbl">Créditos e débitos dos extratos</div><div class="tw rol"><table><thead><tr><th>Pagamento</th><th>Unidade</th><th>Descrição</th><th class="r">Valor</th></tr></thead><tbody>'
-    + X.creditos_debitos.slice().sort(function (a, b) { return a.mes < b.mes ? 1 : -1; }).map(function (c) { return '<tr><td>' + mesLabel(c.mes) + '</td><td>' + c.unidade + '</td><td style="white-space:normal">' + esc(c.descricao) + '</td><td class="r ' + (c.liquido < 0 ? 'rd' : 'gr') + '">' + brl(c.liquido) + '</td></tr>'; }).join('')
+    + X.creditos_debitos.slice().sort(function (a, b) { return a.mes < b.mes ? 1 : -1; }).map(function (c) { return '<tr><td>' + mesLabel(c.mes) + (mesDevido(c) !== c.mes ? '<br><small class="mu">conta em ' + mesLabel(mesDevido(c)) + '</small>' : '') + '</td><td>' + c.unidade + '</td><td style="white-space:normal">' + esc(c.descricao) + '</td><td class="r ' + (c.liquido < 0 ? 'rd' : 'gr') + '">' + brl(c.liquido) + '</td></tr>'; }).join('')
     + '</tbody></table></div></div>';
   el.innerHTML = h;
 }
