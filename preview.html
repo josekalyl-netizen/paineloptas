@@ -359,7 +359,7 @@ html,body{overflow-x:hidden}
    Alterar aqui apenas quando o usuário confirmar novas regras.
    ===================================================================== */
 var REGRAS = {
-  versao: 'v4.1 · 25/11/2026',
+  versao: 'v4.2 · 25/11/2026',
   unidades: ['Consolação', 'Mogi'],
   // 3. Custos fixos (salários brutos JÁ incluem o PJ das sócias — não somar de novo)
   custos: {
@@ -493,6 +493,8 @@ var ESTADO = { investimentos: [], recebidas: {}, contratos: [] };
 var GAS = (typeof google !== 'undefined' && google.script && google.script.run);
 var LS_KEY = 'optas_painel_estado_v1';
 var DEMO = true || /[?&]demo=1/.test(location.search);
+// Investimentos reais já registrados (SMS Kolmeya · NOVO OPTAS MOGI, jan–out/2026), conferidos envio × R$ 0,0530
+var INV_BASE = [{"id":"sms1444984","data":"2026-01-22","valor":2369.95,"valorExato":"2369.948","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":44716,"texto":"Kolmeya #1444984 · 44716 envios × R$ 0,0530 · 22012026_SÃO PAULO_SEM-MEI_ARQ1_VALDECIR.csv","origem":"relatório Kolmeya"},{"id":"sms1448918","data":"2026-01-27","valor":2537.11,"valorExato":"2537.110","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":47870,"texto":"Kolmeya #1448918 · 47870 envios × R$ 0,0530 · EXP-2_SÃO PAULO_SEM MEI_AMIL_OPTAS MOGI.csv","origem":"relatório Kolmeya"},{"id":"sms1455127","data":"2026-02-03","valor":2402.44,"valorExato":"2402.437","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":45329,"texto":"Kolmeya #1455127 · 45329 envios × R$ 0,0530 · EXP-4_SÃO PAULO_SEM MEI_AMIL_OPTAS MOGI.csv","origem":"relatório Kolmeya"},{"id":"sms1457576","data":"2026-02-05","valor":2817.8,"valorExato":"2817.798","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":53166,"texto":"Kolmeya #1457576 · 53166 envios × R$ 0,0530 · VALDERCIR_ABC-E-GRANDE-SP_AMIL.csv","origem":"relatório Kolmeya"},{"id":"sms1472490","data":"2026-02-24","valor":3042.57,"valorExato":"3042.571","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":57407,"texto":"Kolmeya #1472490 · 57407 envios × R$ 0,0530 · BRASILIA-SEM-MEIexportacao1-empresaqui-19022026","origem":"relatório Kolmeya"},{"id":"sms1473913","data":"2026-02-25","valor":1285.72,"valorExato":"1285.727","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":24259,"texto":"Kolmeya #1473913 · 24259 envios × R$ 0,0530 · BRASILIA-SEM-MEIexportacao2-empresaqui-19022026","origem":"relatório Kolmeya"},{"id":"sms1476074","data":"2026-02-26","valor":653.81,"valorExato":"653.808","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":12336,"texto":"Kolmeya #1476074 · 12336 envios × R$ 0,0530 · EXP-GUA-SEM-MEI-exportacao-empresaqui-26022026","origem":"relatório Kolmeya"},{"id":"sms1479141","data":"2026-03-03","valor":1949.55,"valorExato":"1949.552","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":36784,"texto":"Kolmeya #1479141 · 36784 envios × R$ 0,0530 · ABC E ALTO TIETE_SEM-MEI_exportacao-empresaqui-03032026","origem":"relatório Kolmeya"},{"id":"sms1486153","data":"2026-03-10","valor":2934.19,"valorExato":"2934.186","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":55362,"texto":"Kolmeya #1486153 · 55362 envios × R$ 0,0530 · SMS-VALDECIR-10-3-26.csv","origem":"relatório Kolmeya"},{"id":"sms1494654","data":"2026-03-18","valor":2924.54,"valorExato":"2924.540","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":55180,"texto":"Kolmeya #1494654 · 55180 envios × R$ 0,0530 · exportacao1-empresaqui-08032026","origem":"relatório Kolmeya"},{"id":"sms1500029","data":"2026-03-24","valor":2397.83,"valorExato":"2397.826","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":45242,"texto":"Kolmeya #1500029 · 45242 envios × R$ 0,0530 · exportacao2-empresaqui-08032026","origem":"relatório Kolmeya"},{"id":"sms1502625","data":"2026-03-26","valor":1933.33,"valorExato":"1933.334","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":36478,"texto":"Kolmeya #1502625 · 36478 envios × R$ 0,0530 · SMS VALDECIR - DDD11 exportacao1-empresaqui-07072025","origem":"relatório Kolmeya"},{"id":"sms1507746","data":"2026-04-01","valor":2227.22,"valorExato":"2227.219","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":42023,"texto":"Kolmeya #1507746 · 42023 envios × R$ 0,0530 · VALDECIR_SP_18-11-2025.csv","origem":"relatório Kolmeya"},{"id":"sms1514140","data":"2026-04-09","valor":3063.93,"valorExato":"3063.930","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":57810,"texto":"Kolmeya #1514140 · 57810 envios × R$ 0,0530 · exportacao1-empresaqui-01042026-hig.csv","origem":"relatório Kolmeya"},{"id":"sms1529529","data":"2026-04-28","valor":2727.01,"valorExato":"2727.009","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":51453,"texto":"Kolmeya #1529529 · 51453 envios × R$ 0,0530 · CAMPINAS E SP_VALDECIR.csv","origem":"relatório Kolmeya"},{"id":"sms1541731","data":"2026-05-14","valor":1930.21,"valorExato":"1930.207","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":36419,"texto":"Kolmeya #1541731 · 36419 envios × R$ 0,0530 · henrique_SÃO PAULO-SEM-MEI-ABERTAS DE 17012024 A 17092025","origem":"relatório Kolmeya"},{"id":"sms1545008","data":"2026-05-19","valor":2108.55,"valorExato":"2108.552","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":39784,"texto":"Kolmeya #1545008 · 39784 envios × R$ 0,0530 · sp valdecir - 2023 a 06-24.csv","origem":"relatório Kolmeya"},{"id":"sms1551374","data":"2026-05-27","valor":1574.68,"valorExato":"1574.683","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":29711,"texto":"Kolmeya #1551374 · 29711 envios × R$ 0,0530 · SMS VALDECIR 27:05 - MOGI 01:23 A 06:24.csv","origem":"relatório Kolmeya"},{"id":"sms1556357","data":"2026-06-03","valor":1903.76,"valorExato":"1903.760","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":35920,"texto":"Kolmeya #1556357 · 35920 envios × R$ 0,0530 · SMS- VALDECIR- 2023 A 2024 - 02 DE JUNHO.csv","origem":"relatório Kolmeya"},{"id":"sms1560044","data":"2026-06-10","valor":1993.92,"valorExato":"1993.913","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":37621,"texto":"Kolmeya #1560044 · 37621 envios × R$ 0,0530 · SMS - VALDECIR - JULHO 23 A JAN 25 - CLEAN.csv","origem":"relatório Kolmeya"},{"id":"sms1571509","data":"2026-06-25","valor":3288.7,"valorExato":"3288.703","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":62051,"texto":"Kolmeya #1571509 · 62051 envios × R$ 0,0530 · SMS - VALDECIR - 25-06 - TESTE LISTA KALYL.csv","origem":"relatório Kolmeya"},{"id":"sms1574510","data":"2026-07-01","valor":2728.12,"valorExato":"2728.122","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":51474,"texto":"Kolmeya #1574510 · 51474 envios × R$ 0,0530 · VALDECIR MOGI - 01-07.csv","origem":"relatório Kolmeya"},{"id":"sms1582644","data":"2026-07-14","valor":3827.13,"valorExato":"3827.130","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":72210,"texto":"Kolmeya #1582644 · 72210 envios × R$ 0,0530 · 40CONSULTORIA_SP E BRASILIA.csv","origem":"relatório Kolmeya"},{"id":"sms1582657","data":"2026-07-16","valor":3068.33,"valorExato":"3068.329","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":57893,"texto":"Kolmeya #1582657 · 57893 envios × R$ 0,0530 · 14072026_LISTA ALESSANDRO.csv","origem":"relatório Kolmeya"},{"id":"sms1587796","data":"2026-07-22","valor":2250.7,"valorExato":"2250.698","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":42466,"texto":"Kolmeya #1587796 · 42466 envios × R$ 0,0530 · HENRIQUE_americana-campinas-jundiai-mogi-sbc-sjc-sorocaba-TODOS_HIG.csv","origem":"relatório Kolmeya"},{"id":"sms1587812","data":"2026-07-22","valor":3391.79,"valorExato":"3391.788","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":63996,"texto":"Kolmeya #1587812 · 63996 envios × R$ 0,0530 · MASSA_sistema_kalyl.csv","origem":"relatório Kolmeya"},{"id":"sms1592188","data":"2026-07-30","valor":3346.79,"valorExato":"3346.791","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":63147,"texto":"Kolmeya #1592188 · 63147 envios × R$ 0,0530 · sms_w3g_20260729_1313.csv","origem":"relatório Kolmeya"},{"id":"sms1596018","data":"2026-08-05","valor":3238.62,"valorExato":"3238.618","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":61106,"texto":"Kolmeya #1596018 · 61106 envios × R$ 0,0530 · sms_w3g_20260805_1306.csv","origem":"relatório Kolmeya"},{"id":"sms1599341","data":"2026-08-11","valor":3249.38,"valorExato":"3249.377","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":61309,"texto":"Kolmeya #1599341 · 61309 envios × R$ 0,0530 · sms_w3g_20260811_0158.csv","origem":"relatório Kolmeya"},{"id":"sms1603366","data":"2026-08-18","valor":1981.4,"valorExato":"1981.405","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":37385,"texto":"Kolmeya #1603366 · 37385 envios × R$ 0,0530 · sms_w3g_zona-sul_20260817_1916.csv","origem":"relatório Kolmeya"},{"id":"sms1603367","data":"2026-08-18","valor":1995.56,"valorExato":"1995.556","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":37652,"texto":"Kolmeya #1603367 · 37652 envios × R$ 0,0530 · sms_w3g_20260817_1935.csv","origem":"relatório Kolmeya"},{"id":"sms1605037","data":"2026-08-20","valor":2491.0,"valorExato":"2491.000","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":47000,"texto":"Kolmeya #1605037 · 47000 envios × R$ 0,0530 · sulamerica-brasilia.csv","origem":"relatório Kolmeya"},{"id":"sms1605038","data":"2026-08-20","valor":968.73,"valorExato":"968.734","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":18278,"texto":"Kolmeya #1605038 · 18278 envios × R$ 0,0530 · PORTO.csv","origem":"relatório Kolmeya"},{"id":"sms1607575","data":"2026-08-26","valor":1541.88,"valorExato":"1541.876","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":29092,"texto":"Kolmeya #1607575 · 29092 envios × R$ 0,0530 · sms_w3g_zona-sul_20260824_2113 (1).csv","origem":"relatório Kolmeya"},{"id":"sms1608313","data":"2026-08-26","valor":1652.8,"valorExato":"1652.805","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":31185,"texto":"Kolmeya #1608313 · 31185 envios × R$ 0,0530 · porto-26-08.csv","origem":"relatório Kolmeya"},{"id":"sms1617760","data":"2026-09-10","valor":1774.81,"valorExato":"1774.811","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":33487,"texto":"Kolmeya #1617760 · 33487 envios × R$ 0,0530 · AMIL - 10.09.csv","origem":"relatório Kolmeya"},{"id":"sms1637869","data":"2026-10-07","valor":2352.62,"valorExato":"2352.617","categoria":"SMS","campanha":"SMS","unidade":"Mogi","envios":44389,"texto":"Kolmeya #1637869 · 44389 envios × R$ 0,0530 · SAO PAULO_SEM MEI_ABERTAS EM 01012025 A 30042026.csv","origem":"relatório Kolmeya"}];
 // Versão publicada (Apps Script): sem as abas Pendências e Regras (decisão do usuário, 24/11/2026)
 var PUBLICADO = false;
 // Exemplo ILUSTRATIVO só para visualizar o layout — nunca salvo, nunca usado com dados reais.
@@ -543,7 +545,7 @@ function salvarEstado(silencioso) {
 }
 function normEstado(e) {
   e = e || {};
-  return { investimentos: e.investimentos || [], recebidas: e.recebidas || {}, contratos: e.contratos || [], fechamentos: e.fechamentos || {}, anos: e.anos || {}, carteira: e.carteira || [], vitRecebido: e.vitRecebido || [] };
+  return { investimentos: e.investimentos || [], recebidas: e.recebidas || {}, contratos: e.contratos || [], fechamentos: e.fechamentos || {}, anos: e.anos || {}, carteira: e.carteira || [], vitRecebido: e.vitRecebido || [], baseRemovidos: e.baseRemovidos || [] };
 }
 
 /* =====================================================================
@@ -628,12 +630,15 @@ function hojeISO() { var d = new Date(); return d.getFullYear() + '-' + String(d
    4. MOTOR DE CÁLCULO
    ===================================================================== */
 // Feriados nacionais (Lei 662/49, Lei 6.802/80, Lei 14.759/23) + Sexta-feira Santa
+// + São Paulo capital (decisão de 25/11/2026): Aniversário de SP (25/1), Revolução Constitucionalista (9/7, estadual), Corpus Christi (Lei municipal 14.485/07)
 function pascoa(a) { var b = a % 19, c = Math.floor(a / 100), d = a % 100, e = Math.floor(c / 4), f = c % 4, g = Math.floor((c + 8) / 25), h = Math.floor((c - g + 1) / 3), i = (19 * b + c - e - h + 15) % 30, k = Math.floor(d / 4), l = d % 4, m = (32 + 2 * f + 2 * k - i - l) % 7, n = Math.floor((b + 11 * i + 22 * m) / 451), mes = Math.floor((i + m - 7 * n + 114) / 31), dia = ((i + m - 7 * n + 114) % 31) + 1; return new Date(a, mes - 1, dia); }
 function feriados(ano) {
   var f = {}, add = function (m, d, n) { f[ano + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0')] = n; };
   add(1, 1, 'Confraternização Universal'); add(4, 21, 'Tiradentes'); add(5, 1, 'Dia do Trabalho'); add(9, 7, 'Independência');
   add(10, 12, 'Nossa Senhora Aparecida'); add(11, 2, 'Finados'); add(11, 15, 'Proclamação da República'); add(11, 20, 'Consciência Negra'); add(12, 25, 'Natal');
   var sx = pascoa(ano); sx.setDate(sx.getDate() - 2); f[isoDe(sx)] = 'Sexta-feira Santa';
+  add(1, 25, 'Aniversário de São Paulo'); add(7, 9, 'Revolução Constitucionalista');
+  var cc = pascoa(ano); cc.setDate(cc.getDate() + 60); f[isoDe(cc)] = 'Corpus Christi';
   return f;
 }
 function diasUteis(mes) {
@@ -719,8 +724,8 @@ function calcular() {
   var semVidas = [];
   Object.keys(vend).forEach(function (k) {
     var v = vend[k]; v.producao = r2(v.prodHap + v.prodFora);
-    // Fora do projeto: faixa da unidade sobre a produção fora do projeto
-    var f = faixaComissao(v.unidade, v.prodFora);
+    // Fora do projeto: faixa da unidade sobre a produção TOTAL (projeto + fora), aplicada às vendas fora do projeto
+    var f = faixaComissao(v.unidade, v.producao);
     v.pct = f.pct; v.faixa = f; v.comFora = r2(v.prodFora * f.pct);
     // Projeto Hapvida: 15% da mensalidade + valor por vida (a partir de 25 vidas no mês)
     var pv = REGRAS.projetoVendedor;
@@ -731,7 +736,7 @@ function calcular() {
     v.bonusVidas = v.vidasProjeto != null ? r2(v.vidasProjeto * v.valorVida) : null;
     if (v.prodHap > 0 && v.vidasProjeto == null) semVidas.push(v.nome);
     v.comissao = r2(v.comFora + v.comProjeto + (v.bonusVidas || 0));
-    v.faltaProx = f.prox ? f.prox.de - v.prodFora : 0;
+    v.faltaProx = f.prox ? r2(f.prox.de - v.producao) : 0;
     var proxV = v.vidasProjeto != null ? pv.porVida.filter(function (x) { return x.de > v.vidasProjeto; })[0] : null;
     v.faltaVidas = proxV ? proxV.de - v.vidasProjeto : 0; v.proxVida = proxV;
     R.vendedores.push(v);
@@ -811,6 +816,14 @@ function calcular() {
   var pTot = sum(REGRAS.unidades, function (u) { return prodU[u]; }), rat = REGRAS.unidades.map(function (u) { return { u: u, x: 0 }; });
   ratear(rat, livre, function (o) { return pTot ? livre * prodU[o.u] / pTot : livre / REGRAS.unidades.length; }, 'x');
   R.invUnidade = {}; REGRAS.unidades.forEach(function (u, k) { R.invUnidade[u] = r2(invU[k].v + rat[k].x); });
+  // Vitalício do mês entra no a receber (decisão de 25/11/2026): recebido quando o relatório do mês foi lançado; senão, previsto da carteira.
+  // O que não tem unidade é rateado pelo vitalício previsto de cada unidade (ou pela produção).
+  R.vit = calcVitalicio(R.mes);
+  R.vitFonte = R.vit.recebido != null ? 'recebido' : 'previsto';
+  var vitU = REGRAS.unidades.map(function (u) { return { u: u, x: 0 }; }), vitBaseU = R.vitFonte === 'recebido' ? R.vit.recebidoPorUnidade : R.vit.porUnidade;
+  var vitLivre = R.vitFonte === 'recebido' ? R.vit.recebidoSemUnidade : R.vit.semUnidade, prevTot = sum(REGRAS.unidades, function (u) { return R.vit.porUnidade[u] || 0; });
+  ratear(vitU, vitLivre, function (o) { return prevTot ? vitLivre * (R.vit.porUnidade[o.u] || 0) / prevTot : (pTot ? vitLivre * prodU[o.u] / pTot : vitLivre / REGRAS.unidades.length); }, 'x');
+  R.vitUnidade = {}; REGRAS.unidades.forEach(function (u, k) { R.vitUnidade[u] = r2((vitBaseU[u] || 0) + vitU[k].x); });
   REGRAS.unidades.forEach(function (u) {
     var vs = R.vendedores.filter(function (v) { return v.unidade === u; });
     var U = R.unidades[u];
@@ -827,7 +840,8 @@ function calcular() {
     U.leads = eq ? eq.hap.leads : null; U.vidas = eq ? eq.hap.vidas : null; U.qtd = eq ? (eq.hap.qtd + eq.fora.qtd) : null;
     // Base única (v1.9): a receber das operadoras = contratos efetivos × comissão de cada operadora
     // A receber no mês = 1ª parcela das vendas do mês + parcelas das vendas dos meses anteriores
-    U.recebidas = R.ag.base || U.anteriores ? r2((U.primeira || 0) + U.anteriores) : null;
+    U.vitalicio = R.vitUnidade[u];
+    U.recebidas = R.ag.base || U.anteriores || U.vitalicio ? r2(r2((U.primeira || 0) + U.anteriores) + U.vitalicio) : null;
     U.reservaMkt = r2(U.producao * REGRAS.reservaMarketing);
     U.investido = R.invUnidade[u];
     U.res = resultado(U.recebidas, U.comissao, U.custos.fixo, U.custos.provisao, U.producao, null, U.investido);
@@ -839,13 +853,19 @@ function calcular() {
   R.recebidas = R.recebidasInformadas === REGRAS.unidades.length ? soma2(recU) : null;
   R.primeira = soma2(REGRAS.unidades, function (u) { return R.unidades[u].primeira || 0; });
   R.reservaMkt = soma2(REGRAS.unidades, function (u) { return R.unidades[u].reservaMkt; });
+  // Reserva não usada passa para o mês seguinte (decisão de 25/11/2026): saldo = Σ (reserva − investido) dos meses anteriores do ano com produção conhecida
+  var antes = Object.keys(ESTADO.fechamentos).filter(function (k) { return k.slice(0, 4) === R.mes.slice(0, 4) && k < R.mes && ESTADO.fechamentos[k].producao != null; });
+  REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; U.reservaAnterior = soma2(antes, function (k) { var x = (ESTADO.fechamentos[k].unidades || {})[u]; return x ? r2((x.reserva || 0) - (x.investido || 0)) : 0; }); U.reservaDisponivel = r2(U.reservaMkt + U.reservaAnterior); });
+  R.reservaAnterior = soma2(REGRAS.unidades, function (u) { return R.unidades[u].reservaAnterior; });
+  R.reservaDisponivel = r2(R.reservaMkt + R.reservaAnterior);
+  R.mesesSemProducao = Object.keys(ESTADO.fechamentos).filter(function (k) { return k.slice(0, 4) === R.mes.slice(0, 4) && k < R.mes && ESTADO.fechamentos[k].producao == null; }).length;
   R.provisao = soma2(REGRAS.unidades, function (u) { return R.unidades[u].custos.provisao; });
   // Consolidado = soma exata (em centavos) das unidades
   var rs = REGRAS.unidades.map(function (u) { return R.unidades[u].res; });
   R.res = rs.every(Boolean) ? (function () { var o = ['recebidas', 'imposto', 'comissoes', 'reserva', 'fixo', 'provisao', 'custoOp', 'custoOpTotal', 'custos', 'operacional', 'investido', 'financeiro'].reduce(function (o, k) { o[k] = soma2(rs, function (x) { return x[k]; }); return o; }, {}); return margens(o); })() : null;
 
   // ---------- Vitalício da carteira ----------
-  R.vit = calcVitalicio(R.mes);
+  R.vitalicio = soma2(REGRAS.unidades, function (u) { return R.unidades[u].vitalicio || 0; });
   if (!(ESTADO.carteira || []).length) R.alertas.push({ sev: 'wa', cod: 'CARTEIRA', titulo: 'Carteira ativa não carregada', texto: 'O vitalício previsto considera só os contratos registrados no painel.', impacto: 'A receber · vitalício', acao: 'Enviar a lista de contratos ativos (aba Carteira ativa da planilha).' });
   if (R.vit.nSemRegra) R.alertas.push({ sev: 'wa', cod: 'VIT_REGRA', titulo: R.vit.nSemRegra + ' contrato(s) da carteira sem % de vitalício', texto: brl(R.vit.semRegra) + ' de mensalidade fora do vitalício previsto.', impacto: 'A receber · vitalício', acao: 'Informar o vitalício da operadora/modalidade (Pendência 1).' });
 
@@ -934,7 +954,7 @@ function calcularROI(R) {
   Object.keys(porCamp).forEach(function (k) { var g = porCamp[k]; g.roi = g.investido > 0 && g.propostas.length ? (g.retorno - g.investido) / g.investido : null; });
   var atrib = Object.keys(porCamp).filter(function (k) { return porCamp[k].propostas.length; });
   var invAtrib = soma2(atrib, function (k) { return porCamp[k].investido; }), retorno = soma2(atrib, function (k) { return porCamp[k].retorno; });
-  var reserva = R.reservaMkt;
+  var reserva = R.reservaDisponivel;
   return { mes: mes, dias: dias, diaRef: diaRef, diasRest: Math.max(0, dias - diaRef), inv: inv, total: total, media: diaRef ? total / diaRef : 0, porCat: porCat, porCamp: porCamp, organico: organico,
     reserva: reserva, saldo: r2(reserva - total), consumo: reserva ? total / reserva : null,
     invAtrib: invAtrib, retorno: retorno, roi: invAtrib > 0 ? (retorno - invAtrib) / invAtrib : null, retornoPorReal: invAtrib > 0 ? retorno / invAtrib : null };
@@ -945,8 +965,34 @@ function calcularROI(R) {
    6. RENDERIZAÇÃO
    ===================================================================== */
 var R = null;
+// Dados reais de base: entram uma vez no estado; o que o usuário excluir não volta
+function aplicarBaseInvest() {
+  if (DEMO) return;
+  var tem = {}; ESTADO.investimentos.forEach(function (i) { tem[i.id] = 1; });
+  INV_BASE.forEach(function (i) { if (!tem[i.id] && ESTADO.baseRemovidos.indexOf(i.id) < 0) ESTADO.investimentos.push(Object.assign({}, i)); });
+}
+// Meses anteriores do ano sem fechamento: custos replicados da estrutura atual (decisão de 25/11/2026) e investimento real;
+// a receber e comissões ficam em branco até chegar o fechamento de folha do mês.
+function aplicarBaseMeses() {
+  if (DEMO) return;
+  var ano = R.mes.slice(0, 4);
+  for (var m = 1; m < +R.mes.slice(5, 7); m++) {
+    var mes = ano + '-' + String(m).padStart(2, '0'), f = ESTADO.fechamentos[mes];
+    if (f && (f.fechado || !f.base)) continue;
+    var inv = ESTADO.investimentos.filter(function (i) { return (i.data || '').slice(0, 7) === mes; }), un = {}, t = { producao: null, recebidas: null, comissoes: null, fixo: 0, provisao: 0, investido: 0 };
+    REGRAS.unidades.forEach(function (u) {
+      var c = custosUnidade(u, mes), iv = soma2(inv.filter(function (i) { return unidadeCanon(i.unidade) === u; }), function (i) { return +i.valor || 0; });
+      un[u] = compor({ producao: null, recebidas: null, comissoes: null, fixo: c.fixo, provisao: c.provisao, investido: iv });
+      t.fixo = r2(t.fixo + c.fixo); t.provisao = r2(t.provisao + c.provisao);
+    });
+    t.investido = soma2(inv, function (i) { return +i.valor || 0; });
+    ESTADO.fechamentos[mes] = Object.assign(compor(t), { mes: mes, unidades: un, fechado: false, base: true, versao: REGRAS.versao });
+  }
+}
 function render() {
+  aplicarBaseInvest();
   R = calcular();
+  aplicarBaseMeses();
   document.getElementById('hdPeriodo').textContent = mesLabel(R.mes) + (FONTE && FONTE.atualizado ? ' · atualizado ' + FONTE.atualizado : '');
   document.getElementById('hdFonte').innerHTML = '<span class="dot" style="color:' + (GAS ? 'var(--green)' : 'var(--gold)') + '"></span>' + (GAS ? 'Integração ao vivo' : 'Snapshot local');
   document.getElementById('hdRegras').textContent = REGRAS.versao;
@@ -976,12 +1022,12 @@ function vGeral() {
     ['Impostos', x ? brl(x.imposto) : '—', '', '', x ? 'out' : 'mu'],
     ['Custo de operação total', x ? brl(x.custoOpTotal) : '—', '', '', x ? 'out' : 'mu'],
     ['Lucro bruto', x ? brl(x.operacional) : '—', '', '', x ? (x.operacional >= 0 ? 'in' : 'out') : 'mu', x ? sub('margem ' + pct(x.mBruta, 1), x.mBruta >= 0 ? 'ok' : 'no') : ''],
-    ['Reserva de marketing', brl(R.reservaMkt), '', '', 'inv'],
+    ['Reserva de marketing', brl(R.reservaMkt), '', '', 'inv', R.reservaAnterior ? sub('+ saldo dos meses anteriores ' + brl(R.reservaAnterior)) : ''],
     ['Investimento em marketing', brl(ro.total), '', '', ro.total > ro.reserva ? 'out' : 'inv', statusPlan(ro.total, ro.reserva) + (x ? sub(pct(x.mMkt, 1) + ' do a receber') : '')],
     ['Lucro líquido', x ? brl(x.financeiro) : '—', '', '', x ? (x.financeiro >= 0 ? 'in' : 'out') : 'mu', x ? sub('margem ' + pct(x.mLiquida, 1), x.mLiquida >= 0 ? 'ok' : 'no') : ''],
     ['ROI', ro.roi != null ? pct(ro.roi) : '—', '', '', ro.roi != null ? (ro.roi >= 0 ? 'in' : 'out') : 'mu', ro.roi != null ? sub(brl(ro.retornoPorReal) + ' de retorno por R$ 1') : '']
   ];
-  var h = blocoResultado('Optas consolidado · Consolação + Mogi', R.res, R.recebidas, R.comissoes, R.custoFixo, R.provisao, null, R.producao, R.investido, R.primeira, R.caixaAnt.total);
+  var h = blocoResultado('Optas consolidado · Consolação + Mogi', R.res, R.recebidas, R.comissoes, R.custoFixo, R.provisao, null, R.producao, R.investido, R.primeira, R.caixaAnt.total, R.vitalicio);
   h += '<div class="grid g2 mt">';
   REGRAS.unidades.forEach(function (u) {
     var U = R.unidades[u], r = U.res, st = r ? (r.operacional >= 0 ? 'lucro' : 'prej') : 'nd';
@@ -1008,7 +1054,7 @@ function minimos(comissoes, estrutura, reserva) {
   var minimo = function (precisa) { precisa = r2(precisa); var x = Math.ceil(precisa / (1 - i) * 100 - 1e-6) / 100; while (r2(x - r2(x * i)) < precisa) x = r2(x + 0.01); while (x > 0 && r2((x - 0.01) - r2((x - 0.01) * i)) >= precisa) x = r2(x - 0.01); return x; };
   return { empate: minimo(comissoes + estrutura), sustentavel: minimo(comissoes + estrutura + (reserva || 0)) };
 }
-function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, producao, investido, primeira, anteriores) {
+function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, producao, investido, primeira, anteriores, vitalicio) {
   var reserva = res ? res.reserva : r2((producao || 0) * REGRAS.reservaMarketing);
   investido = res ? res.investido : r2(investido || 0);
   var mn = minimos(comissoes, r2(fixo + prov), reserva), tem = recebidas != null;
@@ -1018,7 +1064,7 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
   // 1. A receber − Custos = Lucro bruto
   h += '<div class="eq">'
     + '<div class="eqc c-in"><div class="eqk">A receber no mês</div><div class="eqv">' + (tem ? brl(recebidas) : '—') + '</div>'
-      + (tem ? '<div class="eqd">1ª parcela das vendas <b>' + brl(primeira || 0) + '</b> · parcelas anteriores <b>' + brl(anteriores || 0) + '</b></div>' : '')
+      + (tem ? '<div class="eqd">1ª parcela das vendas <b>' + brl(primeira || 0) + '</b> · parcelas anteriores <b>' + brl(anteriores || 0) + '</b> · vitalício <b>' + brl(vitalicio || 0) + '</b></div>' : '')
       + (/^Optas consolidado/.test(titulo) && R.ag.naoCalc > 0 ? '<div class="plan no">+ ' + brl(R.ag.naoCalc) + ' de vendas fora da conta</div>' : '') + '</div>'
     + '<div class="eqo">−</div>'
     + '<div class="eqc c-out"><div class="eqk">Custos do mês</div><div class="eqv">' + (tem ? brl(custos) : '—') + '</div>'
@@ -1062,7 +1108,7 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
 
 function vUnidade(u) {
   var U = R.unidades[u], c = U.custos;
-  var h = blocoResultado('Unidade ' + u, U.res, U.recebidas, U.comissao, c.fixo, c.provisao, null, U.producao, U.investido, U.primeira || 0, U.anteriores || 0);
+  var h = blocoResultado('Unidade ' + u, U.res, U.recebidas, U.comissao, c.fixo, c.provisao, null, U.producao, U.investido, U.primeira || 0, U.anteriores || 0, U.vitalicio || 0);
   h += '<div class="grid g4 mt">'
     + card('Produção', brl(U.producao), 'Hapvida ' + brl(U.prodHap) + ' · fora ' + brl(U.prodFora), { tag: T.real })
     + card('Comissões dos vendedores', brl(U.comissao), U.vendedores + ' vendedores', { tag: T.real })
@@ -1154,7 +1200,7 @@ function vAno() {
     + '<div class="eqc c-in"><div class="eqk">A receber no ano</div><div class="eqv">' + brl(t.recebidas) + '</div></div><div class="eqo">−</div>'
     + '<div class="eqc c-out"><div class="eqk">Custos no ano</div><div class="eqv">' + brl(t.saiu) + '</div></div><div class="eqo">=</div>'
     + '<div class="eqc res-' + st + '"><div class="eqk">' + (t.nRec ? (ok ? 'Se sustentando no ano' : 'Não se sustentando no ano') : 'Sem meses com valores') + '</div><div class="eqv big2">' + (t.nRec ? brl(t.resultado) : '—') + '</div><div class="eqd">' + (t.nRec ? t.mesesLucro + ' de ' + t.nRec + ' meses no lucro' : '') + '</div></div></div>';
-  h += '<div class="grid g5 mt">' + mini('Reserva de marketing no ano', '<span class="inv">' + brl(t.reserva) + '</span>') + mini('Investido no ano', '<span class="inv">' + brl(t.investido) + '</span>') + mini('Lucro líquido', '<span class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</span>', '') + mini('Saldo do ano anterior', brl(t.saldoAnterior)) + mini('Acumulado com o ano anterior', '<span class="' + (t.acumulado >= 0 ? 'gr' : 'rd') + '">' + brl(t.acumulado) + '</span>', '') + '</div></div>';
+  h += '<div class="grid g5 mt">' + mini('Reserva de marketing no ano', '<span class="inv">' + brl(t.reserva) + '</span>') + mini('Investido no ano', '<span class="inv">' + brl(t.investidoTotal) + '</span>') + mini('Lucro líquido', '<span class="' + (t.depois >= 0 ? 'gr' : 'rd') + '">' + brl(t.depois) + '</span>', '') + mini('Saldo do ano anterior', brl(t.saldoAnterior)) + mini('Acumulado com o ano anterior', '<span class="' + (t.acumulado >= 0 ? 'gr' : 'rd') + '">' + brl(t.acumulado) + '</span>', '') + '</div></div>';
   // Provisão
   var pctProv = t.provisaoAcum / t.provisaoAnual, coberta = t.nRec ? t.resultado >= 0 : null;
   h += '<div class="box dk mt"><div class="lbl">Provisão de 13º e férias em ' + ano + '</div><div class="grid g4 mt">'
@@ -1183,10 +1229,10 @@ function vAno() {
   var acum = t.saldoAnterior;
   t.meses.forEach(function (m) {
     var tem = m.resultado != null; if (tem) acum = r2(acum + m.depois);
-    h += '<tr class="clk' + (sel === m.mes ? ' selr' : '') + '" onclick="vAno.mes=\'' + m.mes + '\';vAno()"><td><b>' + mesLabel(m.mes) + '</b>' + (m.fechado ? '' : ' <span class="tag proj">aberto</span>') + '</td><td class="r gr">' + brl(m.recebidas) + '</td><td class="r rd">' + brl(m.saiu) + '</td><td class="r ' + (tem ? (m.resultado >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.resultado) + '</b></td><td class="r inv">' + brl(m.reserva) + '</td><td class="r inv">' + brl(m.investido || 0) + '</td><td class="r ' + (tem ? (m.depois >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.depois) + '</b></td><td class="r ' + (tem ? (acum >= 0 ? 'pos' : 'neg') : '') + '">' + (tem ? brl(acum) : '—') + '</td><td>' + (tem ? '<span class="st ' + (m.resultado >= 0 ? 'lucro' : 'prej') + '">' + (m.resultado >= 0 ? 'SE PAGOU' : 'NÃO SE PAGOU') + '</span>' : '—') + '</td><td onclick="event.stopPropagation()">'
-      + (fechadoAno || m.exemplo ? '' : (m.fechado ? '<button class="btn gh sm" onclick="reabrirMes(\'' + m.mes + '\')">Reabrir</button>' : '<button class="btn sm" onclick="fecharMes(\'' + m.mes + '\')">Fechar mês</button>')) + '</td></tr>';
+    h += '<tr class="clk' + (sel === m.mes ? ' selr' : '') + '" onclick="vAno.mes=\'' + m.mes + '\';vAno()"><td><b>' + mesLabel(m.mes) + '</b>' + (m.fechado ? '' : (m.base ? ' <span class="tag proj">aguardando folha</span>' : ' <span class="tag proj">aberto</span>')) + '</td><td class="r gr">' + brl(m.recebidas) + '</td><td class="r rd">' + brl(m.saiu) + '</td><td class="r ' + (tem ? (m.resultado >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.resultado) + '</b></td><td class="r inv">' + (m.producao == null ? '—' : brl(m.reserva)) + '</td><td class="r inv">' + brl(m.investido || 0) + '</td><td class="r ' + (tem ? (m.depois >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.depois) + '</b></td><td class="r ' + (tem ? (acum >= 0 ? 'pos' : 'neg') : '') + '">' + (tem ? brl(acum) : '—') + '</td><td>' + (tem ? '<span class="st ' + (m.resultado >= 0 ? 'lucro' : 'prej') + '">' + (m.resultado >= 0 ? 'SE PAGOU' : 'NÃO SE PAGOU') + '</span>' : '—') + '</td><td onclick="event.stopPropagation()">'
+      + (fechadoAno || m.exemplo || m.base ? '' : (m.fechado ? '<button class="btn gh sm" onclick="reabrirMes(\'' + m.mes + '\')">Reabrir</button>' : '<button class="btn sm" onclick="fecharMes(\'' + m.mes + '\')">Fechar mês</button>')) + '</td></tr>';
   });
-  h += '<tr class="tot"><td>Total do ano</td><td class="r gr">' + brl(t.recebidas) + '</td><td class="r rd">' + brl(t.saiu) + '</td><td class="r ' + (ok ? 'pos' : 'neg') + '">' + brl(t.resultado) + '</td><td class="r inv">' + brl(t.reserva) + '</td><td class="r inv">' + brl(t.investido) + '</td><td class="r ' + (t.depois >= 0 ? 'pos' : 'neg') + '">' + brl(t.depois) + '</td><td class="r ' + (t.acumulado >= 0 ? 'pos' : 'neg') + '">' + brl(t.acumulado) + '</td><td></td><td></td></tr></tbody></table></div>'
+  h += '<tr class="tot"><td>Total do ano</td><td class="r gr">' + brl(t.recebidas) + '</td><td class="r rd">' + brl(t.saiu) + '</td><td class="r ' + (ok ? 'pos' : 'neg') + '">' + brl(t.resultado) + '</td><td class="r inv">' + brl(t.reserva) + '</td><td class="r inv">' + brl(t.investidoTotal) + '</td><td class="r ' + (t.depois >= 0 ? 'pos' : 'neg') + '">' + brl(t.depois) + '</td><td class="r ' + (t.acumulado >= 0 ? 'pos' : 'neg') + '">' + brl(t.acumulado) + '</td><td></td><td></td></tr></tbody></table></div>'
     + (t.melhor ? '<div class="kpirow"><div>Melhor mês<b>' + mesLabel(t.melhor.mes) + ' · ' + brl(t.melhor.resultado) + '</b></div><div>Pior mês<b>' + mesLabel(t.pior.mes) + ' · ' + brl(t.pior.resultado) + '</b></div><div>Meses que se pagaram<b>' + t.mesesLucro + ' de ' + t.nRec + '</b></div></div>' : '') + '</div>';
   // Unidades
   h += '<div class="grid g2 mt">';
@@ -1220,7 +1266,7 @@ function carteiraCompleta() {
   return Object.keys(m).map(function (k) { return m[k]; });
 }
 function calcVitalicio(mes) {
-  var o = { total: 0, n: 0, aguardando: 0, semRegra: 0, nSemRegra: 0, porOp: {}, contratos: [] };
+  var o = { total: 0, n: 0, aguardando: 0, semRegra: 0, nSemRegra: 0, porOp: {}, contratos: [], porUnidade: {}, semUnidade: 0 };
   carteiraCompleta().forEach(function (c) {
     var inicio = String(c.data_inicio || c.data_venda || '').slice(0, 7); if (!inicio || inicio > mes) return;
     if (/cancel/i.test(c.situacao || '') && (!c.cancelado_em || String(c.cancelado_em).slice(0, 7) <= mes)) return;
@@ -1233,10 +1279,13 @@ function calcVitalicio(mes) {
     if (rg && rg.vit === 0) { g.qtd--; g.valor = r2(g.valor - valor); if (!g.qtd) delete o.porOp[nome]; return; }
     if (!rg || rg.vit == null) { g.semRegra = r2(g.semRegra + valor); o.semRegra = r2(o.semRegra + valor); o.nSemRegra++; return; }
     var v = r2(valor * rg.vit); g.previsto = r2(g.previsto + v); o.total = r2(o.total + v); o.n++;
+    var uc = unidadeCanon(c.unidade); if (uc) o.porUnidade[uc] = r2((o.porUnidade[uc] || 0) + v); else o.semUnidade = r2(o.semUnidade + v);
     o.contratos.push({ c: c, parcela: parcela, valor: valor, pct: rg.vit, vit: v });
   });
   var rec = (ESTADO.vitRecebido || []).filter(function (x) { return String(x.mes || '').slice(0, 7) === mes; });
   o.recebido = rec.length ? soma2(rec, function (x) { return +x.valor || 0; }) : null;
+  o.recebidoPorUnidade = {}; o.recebidoSemUnidade = 0;
+  rec.forEach(function (x) { var uc = unidadeCanon(x.unidade); if (uc) o.recebidoPorUnidade[uc] = r2((o.recebidoPorUnidade[uc] || 0) + (+x.valor || 0)); else o.recebidoSemUnidade = r2(o.recebidoSemUnidade + (+x.valor || 0)); });
   rec.forEach(function (x) { var g = o.porOp[x.operadora] = o.porOp[x.operadora] || { qtd: 0, valor: 0, pct: null, previsto: 0, semRegra: 0 }; g.recebido = r2((g.recebido || 0) + (+x.valor || 0)); });
   o.imposto = r2(o.total * REGRAS.imposto); o.liquido = r2(o.total - o.imposto);
   return o;
@@ -1312,7 +1361,7 @@ function responder(txt) {
   if (/comiss/.test(t)) return chip('Comissões · ' + nome, brl(U ? U.comissao : R.comissoes), 'out');
   if (/custo/.test(t)) return chip('Custo da operação · ' + nome, x ? brl(x.custoOp) : '—', 'out') + chip('Custo de operação total', x ? brl(x.custoOpTotal) : '—', 'out') + chip('Custos do mês', x ? brl(x.custos) : '—', 'out');
   if (/(roi|retorno)/.test(t)) return chip('ROI', R.roi.roi != null ? pct(R.roi.roi) : '—', sinal(R.roi.roi)) + chip('Retorno', brl(R.roi.retorno), 'in') + chip('Investido', brl(R.roi.invAtrib), 'inv');
-  if (/(invest|reserva|mkt|marketing|verba)/.test(t)) { var iv = U ? U.investido : R.investido, rs = U ? U.reservaMkt : R.reservaMkt; return chip('Reserva · ' + nome, brl(rs), 'inv') + chip('Investido', brl(iv), iv > rs ? 'out' : 'inv') + chip(iv > rs ? 'Fora do planejamento' : 'Disponível', brl(Math.abs(rs - iv)), iv > rs ? 'out' : 'in'); }
+  if (/(invest|reserva|mkt|marketing|verba)/.test(t)) { var iv = U ? U.investido : R.investido, rs = U ? U.reservaDisponivel : R.reservaDisponivel; return chip('Reserva · ' + nome, brl(rs), 'inv') + chip('Investido', brl(iv), iv > rs ? 'out' : 'inv') + chip(iv > rs ? 'Fora do planejamento' : 'Disponível', brl(Math.abs(rs - iv)), iv > rs ? 'out' : 'in'); }
   if (/(produ|vend|venda)/.test(t)) return chip('Produção · ' + nome, brl(U ? U.producao : R.producao), '') + chip('Propostas', String((R.ag.propostas || []).filter(function (p) { return !un || p.unidade === un; }).length || '—'), '');
   if (/(ano|sustent|acumul)/.test(t)) { var a = resumoAno(+R.mes.slice(0, 4)); return chip(R.mes.slice(0, 4) + ' · lucro bruto', brl(a.resultado), sinal(a.resultado)) + chip('Lucro líquido', brl(a.depois), sinal(a.depois)) + chip('Meses que se pagaram', a.mesesLucro + ' de ' + a.nRec, a.resultado >= 0 ? 'in' : 'out'); }
   return chip('Lucro bruto · ' + nome, x ? brl(x.operacional) : '—', sinal(x && x.operacional)) + chip('Lucro líquido', x ? brl(x.financeiro) : '—', sinal(x && x.financeiro)) + chip('A receber', x ? brl(x.recebidas) : '—', 'in') + chip('Custos', x ? brl(x.custos) : '—', 'out');
@@ -1320,7 +1369,7 @@ function responder(txt) {
 function confirmarChat() {
   if (!PEND_CHAT) return; var p = PEND_CHAT; PEND_CHAT = null;
   ESTADO.investimentos.push({ id: Date.now().toString(36), data: p.data, valor: p.valor, categoria: p.categoria, campanha: p.campanha, unidade: p.unidade, texto: p.texto, mensal: p.mensal });
-  salvarEstado(); render(); document.getElementById('chatOut').innerHTML = '<div class="ans"><div class="ansa">' + chip('Registrado', esc(p.campanha) + ' · ' + brl(p.valor), 'inv') + chip('Investido no mês', brl(R.investido), 'inv') + statusPlan(R.investido, R.reservaMkt) + '</div></div>';
+  salvarEstado(); render(); document.getElementById('chatOut').innerHTML = '<div class="ans"><div class="ansa">' + chip('Registrado', esc(p.campanha) + ' · ' + brl(p.valor), 'inv') + chip('Investido no mês', brl(R.investido), 'inv') + statusPlan(R.investido, R.reservaDisponivel) + '</div></div>';
 }
 
 function vFin() {
@@ -1368,7 +1417,7 @@ function vrvtDiario(cs) {
   h += '</tbody></table></div></div>';
   // calendário do ano
   var ano = +R.mes.slice(0, 4);
-  h += '<div class="box dk" style="grid-column:1/-1;order:9"><div class="lbl">VR + VT mês a mês em ' + ano + ' <em>dias úteis = segunda a sexta − feriados nacionais</em></div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">Dias úteis</th><th class="r">Consolação</th><th class="r">Mogi</th><th class="r">Total VR + VT</th><th>Feriados</th></tr></thead><tbody>';
+  h += '<div class="box dk" style="grid-column:1/-1;order:9"><div class="lbl">VR + VT mês a mês em ' + ano + ' <em>dias úteis = segunda a sexta − feriados nacionais e de São Paulo capital</em></div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">Dias úteis</th><th class="r">Consolação</th><th class="r">Mogi</th><th class="r">Total VR + VT</th><th>Feriados</th></tr></thead><tbody>';
   for (var m = 1; m <= 12; m++) {
     var k = ano + '-' + String(m).padStart(2, '0'), d = diasUteis(k), cm = REGRAS.unidades.map(function (u) { return custosUnidade(u, k); });
     var t = sum(cm, function (c) { return c.vr + c.vt; });
@@ -1433,7 +1482,7 @@ function vCom() {
   h += '<div class="box mt"><div class="lbl">Vendedores</div><div class="tw"><table><thead><tr><th>#</th><th>Vendedor(a)</th><th>Unidade</th><th class="r">Projeto Hapvida</th><th class="r">15%</th><th class="r">Vidas</th><th class="r">Por vida</th><th class="r">Fora do projeto</th><th class="r">Faixa</th><th class="r">Comissão fora</th><th class="r">Comissão total</th><th>Próxima faixa</th></tr></thead><tbody>';
   R.vendedores.forEach(function (v, i) {
     var prox = [];
-    if (v.faixa.prox) prox.push('faltam <b>' + brl(v.faltaProx) + '</b> fora p/ ' + pct(v.faixa.prox.pct));
+    if (v.faixa.prox) prox.push('faltam <b>' + brl(v.faltaProx) + '</b> p/ ' + pct(v.faixa.prox.pct));
     if (v.proxVida) prox.push('faltam <b>' + v.faltaVidas + ' vidas</b> p/ R$ ' + v.proxVida.valor + '/vida');
     h += '<tr><td>' + (i + 1) + '</td><td><b>' + esc(v.nome) + '</b></td><td>' + v.unidade + '</td><td class="r">' + brl(v.prodHap) + '</td><td class="r rd">' + brl(v.comProjeto) + '</td><td class="r">' + (v.vidasProjeto != null ? v.vidasProjeto : '—') + '</td><td class="r rd">' + (v.bonusVidas != null ? brl(v.bonusVidas) + (v.valorVida ? ' <span class="m">(R$ ' + v.valorVida + ')</span>' : '') : '—') + '</td><td class="r">' + brl(v.prodFora) + '</td><td class="r"><span class="tier' + (v.faixa.max ? ' max' : '') + '">' + pct(v.pct) + '</span></td><td class="r rd">' + brl(v.comFora) + '</td><td class="r rd"><b>' + brl(v.comissao) + '</b></td><td style="white-space:normal">' + (prox.join(' · ') || '<span class="gr">faixa máxima</span>') + '</td></tr>';
   });
@@ -1506,7 +1555,9 @@ function vRoi() {
   h += '<div class="box res ' + st + '"><div class="lbl">Investimento em marketing <em>' + mesLabel(R.mes) + '</em></div>'
     + '<div class="bigv ' + (dentro ? 'inv' : 'prej') + '" style="margin-top:12px">' + brl(o.total) + '</div>'
     + statusPlan(o.total, lim)
-    + '<div class="mins"><div class="mrow"><span>Limite</span><b>' + brl(lim) + '</b></div>' + bar(usado, dentro ? 'g' : 'r')
+    + '<div class="mins"><div class="mrow"><span>Reserva do mês (15% da produção)</span><b>' + brl(R.reservaMkt) + '</b></div>'
+    + '<div class="mrow"><span>Saldo dos meses anteriores</span><b class="' + (R.reservaAnterior < 0 ? 'rd' : '') + '">' + brl(R.reservaAnterior) + '</b></div>'
+    + '<div class="mrow"><span>Limite</span><b>' + brl(lim) + '</b></div>' + bar(usado, dentro ? 'g' : 'r')
     + '<div class="mrow"><span>Usado do limite</span><b>' + pct(usado, 1) + '</b></div>'
     + '<div class="mrow"><span>' + (dentro ? 'Ainda disponível' : 'Passou do limite em') + '</span><b class="' + (dentro ? 'gr' : 'rd') + '">' + brl(Math.abs(lim - o.total)) + '</b></div></div></div>';
   // ROI = retorno sobre o investimento
@@ -1624,7 +1675,7 @@ function confirmarInv() {
   PEND_INV.forEach(function (p, k) { if (p.erro) return; ESTADO.investimentos.push({ id: Date.now().toString(36) + k, data: p.data, valor: p.valor, categoria: p.categoria, campanha: p.campanha, unidade: p.unidade, texto: p.texto, mensal: p.mensal }); n++; });
   PEND_INV = []; salvarEstado(); render(); show('roi'); toast(n + ' investimento(s) registrado(s)');
 }
-function delInv(id) { if (!confirm('Excluir este lançamento?')) return; ESTADO.investimentos = ESTADO.investimentos.filter(function (i) { return i.id !== id; }); salvarEstado(); render(); show('roi'); }
+function delInv(id) { if (!confirm('Excluir este lançamento?')) return; if (INV_BASE.some(function (i) { return i.id === id; })) ESTADO.baseRemovidos.push(id); ESTADO.investimentos = ESTADO.investimentos.filter(function (i) { return i.id !== id; }); salvarEstado(); render(); show('roi'); }
 
 function vAle() {
   var ord = { er: 0, wa: 1, in: 2 }, al = R.alertas.slice().sort(function (a, b) { return ord[a.sev] - ord[b.sev]; });
@@ -1642,16 +1693,14 @@ function copiarAlertas() {
 }
 
 var PENDENCIAS = [
-  ['3', 'Acúmulo da reserva de marketing', 'A verba não utilizada acumula para o mês seguinte ou expira no fechamento?', 'Saldo calculado só dentro do mês.'],
   ['7', 'Validação contábil dos encargos', 'FPAS/terceiros, RAT, incidências efetivas e encargos já incluídos nos R$ 39.185,43.', 'Provisão de R$ 1.623,15 é estimativa gerencial.'],
-  ['10', 'Feriados municipais e recessos', 'Feriados de São Paulo (Consolação) e de Mogi das Cruzes, Carnaval, Corpus Christi, recesso de fim de ano: a Optas para nesses dias e não paga VR/VT?', 'Usa só feriados nacionais + Sexta-feira Santa.'],
   ['9', 'Vínculo com planilha e CRM', 'Link da planilha e campos do CRM (PipeRun) com venda a venda: projeto, operadora, modalidade, valor, vendedor, unidade, data, origem/campanha.', 'Painel usa os totais por vendedor do painel atual.'],
 ];
 function vPen() {
   if (!document.getElementById('v-pen')) return;
   var h = '<div class="box brd"><div class="lbl">Pendências para finalizar a modelagem <em>mantidas separadas das regras confirmadas</em></div><div class="tw"><table><thead><tr><th>#</th><th>Pendência</th><th>O que falta</th><th>Como o painel trata hoje</th></tr></thead><tbody>';
   PENDENCIAS.forEach(function (p) { h += '<tr><td><b>' + p[0] + '</b></td><td style="white-space:normal;min-width:160px"><b>' + p[1] + '</b></td><td style="white-space:normal;min-width:280px">' + p[2] + '</td><td style="white-space:normal;min-width:220px" class="m">' + p[3] + '</td></tr>'; });
-  h += '</tbody></table></div><div class="note">Resolvidas: base do ROI (ROI sobre as vendas), categorias de investimento (registro por nome de campanha) e origem dos contratos (não é mais necessária para o ROI).</div></div>';
+  h += '</tbody></table></div><div class="note">Resolvidas: base do ROI (ROI sobre as vendas), categorias de investimento (registro por nome de campanha) origem dos contratos (não é mais necessária para o ROI), acúmulo da reserva (passa para o mês seguinte) e feriados (nacionais + São Paulo capital).</div></div>';
   h += '<div class="box mt"><div class="lbl">Fora do escopo desta etapa</div><p class="m">Distribuição de lucros entre W3G e sócias · média de comissões para provisionamento da folha · controle individual de salários fixos · CPL/ROI avançado sem atribuição confiável · conciliação detalhada por pagamento de operadora · estornos, cancelamentos, descontos e recebimentos parciais.</p></div>';
   document.getElementById('v-pen').innerHTML = h;
 }
@@ -1659,7 +1708,7 @@ function vPen() {
 function regra(t, f, d) { return '<div class="box dk"><div class="lbl">' + t + '</div><div class="fx">' + f + '</div><div class="m">' + d + '</div></div>'; }
 function vReg() {
   if (!document.getElementById('v-reg')) return;
-  var h = '<div class="grid g2"><div class="box"><div class="lbl">Comissão dos vendedores <em>% da faixa sobre toda a produção</em></div>';
+  var h = '<div class="grid g2"><div class="box"><div class="lbl">Comissão dos vendedores <em>faixa pela produção total · % sobre as vendas fora do projeto</em></div>';
   REGRAS.unidades.forEach(function (u) {
     var fx = REGRAS.faixas[u];
     h += '<div class="m mt" style="font-weight:700;color:var(--ink)">' + u + '</div><div class="tw"><table><tbody>' + fx.map(function (f, i) { return '<tr><td>' + (fx[i + 1] ? brl(f.de || 1) + ' a ' + brl(fx[i + 1].de - 0.01) : 'A partir de ' + brl(f.de)) + '</td><td class="r"><span class="tier">' + pct(f.pct) + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
@@ -1686,7 +1735,7 @@ function vReg() {
     + card('Reserva de marketing', '15%', 'Sobre a produção mensal (soma das mensalidades dos contratos efetivos). Destinação do resultado, não despesa.', { box: 'dk' })
     + card('Vitalício', 'depois da última parcela', 'Começa no mês seguinte à última parcela de agenciamento e segue enquanto o contrato estiver ativo, com o % da grade.', { box: 'dk' }) + '</div>';
   h += '<div class="sec">Fórmulas do sistema <small>cada regra nova entra aqui</small></div><div class="grid g2">'
-    + regra('Vendedor no Projeto Hapvida', 'Comissão = 15% da mensalidade das vendas do projeto + valor por vida: 25 a 34 vidas R$ 20 · 35 a 49 R$ 25 · 50 ou mais R$ 35 (sobre todas as vidas do mês; abaixo de 25 vidas não paga)', 'Vendas fora do projeto seguem a faixa da unidade, calculada sobre a produção fora do projeto.')
+    + regra('Vendedor no Projeto Hapvida', 'Comissão = 15% da mensalidade das vendas do projeto + valor por vida: 25 a 34 vidas R$ 20 · 35 a 49 R$ 25 · 50 ou mais R$ 35 (sobre todas as vidas do mês; abaixo de 25 vidas não paga)', 'Vendas fora do projeto seguem a faixa da unidade. A faixa é atingida com a produção total do vendedor (projeto + fora) e o percentual incide sobre as vendas fora do projeto.')
     + regra('Custo da operação', 'Custo da operação = custos fixos (salários, VR, VT, operação) + provisão 13º/férias', '')
     + regra('Custo de operação total', 'Custo de operação total = custo da operação + impostos (15% do a receber)', '')
     + regra('Lucro bruto', 'Lucro bruto = a receber das operadoras − comissões dos vendedores − custo de operação total', 'Positivo = LUCRO BRUTO; negativo = PREJUÍZO. Margem bruta = lucro bruto ÷ a receber.')
@@ -1698,13 +1747,13 @@ function vReg() {
     + regra('Se a operação se pagou', 'Mês se pagou quando o lucro bruto ≥ 0 · acumulado do ano = saldo do ano anterior + lucro líquido dos meses', '')
     + regra('Cores', 'Verde = dinheiro que entra · vermelho = dinheiro que sai · amarelo = investimento', '')
     + regra('Qual comissão se aplica a cada venda', '1º tabela gravada na data da venda → 2º regra do projeto (Projeto Hapvida) → 3º tabela da operadora', 'Hapvida fora do projeto usa 350% + 2%. Mudanças futuras de tabela não alteram vendas antigas.')
-    + regra('Limite de investimento', 'Limite = 15% × produção do mês · Dentro se investido ≤ limite; passou se investido > limite', 'Soma de todos os investimentos registrados no mês.')
+    + regra('Limite de investimento', 'Limite = 15% × produção do mês + saldo dos meses anteriores do ano (reserva − investido) · Dentro se investido ≤ limite', 'A reserva não usada passa para o mês seguinte; o que passou do limite reduz o saldo.')
     + regra('Provisão de 13º e férias no ano', 'Obrigação do ano = R$ 1.623,15 × 12 · Coberta se o resultado do ano ≥ 0', 'A provisão já é descontada todo mês no resultado.')
     + regra('Balanço anual e virada de ano', 'Em dezembro: fechar o ano grava o balanço geral e o saldo (lucro líquido do ano) passa para o ano seguinte', 'Acumulado = saldo do ano anterior + lucro líquido do ano atual.')
-    + regra('VR e VT do mês', 'VR do mês = (VR de outubro ÷ 21 dias úteis) × dias úteis do mês · mesma regra para VT', 'Dias úteis = segunda a sexta menos feriados nacionais (inclui Sexta-feira Santa). Por pessoa = valor por dia da unidade ÷ número de CLT.')
+    + regra('VR e VT do mês', 'VR do mês = (VR de outubro ÷ 21 dias úteis) × dias úteis do mês · mesma regra para VT', 'Dias úteis = segunda a sexta menos feriados nacionais (inclui Sexta-feira Santa) e de São Paulo capital (25/1, 9/7, Corpus Christi). Por pessoa = valor por dia da unidade ÷ número de CLT (sócios não recebem VR nem VT).')
     + regra('Arredondamento em centavos', 'Cada valor é arredondado em centavos (meio centavo para cima) no momento do cálculo · total = soma exata das linhas', 'Comissão por vendedor; a receber por proposta; imposto = 15% do a receber da unidade, rateado entre as propostas centavo a centavo; consolidado = soma das unidades.')
     + regra('A receber · vitalício', 'Vitalício do mês = Σ (valor mensal × % de vitalício) dos contratos ativos depois da última parcela de agenciamento', 'Parcela = meses desde o início do contrato + 1. Cancelados saem a partir do mês do cancelamento. Comparado com o recebido dos relatórios das operadoras.')
-    + regra('Comissão do vendedor', 'Comissão = produção do mês × percentual da faixa atingida', 'O percentual incide sobre toda a produção. Sem médias históricas.')
+    + regra('Comissão do vendedor', 'Faixa = pela produção total do mês (projeto + fora) · Comissão fora = produção fora do projeto × percentual da faixa', 'Sem médias históricas.')
     + '</div>';
   document.getElementById('v-reg').innerHTML = h;
 }

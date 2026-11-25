@@ -5,29 +5,21 @@ raiz = pathlib.Path(__file__).resolve().parent.parent
 logo = base64.b64encode((raiz / 'assets/logo-optas.png').read_bytes()).decode()
 DATA = '25/11/2026'
 itens = [
- ("Regras de negócio","alta","Projeto Hapvida conta na faixa da unidade?","Hoje a faixa do vendedor (Consolação 30%/50%, Mogi 20% a 50%) é calculada só sobre a produção FORA do projeto; o projeto paga 15% + valor por vida. A produção do projeto também deve contar para atingir a faixa?","Sim (soma para a faixa) / Não (como está)","Muda a comissão de quem vende projeto e fora."),
- ("Regras de negócio","média","Vitalício entra no lucro?","Hoje o vitalício aparece separado e não soma no lucro bruto/líquido. Deve somar (com 15% de imposto)?","Sim / Não","Muda lucro bruto, líquido e margens."),
- ("Regras de negócio","média","Reserva de marketing não usada","A verba que sobrar no mês passa para o mês seguinte ou zera no fechamento?","Acumula / Zera","Muda o saldo disponível para investir."),
- ("Regras de negócio","média","Feriados e recessos","Dias sem expediente: aniversário de São Paulo, aniversário de Mogi, Carnaval, Corpus Christi, 24/12, 31/12, recesso de fim de ano.","Aba “Feriados e recessos” da planilha","Muda VR/VT de cada mês."),
- ("Regras de negócio","baixa","Encargos da provisão (34,8%)","Validação da contabilidade: INSS 20% + RAT 1% + Terceiros 5,8% + FGTS 8% sobre 13º e férias.","Confirmado / valores corretos","Muda a provisão mensal (R$ 1.623,15)."),
- ("Regras de negócio","baixa","Sócias recebem VR/VT?","Hoje o VR/VT por pessoa é dividido só pelos CLT (5 e 4).","Sim / Não","Muda o valor por pessoa."),
- ("Decisões que tomei e preciso que você confirme","média","Investimento sem unidade","Quando o investimento não diz se é de Mogi ou Consolação, divido pela produção de cada unidade.","Confirmo / outra regra","Muda o lucro líquido de cada unidade."),
- ("Decisões que tomei e preciso que você confirme","média","Meta “não fechar no vermelho e investir”","Usa a reserva de marketing (15% da produção), não o valor realmente investido.","Confirmo / usar o investido","Muda o valor da segunda meta."),
- ("Decisões que tomei e preciso que você confirme","média","Retorno do ROI","Retorno = comissão total contratada (todas as parcelas) das vendas da campanha.","Confirmo / outra base","Muda o ROI."),
- ("Dados para os números ficarem reais","alta","Vendas de 2026, venda a venda","Cada venda: data, unidade, vendedor, Projeto Hapvida (sim/não), operadora, modalidade, produto/condição, valor mensal, situação, nº do contrato, campanha/origem, cliente, CPF/CNPJ, vidas e data de nascimento do titular (PF/adesão).","Aba “Vendas 2026” da planilha","Base de tudo: a receber por parcela, comissões, vidas do projeto, ROI, gráficos."),
- ("Dados para os números ficarem reais","alta","Carteira ativa","Todos os contratos rodando (de qualquer ano): nº, operadora, modalidade, valor atual, data de início, situação.","Aba “Carteira ativa” da planilha","Parcelas que ainda entram e vitalício previsto."),
- ("Dados para os números ficarem reais","alta","Relatórios de vitalício recebido","Quanto entrou de vitalício por operadora em cada mês.","Aba “Vitalício recebido” ou os relatórios das operadoras","Comparação previsto × recebido."),
- ("Dados para os números ficarem reais","média","Custos reais de cada mês","Salários, VR, VT, operação e outros custos de janeiro a dezembro, por unidade.","Aba “Custos mensais” (outubro já preenchido)","Lucro real de cada mês do ano."),
- ("Dados para os números ficarem reais","média","Investimentos em marketing de 2026","Cada investimento: data, campanha, valor (e unidade, se houver).","Aba “Investimentos mkt” ou escrever no painel","Lucro líquido e ROI reais."),
- ("Dados para os números ficarem reais","baixa","Equipe","Admissões e saídas de 2026.","Aba “Equipe” da planilha","Quantas pessoas havia em cada mês."),
- ("Acessos e integração","alta","CRM (PipeRun)","Acesso à API do PipeRun para trazer as vendas com campanha/origem, vidas e cliente automaticamente. A chave é cadastrada de forma segura no ambiente, nunca pelo chat.","Liberar acesso / token de API","Vendas sem digitação; ROI automático."),
- ("Acessos e integração","alta","Planilha Google","Link da planilha onde a equipe registra as vendas hoje.","Link compartilhado","O painel lê os dados direto da planilha."),
- ("Acessos e integração","média","Documentação dos clientes","Onde ficam os documentos dos clientes (para ler a data de nascimento dos titulares).","Pasta / sistema e forma de acesso","Prevent Senior 0 a 18 anos não comissiona."),
- ("Acessos e integração","média","Projeto do Apps Script","Acesso ao projeto do painel TV atual para publicar o painel novo, com as chaves OPTAS_KEY e OPTAS_TV_KEY.","Compartilhar o projeto","Painel publicado e atualizando sozinho."),
+ ("Dados para os números ficarem reais","alta","Fechamento de folha de cada mês (jan a out)","Relatório mensal com cada venda (vendedor, operadora, modalidade, produto, vidas, valor, cliente, CPF/CNPJ, projeto sim/não) e o que foi pago a cada vendedor.","Arquivo do fechamento (Excel, PDF ou CSV) mês a mês","Preenche a receber, comissões e lucro de janeiro a outubro; confere o que foi pago × a regra."),
+ ("Dados para os números ficarem reais","alta","Vitalício recebido, mês a mês e proposta a proposta","O que entrou de vitalício em cada mês, por contrato.","Relatórios das operadoras","Vitalício real no lucro de cada mês e carteira ativa."),
+ ("Dados para os números ficarem reais","alta","Agenciamento recebido (o que entrou, atrasou e falta)","Relatórios de recebimento das operadoras, para trocar o previsto pela grade pelo que realmente entrou.","Relatórios de recebimento","Caixa real, atrasos e cancelamentos."),
+ ("Dados para os números ficarem reais","média","Data de nascimento nas vendas Prevent Senior","Só para as vendas Prevent: titular de 0 a 18 anos não comissiona.","Coluna no fechamento ou documentação do cliente","Comissão Prevent correta."),
+ ("Dados para os números ficarem reais","média","Campanha de cada venda","Qual venda veio do SMS (ou de outra campanha), para o ROI.","Campo no ERP/CRM ou no fechamento","ROI do SMS por venda."),
+ ("Acessos e integração","alta","ERP","Acesso ao ERP para buscar vendas, recebimentos e vitalícios direto da fonte.","Usuário/token (cadastrado de forma segura, nunca pelo chat)","Painel atualizado sem digitação."),
+ ("Acessos e integração","alta","Projeto do Apps Script","Acesso ao projeto do painel atual para publicar, com as chaves OPTAS_KEY e OPTAS_TV_KEY.","Compartilhar o projeto","Painel publicado e atualizando sozinho."),
+ ("Regras de negócio","baixa","Carnaval","Carnaval é ponto facultativo em SP. A Optas trabalha (hoje considerado dia útil)?","Trabalha / não trabalha","VR/VT de fevereiro."),
+ ("Regras de negócio","baixa","Encargos da provisão (34,8%)","Validação da contabilidade: INSS 20% + RAT 1% + Terceiros 5,8% + FGTS 8% sobre 13º e férias.","Confirmado / valores corretos","Provisão mensal (R$ 1.623,15)."),
+ ("Decisões que tomei e preciso que você confirme","média","Retorno do ROI","Retorno = comissão total contratada (todas as parcelas) das vendas da campanha.","Confirmo / outra base","ROI."),
+ ("Decisões que tomei e preciso que você confirme","baixa","Investimento sem unidade","Quando o investimento não diz a unidade, divido pela produção de cada unidade. (Os SMS de 2026 são todos de Mogi.)","Confirmo / outra regra","Lucro líquido por unidade."),
 ]
-registrado = ("Grade de Comissão V3 (02/10/2026) completa, com Amil PME 1% de vitalício e Hapvida/NotreDame PME 290%; Projeto Hapvida 100% em parcela única; "
-  "adesão sem a 1ª parcela (taxa); vitalício depois da última parcela; Prevent 0 a 18 anos sem comissão; vendedor no projeto 15% + valor por vida a partir de 25 vidas; "
-  "caixa por parcelas; custos de outubro; VR/VT por dia útil; faixas dos vendedores de Consolação e Mogi.")
+registrado = ("Grade de Comissão V3 completa (Amil PME 1% de vitalício; Hapvida/NotreDame PME 290%); Projeto Hapvida 100%; adesão sem a taxa; vitalício depois da última parcela e somando no lucro; Prevent 0 a 18 sem comissão; "
+  "vendedor: faixa pela produção total, projeto 15% + valor por vida a partir de 25; reserva que passa para o mês seguinte; feriados de SP capital; sócios sem VR/VT; custos replicados de outubro; "
+  "SMS de Mogi jan–out (R$ 87.926,48); novembro sem investimento.")
 grupos = []
 for g in [x[0] for x in itens]:
     if g not in grupos: grupos.append(g)
@@ -64,7 +56,7 @@ page = f'''<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta n
 <div class="resumo"><span><b>{cont['alta']}</b> de prioridade alta</span><span><b>{cont['média']}</b> média</span><span><b>{cont['baixa']}</b> baixa</span></div></div>
 {cards}<div class="ft">Já registrado: {H.escape(registrado)} As marcações ficam salvas neste navegador.</div></div>
 <script>
-var K='optas_falta_v2',S={{}};try{{S=JSON.parse(localStorage.getItem(K)||'{{}}')}}catch(e){{}}
+var K='optas_falta_v3',S={{}};try{{S=JSON.parse(localStorage.getItem(K)||'{{}}')}}catch(e){{}}
 function upd(){{var t=0,o=0;document.querySelectorAll('.item').forEach(function(el){{t++;var on=!!S[el.dataset.id];el.classList.toggle('ok',on);el.querySelector('input').checked=on;if(on)o++;}});document.getElementById('cont').textContent=o+' de '+t;document.getElementById('bar').style.width=(t?o/t*100:0)+'%';}}
 document.querySelectorAll('.item').forEach(function(el){{el.querySelector('input').addEventListener('change',function(e){{S[el.dataset.id]=e.target.checked;try{{localStorage.setItem(K,JSON.stringify(S))}}catch(x){{}}upd();}});}});upd();
 </script></body></html>'''

@@ -1,6 +1,6 @@
 # OPTAS — DOCUMENTO-MESTRE DE GESTÃO, FINANCEIRO, COMERCIAL E ROI
 
-**Versão:** 4.1  
+**Versão:** 4.2  
 **Data de referência:** 23/11/2026  
 **Finalidade:** Consolidar as regras de negócio, informações financeiras, cálculos, indicadores, integrações e pendências para desenvolvimento do painel gerencial da Optas.
 
@@ -508,7 +508,33 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
 2. **Adesão:** a 1ª parcela (taxa de angariação) **não vem para a Optas**.
 3. **Vitalício começa depois da última parcela de agenciamento** (ex.: Bradesco PME a partir da 5ª; Amil PME a partir da 4ª).
 4. **Prevent Senior não comissiona titulares de 0 a 18 anos**; a idade vem da data de nascimento do cliente (documentação). Sem data: usa 19+ e gera alerta.
-5. **Vendedor no Projeto Hapvida:** 15% da mensalidade + valor por vida sobre todas as vidas do mês quando atinge 25 (25 a 34 → R$ 20; 35 a 49 → R$ 25; 50+ → R$ 35); abaixo de 25 vidas não paga por vida. Vendas fora do projeto seguem a faixa da unidade calculada sobre a produção fora do projeto (a confirmar).
+5. **Vendedor no Projeto Hapvida:** 15% da mensalidade + valor por vida sobre todas as vidas do mês quando atinge 25 (25 a 34 → R$ 20; 35 a 49 → R$ 25; 50+ → R$ 35); abaixo de 25 vidas não paga por vida. Vendas fora do projeto seguem a faixa da unidade (ver 12.23).
+
+## 12.23. Respostas de 25/11/2026, segunda rodada (v4.2)
+
+1. **Faixa do vendedor:** a produção do Projeto Hapvida **conta para a meta toda**. A faixa da unidade é atingida com a produção total (projeto + fora); o percentual incide sobre as vendas fora do projeto. O projeto continua pagando 15% + valor por vida.
+2. **Vitalício entra no lucro:** o vitalício do mês soma no a receber (com 15% de imposto). Usa o **recebido** quando o relatório do mês foi lançado; antes disso, o previsto da carteira. Por unidade: pela unidade do contrato; sem unidade, rateado pelo vitalício previsto de cada unidade.
+3. **Reserva de marketing não usada passa para o mês seguinte** (fôlego). Limite do mês = 15% da produção + Σ (reserva − investido) dos meses anteriores do ano com produção conhecida. O que passou do limite reduz o saldo.
+4. **Feriados:** a Optas segue São Paulo capital: nacionais + Sexta-feira Santa + Aniversário de SP (25/1) + Revolução Constitucionalista (9/7) + Corpus Christi. Carnaval não entra (ponto facultativo) até decisão em contrário.
+5. **Sócios não recebem VR nem VT** (o valor por pessoa já é dividido só pelos CLT).
+6. **Custos de janeiro a setembro:** replicam a estrutura atual (outubro), com VR/VT pelos dias úteis de cada mês.
+7. **Investimento em marketing de 2026:** só os envios de SMS (Kolmeya) do centro de custos **NOVO OPTAS MOGI**, campanha "SMS", unidade Mogi. 37 envios de janeiro a outubro, conferidos envio × R$ 0,0530; arredondamento por mês para o total bater com o relatório. Novembro sem investimento; de dezembro em diante o usuário lança no painel. Centros de custo 4.0 CONSULTORIA, CONSÓRCIO e NOVO OPTAS CONSOLAÇÃO ficam fora.
+
+| Mês | Investido (SMS Mogi) |
+|---|---:|
+| Jan | 4.907,06 |
+| Fev | 10.202,34 |
+| Mar | 12.139,44 |
+| Abr | 8.018,16 |
+| Mai | 5.613,44 |
+| Jun | 7.186,38 |
+| Jul | 18.612,86 |
+| Ago | 17.119,37 |
+| Set | 1.774,81 |
+| Out | 2.352,62 |
+| **Total** | **87.926,48** |
+
+8. **Fonte dos dados reais:** fechamento de folha mensal (vendas e vitalícios recebidos), relatórios de recebimento (o que entrou, atrasou e falta receber), acesso ao Apps Script e ao ERP.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
@@ -518,7 +544,7 @@ Distribuição de lucros entre W3G e sócias; média de comissões para provisio
 
 1. **Tabelas das operadoras:** percentuais de MedSênior, Prevent, Santa Helena, Sobam, Supermed, Qualicorp, Ana Costa, São Cristóvão e Trasmontano (agenciamento, vitalício, PF/PME, diferenças por modalidade) e modalidade das sete já informadas.
 2. **Vitalício:** início na 4ª parcela para todas? Base: valor original ou atualizado? Continuidade igual para todas as modalidades?
-3. **Acúmulo da reserva de marketing:** acumula para o mês seguinte ou expira no fechamento?
+3. ~~Acúmulo da reserva de marketing~~ — resolvido em 12.23 (passa para o mês seguinte).
 4. **Base definitiva do ROI:** componentes do retorno líquido atribuído.
 5. **Categorias de investimento diário:** tráfego pago, compra de leads, campanhas comerciais, outras ações de captação (a validar).
 6. **Origem dos contratos:** a integração disponibilizará origem, campanha e investimento correspondente?
