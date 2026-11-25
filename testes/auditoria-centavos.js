@@ -13,7 +13,8 @@ const path = require('path');
       const U = REGRAS.unidades.map(u => R.unidades[u]);
       // vendedores → unidades → consolidado
       U.forEach(u => { const n = u.custos.unidade, vs = R.vendedores.filter(v => v.unidade === n);
-        ok(n + ' produção = Σ vendedores', u.producao, vs.reduce((t, v) => t + v.producao, 0));
+        ok(n + ' produção = projeto (Σ vendedores) + fora (ERP no mês atual)', u.producao, vs.reduce((t, v) => t + v.prodHap, 0) + (u.foraERP ? ERP.filter(c => c.data_venda.slice(0, 7) === R.mes && unidadeCanon(c.unidade) === n && statusProposta(c) !== 'cancelada').reduce((t, c) => t + c.valor_mensal, 0) : vs.reduce((t, v) => t + v.prodFora, 0)));
+        if (u.foraERP) ok(n + ' 1ª parcela = projeto + fora do ERP', u.primeira, (u.primeiraProjeto || 0) + u.foraERP.primeira);
         ok(n + ' comissões = Σ vendedores', u.comissao, vs.reduce((t, v) => t + v.comissao, 0));
         vs.forEach(v => {
           // fora do projeto: faixa da unidade sobre a produção total, aplicada à produção fora · projeto: 15% + valor por vida a partir de 25 vidas
@@ -64,9 +65,16 @@ const path = require('path');
       if (!DEMO && ERP.length) Object.keys(ESTADO.fechamentos).filter(k => ESTADO.fechamentos[k].fonte === 'ERP').forEach(k => { const f = ESTADO.fechamentos[k];
         REGRAS.unidades.forEach(u => { const x = f.unidades[u]; ok(k + ' ' + u + ' a receber ERP', x.recebidas, x.primeira + x.anteriores + x.vitalicio + (x.outrasReceitas || 0)); ok(k + ' ' + u + ' outras receitas', x.outrasReceitas || 0, lancExtratos(k, u).receitas);
           const cad = ERP.filter(c => c.data_venda.slice(0, 7) === k && unidadeCanon(c.unidade) === u && statusProposta(c) !== 'cancelada');
-          ok(k + ' ' + u + ' produção ERP', x.producao, cad.reduce((t, c) => t + c.valor_mensal, 0)); ok(k + ' ' + u + ' 1ª parcela ERP', x.primeira, cad.reduce((t, c) => t + (c.tabela.valores[0] || 0), 0)); });
+          ok(k + ' ' + u + ' produção ERP', x.producao, cad.reduce((t, c) => t + c.valor_mensal, 0)); ok(k + ' ' + u + ' 1ª parcela ERP', x.primeira, cad.reduce((t, c) => t + valorParcelaERP(c, 0, c.tabela.valores[0] || 0), 0)); });
         ok(k + ' a receber ERP = Σ unidades', f.recebidas, REGRAS.unidades.reduce((t, u) => t + f.unidades[u].recebidas, 0)); });
       // extratos: cada extrato fecha (linhas = ato + parcelas; acumulado + comissões + créd/déb = líquido)
+      // livro do a receber: cada parcela recebida = Σ linhas do extrato; perdida = mais de 90 dias depois da prevista; previstas encadeadas de 30 em 30 dias
+      if (!DEMO && ERP.length && extratosOn()) { const Lv = livroReceber(), hoje = hojeISO();
+        Lv.itens.forEach(it => { const id = it.c.id + '|' + it.parcela;
+          if (it.situacao === 'recebida') ok('livro ' + id + ' recebido', it.valor, EXTRATOS.linhas.filter(l => l.erp === it.c.id && l.parc === it.parcela).reduce((t, l) => t + l.bruto, 0));
+          else { const d = diasEntre(it.prevista, hoje); if ((d <= 0 ? 'em dia' : d < 90 ? 'atrasada' : 'perdida') !== it.situacao) falhas.push('livro ' + id + ' situação'); } });
+        const dp = deParaERP(), tudo = Lv.itens.reduce((t, it) => t + it.valor, 0); ok('livro = recebidas + em dia + atrasadas + perdidas', tudo, dp.vPagas + dp.vEmDia + dp.vAtrasadas + dp.vPerdidas);
+        const ar = itensAReceber(); ok('aba A receber = em dia + atrasadas (+ projeto)', ar.reduce((t, x) => t + x.valor, 0), dp.vEmDia + dp.vAtrasadas + ar.filter(x => x.tipo === 'projeto').reduce((t, x) => t + x.valor, 0)); }
       if (extratosOn()) EXTRATOS.extratos.forEach(x => { const L = EXTRATOS.linhas.filter(l => l.extrato === x.codigo), C = EXTRATOS.creditos_debitos.filter(c => c.extrato === x.codigo);
         ok('extrato ' + x.codigo + ' linhas', L.reduce((t, l) => t + l.liquido, 0), x.comissoes_liquido); ok('extrato ' + x.codigo + ' créd/déb', C.reduce((t, c) => t + c.liquido, 0), x.creditos_debitos);
         ok('extrato ' + x.codigo + ' líquido', x.acumulado + x.comissoes_liquido + x.creditos_debitos, x.liquido); });
@@ -91,7 +99,7 @@ const path = require('path');
       const ro = R.roi;
       if (ro.modo === 'geral') { ok('ROI geral investido = investido do mês', ro.invAtrib, R.investido);
         const rts = REGRAS.unidades.map(u => R.unidades[u].contratado); if (rts.some(x => x != null)) ok('ROI geral retorno = Σ contratado das unidades', ro.retorno, rts.reduce((t, x) => t + (x || 0), 0));
-        if (R.ag.base) ok('ROI geral retorno = contratado de todas as vendas', ro.retorno, R.ag.contratado);
+        if (R.ag.base) ok('ROI geral retorno = contratado de todas as vendas (projeto + fora do ERP)', ro.retorno, R.ag.contratado + REGRAS.unidades.reduce((t, u) => t + (R.unidades[u].foraERP ? R.unidades[u].foraERP.contratado : 0), 0));
         if (ro.invAtrib > 0 && ro.retorno != null && Math.abs(ro.roi - (ro.retorno - ro.invAtrib) / ro.invAtrib) > 1e-12) falhas.push('ROI geral');
         REGRAS.unidades.forEach(u => { const x = ro.porUnidade[u]; ok(u + ' ROI investido', x.investido, R.invUnidade[u]); }); }
       else if (ro.invAtrib > 0) { if (Math.abs(ro.roi - (ro.retorno - ro.invAtrib) / ro.invAtrib) > 1e-12) falhas.push('ROI'); ok('retorno = Σ campanhas', ro.retorno, Object.values(ro.porCamp).reduce((t, g) => t + g.retorno, 0)); }

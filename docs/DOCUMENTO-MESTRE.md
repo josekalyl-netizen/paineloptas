@@ -561,6 +561,16 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
    - **Empréstimos (fora do resultado):** "Retiradas Joana e boleto apartamento" (+R$ 64.773,05, maio/2026) = empréstimo a abater da operação; aluguel Verus −R$ 22.744,32 (março, empréstimo) e +R$ 22.744,32 (maio, quitado).
 13. **Fonte dos dados reais:** fechamento de folha mensal (vendas e vitalícios recebidos), relatórios de recebimento (o que entrou, atrasou e falta receber), acesso ao Apps Script e ao ERP.
 
+
+## 12.24. Decisões de 25/11/2026, terceira rodada (v4.3)
+
+1. **A receber é uma simulação de 90 dias:** cada parcela do ERP tem data prevista = 30 dias depois do último pagamento da proposta (sem pagamento: 30 dias depois do cadastro; parcelas seguintes de 30 em 30 dias). Recebida (achada no extrato) → entra no mês dela pelo valor que veio no extrato. Não recebida: em dia até a data prevista; atrasada até 90 dias depois; **passados 90 dias sem receber, sai da conta** e o mês fica com o que realmente entrou.
+2. **Atrasado vai para o próximo recebimento:** na aba **A receber**, toda parcela atrasada aparece no mês atual, proposta a proposta, com data prevista e dias de atraso. O lucro de cada mês continua contando a parcela no mês dela enquanto está dentro dos 90 dias (sem duplicar).
+3. **Projeto Hapvida:** entra como a receber no mês (100% da 1ª mensalidade), ainda sem fonte de recebimento; previsto 30 dias depois do fim do mês da venda. Passa pela mesma regra de atrasado e 90 dias.
+4. **Salários sem mês na descrição:** ficam no mês do desconto (sem retroativo).
+5. **Vendas fora do projeto no mês atual:** só as cadastradas no ERP (produção, 1ª parcela, contratado e reserva). O PipeRun fica só para a comissão de cada vendedor até a integração completa.
+6. **Empréstimo (retiradas da Joana, boleto do apartamento, aluguel Verus):** fora do sistema, pago por fora; o painel ignora esses lançamentos.
+
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 
 Distribuição de lucros entre W3G e sócias; média de comissões para provisionamento da folha; controle individual de salários fixos; CPL e ROI avançado sem atribuição confiável; conciliação detalhada de cada pagamento das operadoras; controle avançado de estornos, cancelamentos, descontos e recebimentos parciais.

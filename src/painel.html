@@ -328,6 +328,7 @@ html,body{overflow-x:hidden}
     <button class="tab" data-v="mogi">Mogi</button>
     <button class="tab" data-v="ano">Ano</button>
     <button class="tab" data-v="vit">Vitalício</button>
+    <button class="tab" data-v="arec">A receber</button>
     <button class="tab" data-v="rec">Recebimentos</button>
     <button class="tab" data-v="fin">Financeiro</button>
     <button class="tab" data-v="com">Comercial</button>
@@ -344,6 +345,7 @@ html,body{overflow-x:hidden}
   <section class="view" id="v-mogi"></section>
   <section class="view" id="v-ano"></section>
   <section class="view" id="v-vit"></section>
+  <section class="view" id="v-arec"></section>
   <section class="view" id="v-rec"></section>
   <section class="view" id="v-fin"></section>
   <section class="view" id="v-com"></section>
@@ -362,7 +364,7 @@ html,body{overflow-x:hidden}
    Alterar aqui apenas quando o usuário confirmar novas regras.
    ===================================================================== */
 var REGRAS = {
-  versao: 'v4.2 · 25/11/2026',
+  versao: 'v4.3 · 25/11/2026',
   unidades: ['Consolação', 'Mogi'],
   // 3. Custos fixos (salários brutos JÁ incluem o PJ das sócias — não somar de novo)
   custos: {
@@ -514,7 +516,7 @@ var CD_TIPOS = [
   ['H', 'Adiantamento de 1ª parcela (AD nª PARC)', /^AD \d/, 'custo'],
   ['S', '10% sobre parcela', /^10%.*PARC/, 'custo'],
   ['G', 'Vale', /VALE/, 'custo'],
-  ['V', 'Empréstimo (retiradas Joana · aluguel Verus)', /RETIRADA|ALUGUEL/, 'emprestimo'],
+  ['V', 'Empréstimo (retiradas Joana · aluguel Verus) — pago por fora, o sistema não considera', /RETIRADA|ALUGUEL/, 'ignora'],
   ['D', 'Boleto de cliente', /BOLETO/, 'custoOp'],
   ['F', 'Acerto de parcela / folha', /ACERTO/, 'receita'],
   ['K', 'Rescisão', /RESCIS/, 'custo'],
@@ -876,10 +878,12 @@ function calcular() {
     if (pjH.ag != null) { ag.valor = r2(vHap * pjH.parc[0]); ag.contratado = r2(vHap * pjH.ag); ag.base = vHap; ag.vit = 0; }
     else { ag.naoCalc += vHap; ag.naoCalcQtd += D.geral.hap.qtd; opSemRegra['Projeto Hapvida'] = 1; }
     ag.porOperadora['Projeto Hapvida'] = { valor: vHap, qtd: D.geral.hap.qtd, ag: pjH.ag != null ? ag.valor : null, contratado: ag.contratado, vit: 0 };
-    ag.porOperadora['Fora do projeto (operadora não identificada)'] = { valor: vFora, qtd: D.geral.fora.qtd, ag: null, vit: null };
-    ag.naoCalc += vFora; ag.naoCalcQtd += D.geral.fora.qtd; ag.semMod = vFora;
-    semMod = D.geral.fora.qtd || 0;
-    semOrigem = (D.geral.hap.qtd || 0) + (D.geral.fora.qtd || 0); semOrigemValor = vHap + vFora;
+    var foraERP = !DEMO && ERP.length > 0;   // vendas fora do projeto do mês vêm do ERP (decisão de 25/11/2026)
+    if (foraERP) vFora = 0;
+    else { ag.porOperadora['Fora do projeto (operadora não identificada)'] = { valor: vFora, qtd: D.geral.fora.qtd, ag: null, vit: null };
+    ag.naoCalc += vFora; ag.naoCalcQtd += D.geral.fora.qtd; ag.semMod = vFora; }
+    semMod = foraERP ? 0 : D.geral.fora.qtd || 0;
+    semOrigem = (D.geral.hap.qtd || 0) + (foraERP ? 0 : D.geral.fora.qtd || 0); semOrigemValor = vHap + vFora;
     R.alertas.push({ sev: 'er', cod: 'GRAN', titulo: 'A integração entrega produção agregada por vendedor, não por contrato',
       texto: 'O painel gerencial informa totais (Projeto Hapvida / fora do projeto). Não há identificação individual de venda, contrato, operadora, modalidade nem origem.',
       impacto: 'Agenciamento e vitalício por operadora, produção PF/PME, atribuição de contratos a investimentos (ROI) e preservação da tabela vigente por venda.',
@@ -921,21 +925,29 @@ function calcular() {
   var vitLivre = r2((R.vit.recebido != null ? R.vit.recebidoSemUnidade : 0) + (REGRAS.unidades.some(function (u) { return R.vitFonteU[u] === 'previsto'; }) ? R.vit.semUnidade : 0)), prevTot = sum(REGRAS.unidades, function (u) { return R.vit.porUnidade[u] || 0; });
   ratear(vitU, vitLivre, function (o) { return prevTot ? vitLivre * (R.vit.porUnidade[o.u] || 0) / prevTot : (pTot ? vitLivre * prodU[o.u] / pTot : vitLivre / REGRAS.unidades.length); }, 'x');
   R.vitUnidade = {}; REGRAS.unidades.forEach(function (u, k) { R.vitUnidade[u] = r2((vitBaseU[u] || 0) + vitU[k].x); });
+  // Vendas fora do projeto no mês atual: só as cadastradas no ERP (decisão de 25/11/2026); o PipeRun fica só para a comissão de cada vendedor
+  var erpAtual = DEMO || !ERP.length ? null : erpMes(R.mes);
+  R.foraFonte = erpAtual ? 'ERP' : 'painel gerencial';
   REGRAS.unidades.forEach(function (u) {
     var vs = R.vendedores.filter(function (v) { return v.unidade === u; });
-    var U = R.unidades[u];
+    var U = R.unidades[u], eu = erpAtual ? erpAtual.porUnidade[u] : null;
     U.vendedores = vs.length;
-    U.producao = soma2(vs, function (v) { return v.producao; });
     U.prodHap = soma2(vs, function (v) { return v.prodHap; });
-    U.prodFora = soma2(vs, function (v) { return v.prodFora; });
+    U.prodForaPainel = soma2(vs, function (v) { return v.prodFora; });
+    U.prodFora = eu ? eu.producao : U.prodForaPainel;
+    U.foraERP = eu ? { n: eu.n, producao: eu.producao, primeira: eu.primeira, contratado: eu.contratado } : null;
+    U.producao = r2(U.prodHap + U.prodFora);
     U.comissao = soma2(vs, function (v) { return v.comissao; });
     var eq = D && D.equipes ? D.equipes.filter(function (e) { return unidadeCanon(e.nome) === u; })[0] : null;
     var pjU = projeto('Projeto Hapvida');
     U.primeira = eq && pjU.ag != null ? r2((eq.hap.valor || 0) * pjU.parc[0]) : null;
     if (usarContratos) U.primeira = soma2(ag.propostas.filter(function (p) { return p.unidade === u && p.aReceber != null; }), function (p) { return p.aReceber; });
+    U.primeiraProjeto = U.primeira;
+    if (eu) U.primeira = r2((U.primeira || 0) + eu.primeira);
     U.anteriores = R.caixaAnt.porUnidade[u] || 0;
     // comissão contratada (todas as parcelas) das vendas do mês: retorno do ROI geral
     U.contratado = usarContratos ? soma2(ag.propostas.filter(function (p) { return p.unidade === u && p.agTotal != null; }), function (p) { return p.agTotal; }) : (eq && pjU.ag != null ? r2((eq.hap.valor || 0) * pjU.ag) : null);
+    if (eu) U.contratado = r2((U.contratado || 0) + eu.contratado);
     U.leads = eq ? eq.hap.leads : null; U.vidas = eq ? eq.hap.vidas : null; U.qtd = eq ? (eq.hap.qtd + eq.fora.qtd) : null;
     // Base única (v1.9): a receber das operadoras = contratos efetivos × comissão de cada operadora
     // A receber no mês = 1ª parcela das vendas do mês + parcelas das vendas dos meses anteriores
@@ -990,6 +1002,7 @@ function parcelasAnteriores(mes) {
     if (/cancel/i.test(c.situacao || '') && (!c.cancelado_em || String(c.cancelado_em).slice(0, 7) <= mes)) return;
     var rg = regraVenda(c); if (!rg || rg.ag == null) return;
     var k = mesesEntre(ini, mes), pr = parcelasReais(r2(+c.valor_mensal || 0), rg), v = pr[k]; if (!v) return;
+    v = valorParcelaERP(c, k, v); if (!v) return;
     var u = unidadeCanon(c.unidade) || REGRAS.unidades[0], nome = rg.projeto ? rg.nome : rg.nome;
     o.total = r2(o.total + v); o.porUnidade[u] = r2((o.porUnidade[u] || 0) + v); o.porOperadora[nome] = r2((o.porOperadora[nome] || 0) + v);
     o.itens.push({ c: c, parcela: k + 1, valor: v, unidade: u });
@@ -1095,7 +1108,7 @@ function erpMes(mes) {
   ERP.forEach(function (c) {
     if ((c.data_venda || '').slice(0, 7) !== mes || statusProposta(c) === 'cancelada') return;
     var u = o.porUnidade[unidadeCanon(c.unidade)]; if (!u) return;
-    var pr = parcelasReais(c.valor_mensal, regraVenda(c));
+    var pr = parcelasReais(c.valor_mensal, regraVenda(c)).map(function (v, k) { return valorParcelaERP(c, k, v); });
     u.n++; o.n++; u.producao = r2(u.producao + c.valor_mensal); u.primeira = r2(u.primeira + (pr[0] || 0)); u.contratado = r2(u.contratado + soma2(pr, function (x) { return x; })); u.vidas += +c.vidas || 0;
   });
   REGRAS.unidades.forEach(function (u) { var x = o.porUnidade[u]; x.outrasReceitas = lancExtratos(mes, u).receitas; x.recebidas = r2(r2(r2(x.primeira + x.anteriores) + x.vitalicio) + x.outrasReceitas); });
@@ -1136,7 +1149,7 @@ function render() {
   var nAl = R.alertas.filter(function (a) { return a.sev !== 'in'; }).length;
   document.getElementById('nAlertas').textContent = nAl; document.getElementById('nAlertas').style.display = nAl ? '' : 'none';
   registrarMesAtual();
-  vGeral(); REGRAS.unidades.forEach(vUnidade); vAno(); vVit(); vRec(); vFin(); vCom(); vRoi(); vAle(); vPen(); vReg();
+  vGeral(); REGRAS.unidades.forEach(vUnidade); vAno(); vVit(); vARec(); vRec(); vFin(); vCom(); vRoi(); vAle(); vPen(); vReg();
 }
 
 function card(lbl, v, m, opt) { opt = opt || {}; return '<div class="box ' + (opt.box || '') + '"><div class="lbl">' + lbl + (opt.tag || '') + '</div><div class="v ' + (opt.cls || '') + '">' + v + '</div>' + (m ? '<div class="m">' + m + '</div>' : '') + (opt.extra || '') + '</div>'; }
@@ -1433,28 +1446,95 @@ function calcVitalicio(mes) {
 // ---------- Recebimentos: extratos de comissão × propostas do ERP ----------
 function mesesEntreISO(a, b) { return (+b.slice(0, 4) - +a.slice(0, 4)) * 12 + (+b.slice(5, 7) - +a.slice(5, 7)); }
 function deParaERP() {
-  var o = { pagas: 0, vPagas: 0, atrasadas: [], aVencer: 0, vAVencer: 0, ult: {}, semPagamento: 0 };
+  var o = { pagas: 0, vPagas: 0, emDia: 0, vEmDia: 0, atrasadas: [], perdidas: [], ult: {} };
   if (!extratosOn()) return o;
   EXTRATOS.extratos.forEach(function (x) { if (!o.ult[x.unidade] || x.mes > o.ult[x.unidade]) o.ult[x.unidade] = x.mes; });
-  var pago = {}; EXTRATOS.linhas.forEach(function (l) { if (l.erp) { pago[l.erp + '|' + l.parc] = l; } });
-  ERP.forEach(function (c) {
-    if (statusProposta(c) === 'cancelada') return;
-    var u = unidadeCanon(c.unidade), ult = o.ult[u], vals = (c.tabela && c.tabela.valores) || [], algum = false;
-    vals.forEach(function (v, k) {
-      if (!v) return; var l = pago[c.id + '|' + (k + 1)];
-      if (l) { o.pagas++; o.vPagas = r2(o.vPagas + l.bruto); algum = true; return; }
-      var venc = addMes(c.data_venda.slice(0, 7), k);
-      // a W3G paga, em geral, 2 a 3 meses depois do vencimento: vencida há 3 meses ou mais do último extrato e não paga = atrasada
-      if (ult && mesesEntreISO(venc, ult) >= 3) o.atrasadas.push({ c: c, parcela: k + 1, venc: venc, valor: v });
-      else { o.aVencer++; o.vAVencer = r2(o.vAVencer + v); }
-    });
-    if (!algum && vals.some(Boolean) && ult && mesesEntreISO(c.data_venda.slice(0, 7), ult) >= 3) o.semPagamento++;
+  livroReceber().itens.forEach(function (it) {
+    if (it.situacao === 'recebida') { o.pagas++; o.vPagas = r2(o.vPagas + it.valor); }
+    else if (it.situacao === 'em dia') { o.emDia++; o.vEmDia = r2(o.vEmDia + it.valor); }
+    else if (it.situacao === 'atrasada') o.atrasadas.push(it); else o.perdidas.push(it);
   });
-  o.vAtrasadas = soma2(o.atrasadas, function (a) { return a.valor; });
+  o.vAtrasadas = soma2(o.atrasadas, function (a) { return a.valor; }); o.vPerdidas = soma2(o.perdidas, function (a) { return a.valor; });
   return o;
 }
+// ---------- A receber, parcela a parcela (decisões de 25/11/2026) ----------
+// Data prevista: 30 em 30 dias a partir do último pagamento da proposta (sem pagamento: a partir da data de cadastro).
+// Situação: recebida (achada no extrato) · em dia (prevista ainda não chegou) · atrasada (passou da prevista há menos de 90 dias)
+//           · não recebida em 90 dias (o mês da parcela se ajusta ao que entrou: ela sai da conta).
+// Parcela recebida entra no mês pelo valor que realmente veio no extrato.
+function isoMais(iso, dias) { var d = new Date(iso.slice(0, 10) + 'T12:00:00'); d.setDate(d.getDate() + dias); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function diasEntre(a, b) { return Math.round((new Date(b.slice(0, 10) + 'T12:00:00') - new Date(a.slice(0, 10) + 'T12:00:00')) / 864e5); }
+var _livro = null;
+function livroReceber() {
+  var hoje = hojeISO();
+  if (_livro && _livro.hoje === hoje) return _livro;
+  var o = { hoje: hoje, itens: [], porParcela: {} };
+  if (DEMO || !ERP.length) return (_livro = o);
+  var prev = {}, pago = {};
+  if (extratosOn()) {
+    EXTRATOS.extratos.forEach(function (x) { prev[x.codigo] = x.previsao; });
+    EXTRATOS.linhas.forEach(function (l) { if (!l.erp) return; var k = l.erp + '|' + l.parc, g = pago[k] = pago[k] || { bruto: 0, liquido: 0, data: '', extratos: [] }; g.bruto = r2(g.bruto + l.bruto); g.liquido = r2(g.liquido + l.liquido); var d = prev[l.extrato] || (l.mes + '-01'); if (d > g.data) g.data = d; g.extratos.push(l.extrato); });
+  }
+  ERP.forEach(function (c) {
+    if (statusProposta(c) === 'cancelada') return;
+    var vals = (c.tabela && c.tabela.valores) || [], ult = c.data_venda, ini = c.data_venda.slice(0, 7);
+    vals.forEach(function (v, k) {
+      var pg = pago[c.id + '|' + (k + 1)], prevista = isoMais(ult, 30);
+      var it = { c: c, unidade: unidadeCanon(c.unidade), parcela: k + 1, comp: addMes(ini, k), esperado: v, prevista: prevista, valor: v, situacao: '', dias: 0 };
+      if (pg) { it.situacao = 'recebida'; it.recebidaEm = pg.data; it.valor = pg.bruto; it.liquido = pg.liquido; ult = pg.data; }
+      else { ult = prevista; if (!v) return; var d = diasEntre(prevista, hoje); it.dias = d; it.situacao = d <= 0 ? 'em dia' : d < 90 ? 'atrasada' : 'perdida'; }
+      if (!v && !pg) return;
+      o.itens.push(it); o.porParcela[c.id + '|' + (k + 1)] = it;
+    });
+  });
+  return (_livro = o);
+}
+// valor da parcela k (0 = 1ª) de uma proposta do ERP no mês dela: recebido > esperado; não recebida em 90 dias → 0
+function valorParcelaERP(c, k, v) { if (!c || !c.tabela || !c.tabela.erp) return v; var it = livroReceber().porParcela[c.id + '|' + (k + 1)]; if (!it) return v; return it.situacao === 'perdida' ? 0 : it.valor; }
 function addMes(m, n) { var d = new Date(+m.slice(0, 4), +m.slice(5, 7) - 1 + n, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
 function recebidoMes(mes) { if (!extratosOn()) return null; var xs = EXTRATOS.extratos.filter(function (x) { return x.mes === mes; }); return xs.length ? soma2(xs, function (x) { return x.comissoes_liquido; }) : null; }
+// Aba A receber: tudo o que falta entrar, proposta a proposta, com a data prevista
+function itensAReceber() {
+  var L = livroReceber().itens.filter(function (it) { return it.situacao === 'em dia' || it.situacao === 'atrasada'; }).map(function (it) {
+    return { tipo: 'erp', unidade: it.unidade, cliente: it.c.cliente || '', operadora: it.c.operadora + ' · ' + it.c.modalidade, proposta: it.c.numero, cadastro: it.c.data_venda, parcela: it.parcela, comp: it.comp, prevista: it.prevista, valor: it.valor, situacao: it.situacao, dias: it.dias };
+  });
+  // Projeto Hapvida (100% da 1ª mensalidade): ainda sem fonte de recebimento → a receber, previsto 30 dias depois do fim do mês da venda
+  var pj = projeto('Projeto Hapvida'), hoje = hojeISO();
+  if (R && R.vendedores && pj) R.vendedores.forEach(function (v) {
+    if (!v.prodHap) return; var fim = R.mes + '-' + String(diasNoMes(R.mes)).padStart(2, '0'), pv = isoMais(fim, 30), d = diasEntre(pv, hoje);
+    L.push({ tipo: 'projeto', unidade: v.unidade, cliente: 'Vendas de ' + v.nome, operadora: 'Projeto Hapvida', proposta: '—', cadastro: R.mes + '-01', parcela: 1, comp: R.mes, prevista: pv, valor: r2(v.prodHap * pj.parc[0]), situacao: d <= 0 ? 'em dia' : d < 90 ? 'atrasada' : 'perdida', dias: d });
+  });
+  return L.filter(function (x) { return x.situacao !== 'perdida'; });
+}
+function vARec() {
+  var el = document.getElementById('v-arec'); if (!el) return;
+  var L = itensAReceber();
+  if (!L.length) { el.innerHTML = '<div class="box"><div class="lbl">A receber</div><p class="m">Sem propostas do ERP carregadas.</p></div>'; return; }
+  var emDia = L.filter(function (x) { return x.situacao === 'em dia'; }), atr = L.filter(function (x) { return x.situacao === 'atrasada'; });
+  var tot = soma2(L, function (x) { return x.valor; }), hoje = hojeISO(), mesAt = hoje.slice(0, 7);
+  var h = '<div class="grid g4">'
+    + card('Total a receber', brl(tot), L.length + ' parcelas', { cls: 'in', box: 'bgr' })
+    + card('Em dia', brl(soma2(emDia, function (x) { return x.valor; })), emDia.length + ' parcelas com data prevista ainda por vir', { cls: 'in' })
+    + card('Atrasado', brl(soma2(atr, function (x) { return x.valor; })), atr.length + ' parcelas · passa para o próximo recebimento', { cls: 'out' })
+    + card('Por unidade', '<span style="font-size:.55em;line-height:1.4;display:block">' + REGRAS.unidades.map(function (u) { return u + ' ' + brl(soma2(L.filter(function (x) { return x.unidade === u; }), function (x) { return x.valor; })); }).join('<br>') + '</span>', '', {})
+    + '</div>';
+  // por mês previsto (atrasado entra no mês atual)
+  var pm = {}; L.forEach(function (x) { var m = x.situacao === 'atrasada' ? mesAt : x.prevista.slice(0, 7); pm[m] = pm[m] || { v: 0, n: 0, atr: 0 }; pm[m].v = r2(pm[m].v + x.valor); pm[m].n++; if (x.situacao === 'atrasada') pm[m].atr = r2(pm[m].atr + x.valor); });
+  h += '<div class="box mt"><div class="lbl">Quando deve entrar <em>atrasado conta no mês atual</em></div><div class="tw"><table><thead><tr><th>Mês previsto</th><th class="r">Parcelas</th><th class="r">Em dia</th><th class="r">Atrasado</th><th class="r">Total</th></tr></thead><tbody>'
+    + Object.keys(pm).sort().map(function (m) { var x = pm[m]; return '<tr><td>' + mesLabel(m) + '</td><td class="r">' + x.n + '</td><td class="r">' + brl(r2(x.v - x.atr)) + '</td><td class="r ' + (x.atr ? 'rd' : 'mu') + '">' + brl(x.atr) + '</td><td class="r"><b>' + brl(x.v) + '</b></td></tr>'; }).join('')
+    + '<tr class="tot"><td>Total</td><td class="r">' + L.length + '</td><td class="r">' + brl(soma2(emDia, function (x) { return x.valor; })) + '</td><td class="r">' + brl(soma2(atr, function (x) { return x.valor; })) + '</td><td class="r"><b>' + brl(tot) + '</b></td></tr></tbody></table></div></div>';
+  // proposta a proposta
+  var ord = L.slice().sort(function (a, b) { return a.prevista < b.prevista ? -1 : a.prevista > b.prevista ? 1 : b.valor - a.valor; });
+  h += '<div class="box mt"><div class="lbl">Proposta a proposta</div><div class="tw rol"><table><thead><tr><th>Data prevista</th><th>Situação</th><th>Unidade</th><th>Cliente</th><th>Operadora</th><th>Proposta</th><th>Cadastro</th><th class="r">Parcela</th><th>Mês da parcela</th><th class="r">Valor</th></tr></thead><tbody>'
+    + ord.map(function (x) { return '<tr><td>' + x.prevista.split('-').reverse().join('/') + '</td><td>' + (x.situacao === 'atrasada' ? '<span class="pill er">atrasada ' + x.dias + ' dias</span>' : '<span class="pill ok">em dia</span>') + '</td><td>' + x.unidade + '</td><td>' + esc(x.cliente) + '</td><td>' + esc(x.operadora) + '</td><td>' + esc(x.proposta) + '</td><td>' + x.cadastro.split('-').reverse().join('/') + '</td><td class="r">' + x.parcela + 'ª</td><td>' + mesLabel(x.comp) + '</td><td class="r ' + (x.situacao === 'atrasada' ? 'rd' : 'gr') + '">' + brl(x.valor) + '</td></tr>'; }).join('')
+    + '</tbody></table></div><div class="m mt">Data prevista = 30 dias depois do último pagamento da proposta (sem pagamento: 30 dias depois do cadastro). Passou da data → atrasada e vai para o próximo recebimento. Sem receber em 90 dias → sai da conta do mês e o mês fica com o que realmente entrou.</div></div>';
+  // fora da conta
+  var perd = livroReceber().itens.filter(function (it) { return it.situacao === 'perdida'; });
+  if (perd.length) h += '<div class="box mt"><div class="lbl">Não recebidas em 90 dias <em>fora da conta · ' + perd.length + ' parcelas · ' + brl(soma2(perd, function (x) { return x.valor; })) + '</em></div><div class="tw rol"><table><thead><tr><th>Data prevista</th><th>Unidade</th><th>Cliente</th><th>Operadora</th><th>Proposta</th><th class="r">Parcela</th><th>Mês da parcela</th><th class="r">Valor</th></tr></thead><tbody>'
+    + perd.slice().sort(function (a, b) { return b.valor - a.valor; }).map(function (it) { return '<tr><td>' + it.prevista.split('-').reverse().join('/') + '</td><td>' + it.unidade + '</td><td>' + esc(it.c.cliente || '') + '</td><td>' + esc(it.c.operadora) + '</td><td>' + esc(it.c.numero) + '</td><td class="r">' + it.parcela + 'ª</td><td>' + mesLabel(it.comp) + '</td><td class="r rd">' + brl(it.valor) + '</td></tr>'; }).join('')
+    + '</tbody></table></div></div>';
+  el.innerHTML = h;
+}
 function vRec() {
   var el = document.getElementById('v-rec'); if (!el) return;
   if (!extratosOn()) { el.innerHTML = '<div class="box"><div class="lbl">Recebimentos</div><p class="m">Nenhum extrato de comissão carregado.</p></div>'; return; }
@@ -1469,15 +1549,11 @@ function vRec() {
     + '</div>';
   // De-para com o ERP
   h += '<div class="box mt"><div class="lbl">De-para com as propostas do ERP</div><div class="grid g4 mt">'
-    + mini('Parcelas do ERP pagas', dp.pagas + ' · ' + brl(dp.vPagas))
-    + mini('Vencidas e não pagas', '<span class="rd">' + dp.atrasadas.length + ' · ' + brl(dp.vAtrasadas) + '</span>')
-    + mini('Propostas sem nenhum pagamento', '<span class="rd">' + dp.semPagamento + '</span>')
-    + mini('A vencer', dp.aVencer + ' · ' + brl(dp.vAVencer)) + '</div>'
-    + '<div class="m mt">Último extrato: ' + Object.keys(dp.ult).map(function (u) { return u + ' ' + mesLabel(dp.ult[u]); }).join(' · ') + '. Vencida = 3 meses ou mais antes do último extrato da unidade.</div>';
-  var at = dp.atrasadas.slice().sort(function (a, b) { return b.valor - a.valor; });
-  h += '<div class="tw rol mt"><table><thead><tr><th>Unidade</th><th>Cliente</th><th>Operadora</th><th>Proposta</th><th>Cadastro</th><th class="r">Parcela</th><th>Vencimento</th><th class="r">Valor</th></tr></thead><tbody>'
-    + at.map(function (a) { return '<tr><td>' + a.c.unidade + '</td><td>' + esc(a.c.cliente || '') + '</td><td>' + esc(a.c.operadora) + ' · ' + a.c.modalidade + '</td><td>' + esc(a.c.numero) + '</td><td>' + a.c.data_venda.split('-').reverse().join('/') + '</td><td class="r">' + a.parcela + 'ª</td><td>' + mesLabel(a.venc) + '</td><td class="r rd">' + brl(a.valor) + '</td></tr>'; }).join('')
-    + '</tbody></table></div></div>';
+    + mini('Parcelas do ERP recebidas', '<span class="gr">' + dp.pagas + ' · ' + brl(dp.vPagas) + '</span>')
+    + mini('A receber em dia', dp.emDia + ' · ' + brl(dp.vEmDia))
+    + mini('Atrasadas (menos de 90 dias)', '<span class="rd">' + dp.atrasadas.length + ' · ' + brl(dp.vAtrasadas) + '</span>')
+    + mini('Não recebidas em 90 dias (fora da conta)', '<span class="rd">' + dp.perdidas.length + ' · ' + brl(dp.vPerdidas) + '</span>') + '</div>'
+    + '<div class="m mt">Último extrato: ' + Object.keys(dp.ult).map(function (u) { return u + ' ' + mesLabel(dp.ult[u]); }).join(' · ') + '. Detalhe proposta a proposta na aba A receber.</div></div>';
   // Extratos
   h += '<div class="box mt"><div class="lbl">Extratos de comissão</div><div class="tw"><table><thead><tr><th>Pagamento</th><th>Unidade</th><th>Extrato</th><th class="r">Ato da venda</th><th class="r">Parcelas</th><th class="r">Vitalício</th><th class="r">Desc. adm.</th><th class="r">Comissões (líquido)</th><th class="r">Créditos e débitos</th><th class="r">Saldo anterior</th><th class="r">Líquido do extrato</th></tr></thead><tbody>'
     + xs.map(function (x) { var vit = soma2(X.linhas.filter(function (l) { return l.extrato === x.codigo && l.tipo === 'vitalicio'; }), function (l) { return l.liquido; });
@@ -1494,10 +1570,6 @@ function vRec() {
   h += '<div class="box mt"><div class="lbl">Créditos e débitos por tipo</div><div class="tw"><table><thead><tr><th></th><th>Tipo</th><th>Como entra</th><th class="r">Lançamentos</th><th class="r">Total</th></tr></thead><tbody>'
     + Object.keys(porTipo).sort().map(function (k) { var x = porTipo[k]; return '<tr><td><b>' + k + '</b></td><td>' + x.t[1] + '</td><td>' + CD_ACAO[x.t[3]] + '</td><td class="r">' + x.n + '</td><td class="r ' + (x.v < 0 ? 'rd' : 'gr') + '">' + brl(x.v) + '</td></tr>'; }).join('')
     + '</tbody></table></div></div>';
-  var emp = X.creditos_debitos.filter(function (c) { return tipoCD(c.descricao)[3] === 'emprestimo'; });
-  if (emp.length) h += '<div class="box mt"><div class="lbl">Empréstimos <em>a abater da operação · fora do resultado</em></div><div class="tw"><table><thead><tr><th>Mês</th><th>Unidade</th><th>Lançamento</th><th class="r">Valor</th></tr></thead><tbody>'
-    + emp.map(function (c) { return '<tr><td>' + mesLabel(c.mes) + (mesDevido(c) !== c.mes ? '<br><small class="mu">conta em ' + mesLabel(mesDevido(c)) + '</small>' : '') + '</td><td>' + c.unidade + '</td><td style="white-space:normal">' + esc(c.descricao) + (/ALUGUEL/i.test(c.descricao) ? (c.liquido < 0 ? ' <span class="m">(empréstimo)</span>' : ' <span class="m">(empréstimo quitado)</span>') : ' <span class="m">(empréstimo a abater da operação)</span>') + '</td><td class="r">' + brl(c.liquido) + '</td></tr>'; }).join('')
-    + '<tr class="tot"><td colspan="3">Saldo a abater da operação</td><td class="r"><b>' + brl(soma2(emp, function (c) { return c.liquido; })) + '</b></td></tr></tbody></table></div></div>';
   // Créditos e débitos
   h += '<div class="box mt"><div class="lbl">Créditos e débitos dos extratos</div><div class="tw rol"><table><thead><tr><th>Pagamento</th><th>Unidade</th><th>Descrição</th><th class="r">Valor</th></tr></thead><tbody>'
     + X.creditos_debitos.slice().sort(function (a, b) { return a.mes < b.mes ? 1 : -1; }).map(function (c) { return '<tr><td>' + mesLabel(c.mes) + (mesDevido(c) !== c.mes ? '<br><small class="mu">conta em ' + mesLabel(mesDevido(c)) + '</small>' : '') + '</td><td>' + c.unidade + '</td><td style="white-space:normal">' + esc(c.descricao) + '</td><td class="r ' + (c.liquido < 0 ? 'rd' : 'gr') + '">' + brl(c.liquido) + '</td></tr>'; }).join('')
