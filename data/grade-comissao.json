@@ -426,9 +426,9 @@
     0.8,
     0.7
    ],
-   "vit": null,
+   "vit": 0.01,
    "padrao": false,
-   "obs": "tem vitalício (confirmado pelo usuário em 25/11/2026); percentual pendente"
+   "obs": "vitalício 1% confirmado pelo usuário em 25/11/2026 (a grade V3 omitiu)"
   },
   {
    "tipo": "Saúde",
