@@ -87,8 +87,8 @@ const path = require('path');
       // créditos/débitos: receitas e custos por tipo, unidade e mês = soma independente dos lançamentos
       if (extratosOn()) { const meses = [...new Set(EXTRATOS.creditos_debitos.map(c => mesDevido(c)))];
         meses.forEach(m => REGRAS.unidades.forEach(u => { const cs = EXTRATOS.creditos_debitos.filter(c => mesDevido(c) === m && unidadeCanon(c.unidade) === u), lx = lancExtratos(m, u);
-          ok(m + ' ' + u + ' receitas dos extratos', lx.receitas, cs.filter(c => tipoCD(c.descricao)[3] === 'receita').reduce((t, c) => t + c.liquido, 0));
-          ok(m + ' ' + u + ' custos dos extratos', lx.custos, -cs.filter(c => /^custo/.test(tipoCD(c.descricao)[3])).reduce((t, c) => t + c.liquido, 0));
+          ok(m + ' ' + u + ' receitas dos extratos', lx.receitas, cs.filter(c => /receita|custo/.test(tipoCD(c.descricao)[3]) && c.liquido >= 0).reduce((t, c) => t + c.liquido, 0));  // regra do sinal: sem sinal = a receber
+          ok(m + ' ' + u + ' custos dos extratos', lx.custos, -cs.filter(c => /receita|custo/.test(tipoCD(c.descricao)[3]) && c.liquido < 0).reduce((t, c) => t + c.liquido, 0));  // "-" = custo
           const cu = custosUnidade(u, m), real = cs.some(c => tipoCD(c.descricao)[0] === 'A');
           ok(m + ' ' + u + ' folha dos extratos', lx.folha, -cs.filter(c => tipoCD(c.descricao)[3] === 'folha').reduce((t, c) => t + c.liquido, 0));
           ok(m + ' ' + u + ' custo fixo (' + (real ? 'folha real + extratos' : 'estrutura + extratos') + ')', cu.fixo, real ? lx.folha + lx.custos : cu.fixoEstrutura + lx.custos);

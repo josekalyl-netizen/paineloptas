@@ -531,6 +531,9 @@ var CD_TIPOS = [
   ['U', 'Taxa de implantação', /TX\. IMP|TAXA/, 'custo']
 ];
 var CD_ACAO = { receita: 'soma no a receber', custo: 'custo da unidade', custoOp: 'custo de operação', ignora: 'ignorado', folha: 'folha (sobrepõe a estrutura no mês devido)', emprestimo: 'empréstimo (fora do resultado)', pendente: 'aguardando decisão' };
+// Regra do sinal (decisão do usuário, 25/11/2026): nos créditos e débitos, valor com "-" é custo e valor sem sinal é a receber.
+// Vale para tudo que entra na conta (campanha, premiação, acerto, devolução, estorno, boleto, AD...). Folha e ignorados seguem o tipo.
+function acaoCD(t, v) { return t[3] === 'receita' || t[3] === 'custo' || t[3] === 'custoOp' ? (v < 0 ? (t[3] === 'custoOp' ? 'custoOp' : 'custo') : 'receita') : t[3]; }
 function tipoCD(desc) { var d = norm(desc).toUpperCase(); for (var i = 0; i < CD_TIPOS.length; i++) if (CD_TIPOS[i][2].test(d)) return CD_TIPOS[i]; return ['?', 'Sem classificação', null, 'pendente']; }
 // Mês devido (decisão de 25/11/2026): salário, benefícios, férias, 13º, rescisão e vale entram no mês a que se referem
 // ("SALÁRIOS - SETEMBRO 2026" → setembro; "SALÁRIO - JOANA 07/09" → setembro), não no mês em que o extrato descontou.
@@ -561,13 +564,13 @@ function lancExtratos(mes, u) {
   if (!extratosOn()) return o;
   EXTRATOS.creditos_debitos.forEach(function (c) {
     if (mesDevido(c) !== mes || unidadeCanon(c.unidade) !== u) return;
-    var t = tipoCD(c.descricao); o.itens.push({ c: c, t: t });
+    var t = tipoCD(c.descricao), a = acaoCD(t, c.liquido); o.itens.push({ c: c, t: t, a: a });
     if (t[0] === 'A') o.salario = r2(o.salario - c.liquido);
-    if (t[3] === 'receita') o.receitas = r2(o.receitas + c.liquido);
-    else if (t[3] === 'custo' || t[3] === 'custoOp') o.custos = r2(o.custos - c.liquido);
-    else if (t[3] === 'folha') o.folha = r2(o.folha - c.liquido);
-    else if (t[3] === 'emprestimo') o.emprestimo = r2(o.emprestimo + c.liquido);
-    else if (t[3] === 'pendente') o.pendente = r2(o.pendente - c.liquido);
+    if (a === 'receita') o.receitas = r2(o.receitas + c.liquido);
+    else if (a === 'custo' || a === 'custoOp') o.custos = r2(o.custos - c.liquido);
+    else if (a === 'folha') o.folha = r2(o.folha - c.liquido);
+    else if (a === 'emprestimo') o.emprestimo = r2(o.emprestimo + c.liquido);
+    else if (a === 'pendente') o.pendente = r2(o.pendente - c.liquido);
   });
   return o;
 }
@@ -1355,7 +1358,7 @@ function custoDetalhe(mes) {
     if (x.imposto != null) add('Imposto', '15% sobre o a receber de ' + brl(x.recebidas), x.imposto);
     add('Comissões dos vendedores', x.comissoes ? 'Comissões à parte' : 'Já descontadas nos relatórios de pagamento (nada à parte)', x.comissoes || 0);
     if (c.fonteCustos === 'extratos') {
-      c.extrato.itens.forEach(function (i) { if (i.t[3] === 'folha') add('Folha (relatórios de pagamento)', i.c.descricao, -i.c.liquido, orig(i)); });
+      c.extrato.itens.forEach(function (i) { if (i.a === 'folha') add('Folha (relatórios de pagamento)', i.c.descricao, -i.c.liquido, orig(i)); });
     } else {
       add('Estrutura informada', 'Salários brutos (inclui PJ da sócia ' + brl(c.pj) + ')', c.salariosBrutos);
       add('Estrutura informada', 'Vale-refeição · ' + c.diasUteis + ' dias úteis', c.vr);
@@ -1366,13 +1369,9 @@ function custoDetalhe(mes) {
       add('Provisão', 'Encargos sobre 13º e férias', c.provEncargos);
     }
     c.extrato.itens.forEach(function (i) {
-      if (i.t[3] === 'custo' || i.t[3] === 'custoOp') add('Lançado nos relatórios de pagamento', i.c.descricao, -i.c.liquido, orig(i));
-      else if (i.t[3] !== 'folha') {
-        var k = norm(i.c.descricao).toUpperCase().replace(/\s+/g, ' ').trim(), f = fora.filter(function (z) { return z.k === k && z.ext === i.c.extrato && z.t === i.t[3]; })[0];
-        if (f) { f.valor = r2(f.valor + i.c.liquido); f.n++; } else fora.push({ k: k, ext: i.c.extrato, t: i.t[3], n: 1, nome: i.c.descricao, valor: i.c.liquido });
-      }
+      if (i.a === 'custo' || i.a === 'custoOp') add('Lançado nos relatórios de pagamento', i.c.descricao, -i.c.liquido, orig(i));
+      else if (i.a !== 'folha') fora.push({ nome: i.c.descricao, valor: i.c.liquido, como: i.a === 'receita' ? 'sem sinal: soma no a receber' : 'não entra (' + i.t[1] + ')' });
     });
-    fora.forEach(function (f) { f.como = f.n > 1 && Math.abs(f.valor) < 0.005 ? 'lançada e estornada no mesmo relatório: não soma' : f.t === 'receita' ? 'soma no a receber' : 'não entra (' + tipoCD(f.nome)[1] + ')'; });
     var tot = soma2(L, function (l) { return l.valor; });
     out.unidades[u] = { linhas: L, fora: fora, total: tot, guardado: x.saiu != null ? x.saiu : null, fonte: c.fonteCustos,
       real: c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido; sobrepõe a estrutura informada)' : 'Sem salário no relatório deste mês: vale a estrutura informada + provisão' };
@@ -1394,7 +1393,7 @@ function blocoCustoDetalhe(mes) {
     });
     h += '<tr class="tot"><td>Total de custos · ' + u + '</td><td class="r rd">' + brl(x.total) + '</td></tr></tbody></table></div>';
     if (x.guardado != null && Math.abs(x.guardado - x.total) > 0.005) h += '<div class="m rd mt">Atenção: o mês fechado guardou ' + brl(x.guardado) + ' de custos; pelas regras de hoje dá ' + brl(x.total) + '.</div>';
-    if (x.fora.length) h += '<div class="m mt"><b>Também nos relatórios, mas não é custo:</b> ' + x.fora.map(function (f) { return esc(f.nome) + ' (' + brl(f.valor) + ', ' + f.como + ')'; }).join(' · ') + '</div>';
+    if (x.fora.length) h += '<div class="m mt"><b>Também nos relatórios, mas não é custo (valores sem sinal vão para o a receber):</b> ' + x.fora.map(function (f) { return esc(f.nome) + ' (' + brl(f.valor) + ', ' + f.como + ')'; }).join(' · ') + '</div>';
     h += '</div>';
   });
   return h + '</div></div>';
@@ -1648,7 +1647,7 @@ function vRec() {
   // Tipos de crédito/débito e o que o painel faz com cada um
   var porTipo = {}; X.creditos_debitos.forEach(function (c) { var t = tipoCD(c.descricao), k = t[0]; porTipo[k] = porTipo[k] || { t: t, n: 0, v: 0 }; porTipo[k].n++; porTipo[k].v = r2(porTipo[k].v + c.liquido); });
   h += '<div class="box mt"><div class="lbl">Créditos e débitos por tipo</div><div class="tw"><table><thead><tr><th></th><th>Tipo</th><th>Como entra</th><th class="r">Lançamentos</th><th class="r">Total</th></tr></thead><tbody>'
-    + Object.keys(porTipo).sort().map(function (k) { var x = porTipo[k]; return '<tr><td><b>' + k + '</b></td><td>' + x.t[1] + '</td><td>' + CD_ACAO[x.t[3]] + '</td><td class="r">' + x.n + '</td><td class="r ' + (x.v < 0 ? 'rd' : 'gr') + '">' + brl(x.v) + '</td></tr>'; }).join('')
+    + Object.keys(porTipo).sort().map(function (k) { var x = porTipo[k]; return '<tr><td><b>' + k + '</b></td><td>' + x.t[1] + '</td><td>' + (/receita|custo/.test(x.t[3]) ? 'pelo sinal: com "-" é custo, sem sinal soma no a receber' : CD_ACAO[x.t[3]]) + '</td><td class="r">' + x.n + '</td><td class="r ' + (x.v < 0 ? 'rd' : 'gr') + '">' + brl(x.v) + '</td></tr>'; }).join('')
     + '</tbody></table></div></div>';
   // Créditos e débitos
   h += '<div class="box mt"><div class="lbl">Créditos e débitos dos extratos</div><div class="tw rol"><table><thead><tr><th>Pagamento</th><th>Unidade</th><th>Descrição</th><th class="r">Valor</th></tr></thead><tbody>'
