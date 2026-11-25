@@ -66,7 +66,13 @@ const path = require('path');
       if (!DEMO) { const tot = { '2026-01': 4907.06, '2026-02': 10202.34, '2026-03': 12139.44, '2026-04': 8018.16, '2026-05': 5613.44, '2026-06': 7186.38, '2026-07': 18612.86, '2026-08': 17119.37, '2026-09': 1774.81, '2026-10': 2352.62 };
         Object.keys(tot).forEach(m => { ok('SMS ' + m, ESTADO.investimentos.filter(i => i.data.slice(0, 7) === m).reduce((t, i) => t + i.valor, 0), tot[m]); const f = ESTADO.fechamentos[m]; if (f) ok('Ano ' + m + ' investido', f.investido, tot[m]); }); }
       // ROI
-      const ro = R.roi; if (ro.invAtrib > 0) { if (Math.abs(ro.roi - (ro.retorno - ro.invAtrib) / ro.invAtrib) > 1e-12) falhas.push('ROI'); ok('retorno = Σ campanhas', ro.retorno, Object.values(ro.porCamp).reduce((t, g) => t + g.retorno, 0)); }
+      const ro = R.roi;
+      if (ro.modo === 'geral') { ok('ROI geral investido = investido do mês', ro.invAtrib, R.investido);
+        const rts = REGRAS.unidades.map(u => R.unidades[u].contratado); if (rts.some(x => x != null)) ok('ROI geral retorno = Σ contratado das unidades', ro.retorno, rts.reduce((t, x) => t + (x || 0), 0));
+        if (R.ag.base) ok('ROI geral retorno = contratado de todas as vendas', ro.retorno, R.ag.contratado);
+        if (ro.invAtrib > 0 && ro.retorno != null && Math.abs(ro.roi - (ro.retorno - ro.invAtrib) / ro.invAtrib) > 1e-12) falhas.push('ROI geral');
+        REGRAS.unidades.forEach(u => { const x = ro.porUnidade[u]; ok(u + ' ROI investido', x.investido, R.invUnidade[u]); }); }
+      else if (ro.invAtrib > 0) { if (Math.abs(ro.roi - (ro.retorno - ro.invAtrib) / ro.invAtrib) > 1e-12) falhas.push('ROI'); ok('retorno = Σ campanhas', ro.retorno, Object.values(ro.porCamp).reduce((t, g) => t + g.retorno, 0)); }
       // vitalício
       ok('vitalício = Σ contratos', R.vit.total, R.vit.contratos.reduce((t, x) => t + x.vit, 0));
       // ano

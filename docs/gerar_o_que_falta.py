@@ -9,11 +9,10 @@ itens = [
  ("Dados para os números ficarem reais","alta","Vitalício recebido, mês a mês e proposta a proposta","O que entrou de vitalício em cada mês, por contrato.","Relatórios das operadoras","Vitalício real no lucro de cada mês e carteira ativa."),
  ("Dados para os números ficarem reais","alta","Agenciamento recebido (o que entrou, atrasou e falta)","Relatórios de recebimento das operadoras, para trocar o previsto pela grade pelo que realmente entrou.","Relatórios de recebimento","Caixa real, atrasos e cancelamentos."),
  ("Dados para os números ficarem reais","média","Data de nascimento nas vendas Prevent Senior","Só para as vendas Prevent: titular de 0 a 18 anos não comissiona.","Coluna no fechamento ou documentação do cliente","Comissão Prevent correta."),
- ("Dados para os números ficarem reais","média","Campanha de cada venda","Qual venda veio do SMS (ou de outra campanha), para o ROI.","Campo no ERP/CRM ou no fechamento","ROI do SMS por venda."),
+ ("Dados para os números ficarem reais","média","Campanha de cada venda","A partir de dezembro: qual venda veio de qual campanha. Até novembro o ROI é geral (investido × todas as vendas).","Campo no ERP/CRM ou no fechamento","ROI do SMS por venda."),
  ("Acessos e integração","alta","ERP","Acesso ao ERP para buscar vendas, recebimentos e vitalícios direto da fonte.","Usuário/token (cadastrado de forma segura, nunca pelo chat)","Painel atualizado sem digitação."),
  ("Acessos e integração","alta","Projeto do Apps Script","Acesso ao projeto do painel atual para publicar, com as chaves OPTAS_KEY e OPTAS_TV_KEY.","Compartilhar o projeto","Painel publicado e atualizando sozinho."),
  ("Regras de negócio","baixa","Encargos da provisão (34,8%)","Validação da contabilidade: INSS 20% + RAT 1% + Terceiros 5,8% + FGTS 8% sobre 13º e férias.","Confirmado / valores corretos","Provisão mensal (R$ 1.623,15)."),
- ("Decisões que tomei e preciso que você confirme","média","Retorno do ROI","Retorno = comissão total contratada (todas as parcelas) das vendas da campanha.","Confirmo / outra base","ROI."),
  ("Decisões que tomei e preciso que você confirme","baixa","Investimento sem unidade","Quando o investimento não diz a unidade, divido pela produção de cada unidade. (Os SMS de 2026 são todos de Mogi.)","Confirmo / outra regra","Lucro líquido por unidade."),
 ]
 registrado = ("Grade de Comissão V3 completa (Amil PME 1% de vitalício; Hapvida/NotreDame PME 290%); Projeto Hapvida 100%; adesão sem a taxa; vitalício depois da última parcela e somando no lucro; Prevent 0 a 18 sem comissão; "

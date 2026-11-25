@@ -534,7 +534,8 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
 | Out | 2.352,62 |
 | **Total** | **87.926,48** |
 
-8. **Fonte dos dados reais:** fechamento de folha mensal (vendas e vitalícios recebidos), relatórios de recebimento (o que entrou, atrasou e falta receber), acesso ao Apps Script e ao ERP.
+8. **ROI:** até novembro/2026, **ROI geral** = (comissão contratada de todas as vendas do mês − investido no mês) ÷ investido, por unidade e consolidado, sem rastrear venda a venda. A partir de dezembro/2026, ROI por campanha (cada venda ligada à campanha de origem).
+9. **Fonte dos dados reais:** fechamento de folha mensal (vendas e vitalícios recebidos), relatórios de recebimento (o que entrou, atrasou e falta receber), acesso ao Apps Script e ao ERP.
 
 # 13. ESCOPO FORA DA PRIMEIRA ETAPA
 

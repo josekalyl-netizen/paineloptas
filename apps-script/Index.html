@@ -477,6 +477,7 @@ var REGRAS = {
   imposto: 0.15,                                               // 8. sobre agenciamento e vitalício, todas as operadoras
   // Projeto Hapvida · pagamento ao vendedor: 15% da mensalidade + valor por vida a partir de 25 vidas no mês (abaixo de 25 não paga)
   projetoVendedor: { pct: 0.15, porVida: [{ de: 25, valor: 20 }, { de: 35, valor: 25 }, { de: 50, valor: 35 }] },
+  roiPorCampanhaDesde: '2026-12',                              // antes: ROI geral (investido × todas as vendas); a partir daqui: venda a venda por campanha (decisão de 25/11/2026)
   reservaMarketing: 0.15,                                      // 15% da produção mensal (decisão v1.6)
   reservaAcumula: null,                                        // Pendência 3 (null = não decidido)
   baseROIDefinida: false,                                      // Pendência 4
@@ -506,8 +507,8 @@ var ESTADO_DEMO = {
     var f = {};
     b.forEach(function (m, i) {
       var mes = '2026-' + String(i + 1).padStart(2, '0'), un = {};
-      ['Consolação', 'Mogi'].forEach(function (u, k) { var c = custosUnidade(u, mes); un[u] = compor({ producao: m[k][0], recebidas: Math.round(m[k][1] * [1.12, 1.2, 1.08, 1.02, 1.25, 1.22, 1.05, 1.3, 1.15, 1.28][i]), comissoes: m[k][2], fixo: c.fixo, provisao: c.provisao, investido: m[k][3] }); });
-      var t = {}; ['producao', 'recebidas', 'comissoes', 'fixo', 'provisao', 'investido'].forEach(function (x) { t[x] = un['Consolação'][x] + un['Mogi'][x]; });
+      ['Consolação', 'Mogi'].forEach(function (u, k) { var c = custosUnidade(u, mes); un[u] = compor({ producao: m[k][0], recebidas: Math.round(m[k][1] * [1.12, 1.2, 1.08, 1.02, 1.25, 1.22, 1.05, 1.3, 1.15, 1.28][i]), comissoes: m[k][2], fixo: c.fixo, provisao: c.provisao, investido: m[k][3], contratado: r2(m[k][0] * 2.4) }); });
+      var t = {}; ['producao', 'recebidas', 'comissoes', 'fixo', 'provisao', 'investido', 'contratado'].forEach(function (x) { t[x] = r2(un['Consolação'][x] + un['Mogi'][x]); });
       f[mes] = Object.assign(compor(t), { mes: mes, unidades: un, fechado: true, fechadoEm: mes + '-28', exemplo: true });
     });
     return f;
@@ -838,6 +839,8 @@ function calcular() {
     U.primeira = eq && pjU.ag != null ? r2((eq.hap.valor || 0) * pjU.parc[0]) : null;
     if (usarContratos) U.primeira = soma2(ag.propostas.filter(function (p) { return p.unidade === u && p.aReceber != null; }), function (p) { return p.aReceber; });
     U.anteriores = R.caixaAnt.porUnidade[u] || 0;
+    // comissão contratada (todas as parcelas) das vendas do mês: retorno do ROI geral
+    U.contratado = usarContratos ? soma2(ag.propostas.filter(function (p) { return p.unidade === u && p.agTotal != null; }), function (p) { return p.agTotal; }) : (eq && pjU.ag != null ? r2((eq.hap.valor || 0) * pjU.ag) : null);
     U.leads = eq ? eq.hap.leads : null; U.vidas = eq ? eq.hap.vidas : null; U.qtd = eq ? (eq.hap.qtd + eq.fora.qtd) : null;
     // Base única (v1.9): a receber das operadoras = contratos efetivos × comissão de cada operadora
     // A receber no mês = 1ª parcela das vendas do mês + parcelas das vendas dos meses anteriores
@@ -956,9 +959,16 @@ function calcularROI(R) {
   var atrib = Object.keys(porCamp).filter(function (k) { return porCamp[k].propostas.length; });
   var invAtrib = soma2(atrib, function (k) { return porCamp[k].investido; }), retorno = soma2(atrib, function (k) { return porCamp[k].retorno; });
   var reserva = R.reservaDisponivel;
-  return { mes: mes, dias: dias, diaRef: diaRef, diasRest: Math.max(0, dias - diaRef), inv: inv, total: total, media: diaRef ? total / diaRef : 0, porCat: porCat, porCamp: porCamp, organico: organico,
+  // Até novembro/2026: ROI geral = investido no mês × comissão contratada de TODAS as vendas do mês (sem rastrear venda a venda)
+  var geral = mes < REGRAS.roiPorCampanhaDesde, porUnidade = {};
+  if (geral) {
+    REGRAS.unidades.forEach(function (u) { var iv = R.invUnidade[u] || 0, rt = R.unidades[u].contratado; porUnidade[u] = { investido: iv, retorno: rt, roi: iv > 0 && rt != null ? (rt - iv) / iv : null }; });
+    var rts = REGRAS.unidades.map(function (u) { return R.unidades[u].contratado; });
+    invAtrib = total; retorno = rts.some(function (x) { return x != null; }) ? soma2(rts, function (x) { return x || 0; }) : null;
+  }
+  return { mes: mes, modo: geral ? 'geral' : 'campanha', porUnidade: porUnidade, dias: dias, diaRef: diaRef, diasRest: Math.max(0, dias - diaRef), inv: inv, total: total, media: diaRef ? total / diaRef : 0, porCat: porCat, porCamp: porCamp, organico: organico,
     reserva: reserva, saldo: r2(reserva - total), consumo: reserva ? total / reserva : null,
-    invAtrib: invAtrib, retorno: retorno, roi: invAtrib > 0 ? (retorno - invAtrib) / invAtrib : null, retornoPorReal: invAtrib > 0 ? retorno / invAtrib : null };
+    invAtrib: invAtrib, retorno: retorno, roi: invAtrib > 0 && retorno != null ? (retorno - invAtrib) / invAtrib : null, retornoPorReal: invAtrib > 0 && retorno != null ? retorno / invAtrib : null };
 }
 
 
@@ -1144,8 +1154,8 @@ function compor(p) {
 }
 function fotoMes() {
   var un = {};
-  REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; un[u] = compor({ producao: U.producao, recebidas: U.recebidas, comissoes: U.comissao, fixo: U.custos.fixo, provisao: U.custos.provisao, investido: U.investido, imposto: U.res ? U.res.imposto : null }); });
-  return Object.assign(compor({ producao: R.producao, recebidas: R.recebidas, comissoes: R.comissoes, fixo: R.custoFixo, provisao: R.provisao, investido: R.investido, imposto: R.res ? R.res.imposto : null, aReceber: R.ag.base ? r2(R.ag.valor) : null }),
+  REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; un[u] = compor({ producao: U.producao, recebidas: U.recebidas, comissoes: U.comissao, fixo: U.custos.fixo, provisao: U.custos.provisao, investido: U.investido, imposto: U.res ? U.res.imposto : null, contratado: U.contratado }); });
+  return Object.assign(compor({ producao: R.producao, recebidas: R.recebidas, comissoes: R.comissoes, fixo: R.custoFixo, provisao: R.provisao, investido: R.investido, imposto: R.res ? R.res.imposto : null, aReceber: R.ag.base ? r2(R.ag.valor) : null, contratado: R.roi.retorno != null && R.roi.modo === 'geral' ? R.roi.retorno : (R.ag.base ? R.ag.contratado : null) }),
     { mes: R.mes, unidades: un, versao: REGRAS.versao, fechado: false });
 }
 // O mês corrente é gravado automaticamente enquanto estiver aberto; mês fechado não muda mais.
@@ -1164,6 +1174,8 @@ function fecharMes(mes) {
 }
 function reabrirMes(mes) { if (!confirm('Reabrir ' + mesLabel(mes) + '? Os números voltam a ser atualizados.')) return; ESTADO.fechamentos[mes].fechado = false; delete ESTADO.fechamentos[mes].fechadoEm; salvarEstado(); render(); show('ano'); }
 function mesesDoAno(ano) { return Object.keys(ESTADO.fechamentos).filter(function (k) { return k.slice(0, 4) === String(ano); }).sort(); }
+// ROI do mês (geral até nov/2026): (comissão contratada das vendas do mês − investido) ÷ investido
+function roiMes(m) { if (!m.investido || m.contratado == null) return '—'; var x = (m.contratado - m.investido) / m.investido; return '<b class="' + (x >= 0 ? 'gr' : 'rd') + '">' + pct(x) + '</b>'; }
 function resumoAno(ano) {
   var ms = mesesDoAno(ano).map(function (k) { return ESTADO.fechamentos[k]; });
   var comRec = ms.filter(function (m) { return m.recebidas != null; });
@@ -1226,14 +1238,14 @@ function vAno() {
   }
   h += '</div>';
   // Tabela
-  h += '<div class="box mt"><div class="lbl">Meses de ' + ano + '</div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">A receber</th><th class="r">Custos</th><th class="r">Lucro bruto</th><th class="r">Reserva mkt</th><th class="r">Investido</th><th class="r">Lucro líquido</th><th class="r">Acumulado</th><th>Situação</th><th></th></tr></thead><tbody>';
+  h += '<div class="box mt"><div class="lbl">Meses de ' + ano + '</div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">A receber</th><th class="r">Custos</th><th class="r">Lucro bruto</th><th class="r">Reserva mkt</th><th class="r">Investido</th><th class="r">ROI</th><th class="r">Lucro líquido</th><th class="r">Acumulado</th><th>Situação</th><th></th></tr></thead><tbody>';
   var acum = t.saldoAnterior;
   t.meses.forEach(function (m) {
     var tem = m.resultado != null; if (tem) acum = r2(acum + m.depois);
-    h += '<tr class="clk' + (sel === m.mes ? ' selr' : '') + '" onclick="vAno.mes=\'' + m.mes + '\';vAno()"><td><b>' + mesLabel(m.mes) + '</b>' + (m.fechado ? '' : (m.base ? ' <span class="tag proj">aguardando folha</span>' : ' <span class="tag proj">aberto</span>')) + '</td><td class="r gr">' + brl(m.recebidas) + '</td><td class="r rd">' + brl(m.saiu) + '</td><td class="r ' + (tem ? (m.resultado >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.resultado) + '</b></td><td class="r inv">' + (m.producao == null ? '—' : brl(m.reserva)) + '</td><td class="r inv">' + brl(m.investido || 0) + '</td><td class="r ' + (tem ? (m.depois >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.depois) + '</b></td><td class="r ' + (tem ? (acum >= 0 ? 'pos' : 'neg') : '') + '">' + (tem ? brl(acum) : '—') + '</td><td>' + (tem ? '<span class="st ' + (m.resultado >= 0 ? 'lucro' : 'prej') + '">' + (m.resultado >= 0 ? 'SE PAGOU' : 'NÃO SE PAGOU') + '</span>' : '—') + '</td><td onclick="event.stopPropagation()">'
+    h += '<tr class="clk' + (sel === m.mes ? ' selr' : '') + '" onclick="vAno.mes=\'' + m.mes + '\';vAno()"><td><b>' + mesLabel(m.mes) + '</b>' + (m.fechado ? '' : (m.base ? ' <span class="tag proj">aguardando folha</span>' : ' <span class="tag proj">aberto</span>')) + '</td><td class="r gr">' + brl(m.recebidas) + '</td><td class="r rd">' + brl(m.saiu) + '</td><td class="r ' + (tem ? (m.resultado >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.resultado) + '</b></td><td class="r inv">' + (m.producao == null ? '—' : brl(m.reserva)) + '</td><td class="r inv">' + brl(m.investido || 0) + '</td><td class="r">' + roiMes(m) + '</td><td class="r ' + (tem ? (m.depois >= 0 ? 'pos' : 'neg') : '') + '"><b>' + brl(m.depois) + '</b></td><td class="r ' + (tem ? (acum >= 0 ? 'pos' : 'neg') : '') + '">' + (tem ? brl(acum) : '—') + '</td><td>' + (tem ? '<span class="st ' + (m.resultado >= 0 ? 'lucro' : 'prej') + '">' + (m.resultado >= 0 ? 'SE PAGOU' : 'NÃO SE PAGOU') + '</span>' : '—') + '</td><td onclick="event.stopPropagation()">'
       + (fechadoAno || m.exemplo || m.base ? '' : (m.fechado ? '<button class="btn gh sm" onclick="reabrirMes(\'' + m.mes + '\')">Reabrir</button>' : '<button class="btn sm" onclick="fecharMes(\'' + m.mes + '\')">Fechar mês</button>')) + '</td></tr>';
   });
-  h += '<tr class="tot"><td>Total do ano</td><td class="r gr">' + brl(t.recebidas) + '</td><td class="r rd">' + brl(t.saiu) + '</td><td class="r ' + (ok ? 'pos' : 'neg') + '">' + brl(t.resultado) + '</td><td class="r inv">' + brl(t.reserva) + '</td><td class="r inv">' + brl(t.investidoTotal) + '</td><td class="r ' + (t.depois >= 0 ? 'pos' : 'neg') + '">' + brl(t.depois) + '</td><td class="r ' + (t.acumulado >= 0 ? 'pos' : 'neg') + '">' + brl(t.acumulado) + '</td><td></td><td></td></tr></tbody></table></div>'
+  h += '<tr class="tot"><td>Total do ano</td><td class="r gr">' + brl(t.recebidas) + '</td><td class="r rd">' + brl(t.saiu) + '</td><td class="r ' + (ok ? 'pos' : 'neg') + '">' + brl(t.resultado) + '</td><td class="r inv">' + brl(t.reserva) + '</td><td class="r inv">' + brl(t.investidoTotal) + '</td><td class="r">' + roiMes({ investido: t.investidoTotal, contratado: t.meses.every(function (m) { return !m.investido || m.contratado != null; }) ? soma2(t.meses, function (m) { return m.contratado || 0; }) : null }) + '</td><td class="r ' + (t.depois >= 0 ? 'pos' : 'neg') + '">' + brl(t.depois) + '</td><td class="r ' + (t.acumulado >= 0 ? 'pos' : 'neg') + '">' + brl(t.acumulado) + '</td><td></td><td></td></tr></tbody></table></div>'
     + (t.melhor ? '<div class="kpirow"><div>Melhor mês<b>' + mesLabel(t.melhor.mes) + ' · ' + brl(t.melhor.resultado) + '</b></div><div>Pior mês<b>' + mesLabel(t.pior.mes) + ' · ' + brl(t.pior.resultado) + '</b></div><div>Meses que se pagaram<b>' + t.mesesLucro + ' de ' + t.nRec + '</b></div></div>' : '') + '</div>';
   // Unidades
   h += '<div class="grid g2 mt">';
@@ -1563,11 +1575,14 @@ function vRoi() {
     + '<div class="mrow"><span>' + (dentro ? 'Ainda disponível' : 'Passou do limite em') + '</span><b class="' + (dentro ? 'gr' : 'rd') + '">' + brl(Math.abs(lim - o.total)) + '</b></div></div></div>';
   // ROI = retorno sobre o investimento
   var rv = o.roi, st2 = rv == null ? 'nd' : (rv >= 0 ? 'lucro' : 'prej');
-  h += '<div class="box res ' + st2 + '"><div class="lbl">ROI <em>' + mesLabel(R.mes) + '</em></div>'
+  var geral = o.modo === 'geral';
+  h += '<div class="box res ' + st2 + '"><div class="lbl">' + (geral ? 'ROI geral' : 'ROI por campanha') + ' <em>' + mesLabel(R.mes) + (geral ? ' · investido × todas as vendas do mês' : '') + '</em></div>'
     + '<div class="bigv ' + st2 + '" style="margin-top:12px">' + (rv != null ? pct(rv) : '—') + '</div>'
-    + '<div class="mins"><div class="mrow"><span>Investido em campanhas com venda</span><b class="inv">' + brl(o.invAtrib) + '</b></div>'
-    + '<div class="mrow"><span>Retorno (comissão contratada das vendas das campanhas)</span><b class="gr">' + brl(o.retorno) + '</b></div>'
-    + '<div class="mrow"><span>Retorno para cada R$ 1,00 investido</span><b>' + (o.retornoPorReal != null ? brl(o.retornoPorReal) : '—') + '</b></div></div></div>';
+    + '<div class="mins"><div class="mrow"><span>' + (geral ? 'Investido no mês' : 'Investido em campanhas com venda') + '</span><b class="inv">' + brl(o.invAtrib) + '</b></div>'
+    + '<div class="mrow"><span>' + (geral ? 'Retorno (comissão contratada de todas as vendas do mês)' : 'Retorno (comissão contratada das vendas das campanhas)') + '</span><b class="gr">' + brl(o.retorno) + '</b></div>'
+    + '<div class="mrow"><span>Retorno para cada R$ 1,00 investido</span><b>' + (o.retornoPorReal != null ? brl(o.retornoPorReal) : '—') + '</b></div>'
+    + (geral ? REGRAS.unidades.map(function (u) { var x = o.porUnidade[u]; return '<div class="mrow"><span>' + u + ' · investido ' + brl(x.investido) + ' · retorno ' + brl(x.retorno) + '</span><b class="' + (x.roi == null ? '' : (x.roi >= 0 ? 'gr' : 'rd')) + '">' + (x.roi != null ? pct(x.roi) : '—') + '</b></div>'; }).join('') : '')
+    + '</div></div>';
   h += '</div>';
 
   // Lançamento por texto
@@ -1744,10 +1759,11 @@ function vReg() {
     + regra('Investimento por unidade', 'Investimento lançado com a unidade (Mogi/Consolação) fica nela · o restante é rateado pela produção de cada unidade', 'Investido em marketing (%) = investido ÷ a receber.')
     + regra('Mínimo para não fechar no vermelho', 'Menor a receber em que o lucro bruto fica ≥ 0 (com o imposto de 15% arredondado)', '')
     + regra('Mínimo para não fechar no vermelho e investir', 'Menor a receber em que o lucro bruto cobre a reserva de marketing', '')
-    + regra('ROI', 'ROI = (retorno − investido) ÷ investido · retorno = a receber das vendas ligadas a cada campanha', 'A venda é ligada à campanha pelo nome da campanha/origem vindo do CRM, planilha ou sistemas. Venda sem campanha de marketing não entra no ROI.')
+    + regra('ROI por campanha · a partir de dezembro/2026', 'ROI = (retorno − investido) ÷ investido · retorno = a receber das vendas ligadas a cada campanha', 'A venda é ligada à campanha pelo nome da campanha/origem vindo do CRM, planilha ou sistemas. Venda sem campanha de marketing não entra no ROI.')
     + regra('Se a operação se pagou', 'Mês se pagou quando o lucro bruto ≥ 0 · acumulado do ano = saldo do ano anterior + lucro líquido dos meses', '')
     + regra('Cores', 'Verde = dinheiro que entra · vermelho = dinheiro que sai · amarelo = investimento', '')
     + regra('Qual comissão se aplica a cada venda', '1º tabela gravada na data da venda → 2º regra do projeto (Projeto Hapvida) → 3º tabela da operadora', 'Hapvida fora do projeto usa 350% + 2%. Mudanças futuras de tabela não alteram vendas antigas.')
+    + regra('ROI geral · até novembro/2026', 'ROI geral = (comissão contratada de todas as vendas do mês − investido no mês) ÷ investido · por unidade e no consolidado', 'A partir de dezembro/2026: ROI por campanha, ligando cada venda à campanha de origem.')
     + regra('Limite de investimento', 'Limite = 15% × produção do mês + saldo dos meses anteriores do ano (reserva − investido) · Dentro se investido ≤ limite', 'A reserva não usada passa para o mês seguinte; o que passou do limite reduz o saldo.')
     + regra('Provisão de 13º e férias no ano', 'Obrigação do ano = R$ 1.623,15 × 12 · Coberta se o resultado do ano ≥ 0', 'A provisão já é descontada todo mês no resultado.')
     + regra('Balanço anual e virada de ano', 'Em dezembro: fechar o ano grava o balanço geral e o saldo (lucro líquido do ano) passa para o ano seguinte', 'Acumulado = saldo do ano anterior + lucro líquido do ano atual.')
