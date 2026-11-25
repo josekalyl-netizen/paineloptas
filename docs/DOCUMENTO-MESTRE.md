@@ -564,6 +564,8 @@ Confirmado pelo usuário: **Alice, Porto, SulAmérica, Bradesco, Amil e Seguros 
 
 ## 12.24. Decisões de 25/11/2026, terceira rodada (v4.3)
 
+0. **Nome do sistema:** o ERP da operação se chama **SisWeb** (propostas, parcelas, beneficiários e extratos de comissão). No painel aparece sempre como SisWeb; neste documento, "ERP" = SisWeb.
+
 1. **A receber é uma simulação de 90 dias:** cada parcela do ERP tem data prevista = 30 dias depois do último pagamento da proposta (sem pagamento: 30 dias depois do cadastro; parcelas seguintes de 30 em 30 dias). Recebida (achada no extrato) → entra no mês dela pelo valor que veio no extrato. Não recebida: em dia até a data prevista; atrasada até 90 dias depois; **passados 90 dias sem receber, sai da conta** e o mês fica com o que realmente entrou.
 2. **Atrasado vai para o próximo recebimento:** na aba **A receber**, toda parcela atrasada aparece no mês atual, proposta a proposta, com data prevista e dias de atraso. O lucro de cada mês continua contando a parcela no mês dela enquanto está dentro dos 90 dias (sem duplicar).
 3. **Projeto Hapvida:** entra como a receber no mês (100% da 1ª mensalidade), ainda sem fonte de recebimento; previsto 30 dias depois do fim do mês da venda. Passa pela mesma regra de atrasado e 90 dias.
