@@ -560,12 +560,13 @@ function mesDevido(c) {
 }
 // Lançamentos do mês por unidade (mês devido para folha/rescisão/vale; mês do desconto para o resto)
 function lancExtratos(mes, u) {
-  var o = { receitas: 0, custos: 0, folha: 0, salario: 0, emprestimo: 0, pendente: 0, itens: [] };
+  var o = { receitas: 0, custos: 0, folha: 0, salario: 0, beneficio: 0, emprestimo: 0, pendente: 0, itens: [] };
   if (!extratosOn()) return o;
   EXTRATOS.creditos_debitos.forEach(function (c) {
     if (mesDevido(c) !== mes || unidadeCanon(c.unidade) !== u) return;
     var t = tipoCD(c.descricao), a = acaoCD(t, c.liquido); o.itens.push({ c: c, t: t, a: a });
     if (t[0] === 'A') o.salario = r2(o.salario - c.liquido);
+    if (t[0] === 'C') o.beneficio = r2(o.beneficio - c.liquido);
     if (a === 'receita') o.receitas = r2(o.receitas + c.liquido);
     else if (a === 'custo' || a === 'custoOp') o.custos = r2(o.custos - c.liquido);
     else if (a === 'folha') o.folha = r2(o.folha - c.liquido);
@@ -573,6 +574,18 @@ function lancExtratos(mes, u) {
     else if (a === 'pendente') o.pendente = r2(o.pendente - c.liquido);
   });
   return o;
+}
+// Mês sem salário no relatório (decisão do usuário, 25/11/2026): salário = média dos últimos 3 meses com salário registrado.
+// Benefícios sem registro no mês: mesma regra. Sem 3 meses anteriores, completa com os meses registrados mais próximos.
+function mesSoma(mes, n) { var a = +mes.slice(0, 4), m = +mes.slice(5, 7) - 1 + n; a += Math.floor(m / 12); m = ((m % 12) + 12) % 12; return a + '-' + String(m + 1).padStart(2, '0'); }
+function inicioRelatorios(u) { var _i = inicioRelatorios.cache = inicioRelatorios.cache || {}; if (_i[u]) return _i[u]; var m = '9999-99'; EXTRATOS.extratos.forEach(function (e) { if (unidadeCanon(e.unidade) === u && e.mes < m) m = e.mes; }); return (_i[u] = m); }
+function mediaFolha(u, mes, campo) {
+  var _c = mediaFolha.cache = mediaFolha.cache || {}, k = u + '|' + mes + '|' + campo; if (_c[k]) return _c[k];
+  var ms = [], i, x;
+  for (i = 1; i <= 36 && ms.length < 3; i++) { x = mesSoma(mes, -i); var v = lancExtratos(x, u)[campo]; if (v) ms.push({ mes: x, valor: v }); }
+  for (i = 1; i <= 36 && ms.length < 3; i++) { x = mesSoma(mes, i); var w = lancExtratos(x, u)[campo]; if (w) ms.push({ mes: x, valor: w }); }
+  ms.sort(function (a, b) { return a.mes < b.mes ? -1 : 1; });
+  return (_c[k] = { valor: ms.length ? r2(soma2(ms, function (m) { return m.valor; }) / ms.length) : 0, meses: ms });
 }
 function extratosOn() { return !DEMO && EXTRATOS && EXTRATOS.extratos && EXTRATOS.extratos.length; }
 // Vitalício recebido nos extratos (mês do pagamento), por unidade e operadora
@@ -756,10 +769,12 @@ function custosUnidade(u, mes) {
   var lx = lancExtratos(mes, u);
   // a folha do extrato sobrepõe a estrutura no mês devido quando há salário lançado para o mês;
   // sem salário no extrato, vale a estrutura (que já inclui benefícios e provisões) — decisões de 25/11/2026
-  var real = lx.salario !== 0;
-  return { unidade: u, fonteCustos: real ? 'extratos' : 'estrutura', mes: mes, diasUteis: du, vrDia: vrDia, vtDia: vtDia, vrPessoaDia: vrDia / c.clt, vtPessoaDia: vtDia / c.clt,
+  var real = lx.salario !== 0, mSal = null, mBen = null;
+  if (!real && extratosOn() && mes >= inicioRelatorios(u)) { mSal = mediaFolha(u, mes, 'salario'); if (!mSal.meses.length) mSal = null; else { mBen = lx.beneficio ? null : mediaFolha(u, mes, 'beneficio'); real = true; } }
+  var media = mSal ? r2(mSal.valor + (mBen ? mBen.valor : 0)) : 0;
+  return { unidade: u, fonteCustos: mSal ? 'media' : real ? 'extratos' : 'estrutura', mediaSalario: mSal, mediaBeneficio: mBen, media: media, mes: mes, diasUteis: du, vrDia: vrDia, vtDia: vtDia, vrPessoaDia: vrDia / c.clt, vtPessoaDia: vtDia / c.clt,
            salariosBrutos: c.salariosBrutos, pj: c.pjSocia, clt: clt, vr: vr, vt: vt, operacional: c.operacional, fixoEstrutura: fixo,
-           extrato: lx, fixo: real ? r2(lx.folha + lx.custos) : r2(fixo + lx.custos),   // + custos lançados nos extratos do mês (custo da unidade e de operação)
+           extrato: lx, fixo: real ? r2(lx.folha + media + lx.custos) : r2(fixo + lx.custos),   // + custos lançados nos extratos do mês (custo da unidade e de operação)
            prov13: real ? 0 : p13, provFerias: real ? 0 : pFer, provEncargos: real ? 0 : pEnc, provisao: real ? 0 : p13 + pFer + pEnc, cltPessoas: c.clt };
 }
 
@@ -961,7 +976,7 @@ function calcular() {
     U.reservaMkt = r2(U.producao * REGRAS.reservaMarketing);
     U.investido = R.invUnidade[u];
     // folha do extrato já inclui as comissões dos vendedores: no resultado, comissão à parte = 0
-    U.comissaoResultado = U.custos.fonteCustos === 'extratos' ? 0 : U.comissao;
+    U.comissaoResultado = U.custos.fonteCustos !== 'estrutura' ? 0 : U.comissao;   // folha real ou média dos relatórios já inclui as comissões
     U.res = resultado(U.recebidas, U.comissaoResultado, U.custos.fixo, U.custos.provisao, U.producao, null, U.investido);
     prodTot = r2(prodTot + U.producao); comTot = r2(comTot + U.comissao);
   });
@@ -1357,8 +1372,11 @@ function custoDetalhe(mes) {
     var orig = function (i) { return i.t[1] + ' · extrato ' + i.c.extrato + ' · pago em ' + mesLabel(i.c.mes); };
     if (x.imposto != null) add('Imposto', '15% sobre o a receber de ' + brl(x.recebidas), x.imposto, '', 'imp');
     add('Comissões dos vendedores', x.comissoes ? 'Comissões à parte' : 'Já descontadas nos relatórios de pagamento (nada à parte)', x.comissoes || 0, '', 'com');
-    if (c.fonteCustos === 'extratos') {
+    if (c.fonteCustos !== 'estrutura') {
       c.extrato.itens.forEach(function (i) { if (i.a === 'folha') add('Folha (relatórios de pagamento)', i.c.descricao, -i.c.liquido, orig(i), 'S' + i.t[0]); });
+      var mm = function (m) { return m.meses.map(function (x) { return mesLabel(x.mes).slice(0, 3).toLowerCase() + '/' + x.mes.slice(2, 4) + ' ' + brl(x.valor); }).join(' · '); };
+      if (c.mediaSalario) add('Folha (média de 3 meses)', 'Salários · média de ' + c.mediaSalario.meses.length + ' meses', c.mediaSalario.valor, mm(c.mediaSalario), 'SA');
+      if (c.mediaBeneficio && c.mediaBeneficio.meses.length) add('Folha (média de 3 meses)', 'Benefícios · média de ' + c.mediaBeneficio.meses.length + ' meses', c.mediaBeneficio.valor, mm(c.mediaBeneficio), 'SC');
     } else {
       add('Estrutura informada', 'Salários brutos (inclui PJ da sócia ' + brl(c.pj) + ')', c.salariosBrutos, '', 'est');
       add('Estrutura informada', 'Vale-refeição · ' + c.diasUteis + ' dias úteis', c.vr, '', 'est');
@@ -1374,7 +1392,7 @@ function custoDetalhe(mes) {
     });
     var tot = soma2(L, function (l) { return l.valor; });
     out.unidades[u] = { linhas: L, fora: fora, total: tot, guardado: x.saiu != null ? x.saiu : null, fonte: c.fonteCustos,
-      real: c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido; sobrepõe a estrutura informada)' : 'Sem salário no relatório deste mês: vale a estrutura informada + provisão' };
+      real: c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido; sobrepõe a estrutura informada)' : c.fonteCustos === 'media' ? 'Sem salário no relatório deste mês: média dos últimos 3 meses registrados (troca pelo real quando chegar o relatório do dia 5)' : 'Sem salário no relatório deste mês: vale a estrutura informada + provisão' };
     out.total = r2(out.total + tot);
   });
   return out;

@@ -628,3 +628,11 @@ Distribuição de lucros entre W3G e sócias; média de comissões para provisio
 **Entradas e saídas do mês (25/11/2026):** na aba Ano, o mês selecionado mostra um quadro único: linhas = categorias, colunas = Consolação · Mogi · Total. Entradas: agenciamento 1ª parcela, parcelas seguintes, vitalício, campanhas, premiações, Depto. de Seguros, acertos, desconto devolvido, estornos devolvidos. Saídas: imposto, salários, benefícios, férias, 13º, rescisões, vales, estrutura informada, provisão, adiantamentos de comissão, estornos, boletos, Valdecir, premiação de vendedor, taxa de implantação, campanhas estornadas. Cada categoria abre os itens. Fecha com total de entradas, total de saídas e resultado (lucro bruto); a auditoria confere centavo a centavo.
 
 **Ano: unidades batem com o total (25/11/2026):** a sustentação do ano é o **lucro líquido** = a receber − custos − investido. Cada unidade mostra a mesma conta linha a linha (a receber − custos = lucro bruto − investido = lucro líquido), e Consolação + Mogi = total, centavo a centavo (auditoria confere bruto, investido e líquido). O investimento SMS Kolmeya é todo de Mogi.
+
+### Salário sem relatório: média de 3 meses (25/11/2026)
+- O salário de cada mês vem do relatório de pagamento do dia 5 (no mês a que se refere).
+- Mês sem salário no relatório → salário = média dos últimos 3 meses com salário registrado na unidade. Benefícios sem registro no mês seguem a mesma regra.
+- Sem 3 meses anteriores (Consolação, janeiro/2026), completa com os meses registrados mais próximos.
+- Vale a partir do primeiro relatório de cada unidade; antes disso continua a estrutura informada.
+- Como a folha dos relatórios já inclui as comissões dos vendedores, no mês pela média não se soma comissão à parte nem provisão (igual aos meses com relatório).
+- Quando chega o relatório do mês, o valor real substitui a média.
