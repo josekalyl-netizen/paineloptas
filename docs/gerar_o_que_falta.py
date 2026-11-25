@@ -5,13 +5,8 @@ raiz = pathlib.Path(__file__).resolve().parent.parent
 logo = base64.b64encode((raiz / 'assets/logo-optas.png').read_bytes()).decode()
 DATA = '25/11/2026'
 itens = [
- ("Decisões","alta","Lucro dos meses passados: a receber do SisWeb ou recebido real?","Hoje o lucro de cada mês usa o que o SisWeb diz que deveria entrar (1ª parcela no mês da venda), que inclui 231 parcelas nunca pagas (R$ 326.419,64). A alternativa é usar o que entrou nos extratos.","SisWeb (como está) / Extratos (real)","Lucro bruto e líquido de janeiro a outubro."),
  ("Decisões","alta","Projeto Hapvida: onde entra o dinheiro?","Os extratos da W3G não trazem as comissões do Projeto Hapvida (100% da 1ª mensalidade). Em outubro o projeto implantou R$ 1.960,53 e em novembro R$ 21.343,07 até 25/11.","Em qual relatório/extrato vem e em que mês","A receber do projeto e lucro de outubro e novembro."),
- ("Decisões","média","Comissões dos vendedores de janeiro e outubro","Nesses meses o extrato não tem folha; o custo usa a estrutura e falta a comissão dos vendedores.","Valor pago / considerar zero","Resultado de janeiro e outubro."),
- ("Decisões","média","Vendas fora do projeto do mês: PipeRun ou SisWeb?","Novembro: PipeRun mostra 15 vendas (R$ 18.213,06); o SisWeb tem 6 cadastradas.","Qual fonte vale no mês corrente","1ª parcela das vendas fora do projeto do mês."),
- ("Decisões","baixa","Abatimento do empréstimo (R$ 64.773,05)","Como o abatimento vai aparecer nos extratos (descrição) para eu baixar o saldo.","Texto do lançamento","Saldo de empréstimo."),
  ("Dados","alta","Situação das propostas no SisWeb","Exportação com a situação (cancelada, sem confirmação da 1ª, cancelada na operadora, inadimplente, implantada) e a data do cancelamento.","Mesma exportação do SisWeb + 2 colunas","Cancelamentos saem da conta; explica as 231 parcelas não pagas."),
- ("Dados","alta","Vendedor de cada proposta","O SisWeb e os extratos não dizem quem vendeu.","Coluna vendedor no SisWeb ou planilha","Média por vendedor nos meses passados e conferência da comissão por venda."),
  ("Dados","média","Extratos novos todo mês","Mogi: falta o de novembro. Consolação: não houve extrato em outubro?","CSV do SisWeb, como os enviados","Recebido, vitalício, folha e créditos/débitos do mês."),
  ("Dados","média","Comissão da Optas em 5 propostas do SisWeb","Select, Unimed Santos, Biovida e duas Onmed (Qualicorp) estão sem a comissão da corretora cadastrada.","Cadastrar no SisWeb","A receber dessas propostas."),
  ("Acessos","alta","Projeto do Apps Script","Para publicar o painel e atualizar sozinho (chaves OPTAS_KEY, OPTAS_TV_KEY, OPTAS_PLANILHA_LEADS).","Compartilhar o projeto","Painel publicado, vidas e produção ao vivo."),
@@ -20,7 +15,7 @@ itens = [
 ]
 registrado = ("Grade V3; Projeto Hapvida 100%; adesão sem taxa; vitalício após o agenciamento e no lucro; Prevent por idade; vendedor (faixa pela produção total, 15% + valor por vida só implantadas, a partir de 25); "
   "reserva que passa para o mês seguinte; feriados de SP e Carnaval; SMS de Mogi jan–out; ROI geral até novembro; SisWeb (358 propostas, parcelas reais); extratos (23, de-para no centavo); "
-  "créditos/débitos classificados; folha do extrato sobrepõe a estrutura; empréstimos fora do resultado; Valdecir 40% como custo de operação de Mogi; Gileade fora.")
+  "créditos/débitos classificados; folha do extrato sobrepõe a estrutura; empréstimos fora do resultado; Valdecir 40% como custo de operação de Mogi; Gileade fora; a receber em simulação com ajuste aos 90 dias pelo vencimento do SisWeb; vendas fora do mês só pelo SisWeb; empréstimo da Joana fora do sistema; comissões dos vendedores = as dos relatórios de pagamento (sem folha à parte); vendas até novembro sem vendedor e, de dezembro em diante, vendedor informado pela Optas.")
 grupos = []
 for g in [x[0] for x in itens]:
     if g not in grupos: grupos.append(g)
