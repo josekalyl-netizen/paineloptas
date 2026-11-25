@@ -5,20 +5,22 @@ raiz = pathlib.Path(__file__).resolve().parent.parent
 logo = base64.b64encode((raiz / 'assets/logo-optas.png').read_bytes()).decode()
 DATA = '25/11/2026'
 itens = [
- ("Dados para os números ficarem reais","alta","Situação das propostas no ERP","A exportação de propostas não traz a situação (cancelada, cancelada sem confirmação da 1ª, cancelada na operadora, inadimplente, implantada) nem a data do cancelamento.","Mesma exportação com a coluna de situação e a data do cancelamento","Cancelamentos saem da conta: a receber, vitalício e produção de cada mês."),
- ("Dados para os números ficarem reais","alta","Fechamento de folha de cada mês (jan a out)","O ERP já trouxe as propostas, parcelas e vidas. Falta o vendedor de cada proposta (o ERP vem sem vendedor) e o que foi pago a cada um.","Arquivo do fechamento (Excel, PDF ou CSV) mês a mês","Comissões e lucro de janeiro a outubro; confere o que foi pago × a regra."),
- ("Dados para os números ficarem reais","alta","Vitalício recebido, mês a mês e proposta a proposta","O que entrou de vitalício em cada mês, por contrato.","Relatórios das operadoras","Vitalício real no lucro de cada mês e carteira ativa."),
- ("Dados para os números ficarem reais","alta","Agenciamento recebido (o que entrou, atrasou e falta)","Relatórios de recebimento das operadoras, para trocar o previsto pela grade pelo que realmente entrou.","Relatórios de recebimento","Caixa real, atrasos e cancelamentos."),
- ("Dados para os números ficarem reais","média","Data de nascimento nas vendas Prevent Senior","Só para as vendas Prevent: titular de 0 a 18 anos não comissiona.","Coluna no fechamento ou documentação do cliente","Comissão Prevent correta."),
- ("Dados para os números ficarem reais","média","Campanha de cada venda","A partir de dezembro: qual venda veio de qual campanha. Até novembro o ROI é geral (investido × todas as vendas).","Campo no ERP/CRM ou no fechamento","ROI do SMS por venda."),
- ("Acessos e integração","alta","ERP","Acesso ao ERP para buscar vendas, recebimentos e vitalícios direto da fonte.","Usuário/token (cadastrado de forma segura, nunca pelo chat)","Painel atualizado sem digitação."),
- ("Acessos e integração","alta","Projeto do Apps Script","Acesso ao projeto do painel atual para publicar, com as chaves OPTAS_KEY e OPTAS_TV_KEY.","Compartilhar o projeto","Painel publicado e atualizando sozinho."),
- ("Regras de negócio","baixa","Encargos da provisão (34,8%)","Validação da contabilidade: INSS 20% + RAT 1% + Terceiros 5,8% + FGTS 8% sobre 13º e férias.","Confirmado / valores corretos","Provisão mensal (R$ 1.623,15)."),
- ("Decisões que tomei e preciso que você confirme","baixa","Investimento sem unidade","Quando o investimento não diz a unidade, divido pela produção de cada unidade. (Os SMS de 2026 são todos de Mogi.)","Confirmo / outra regra","Lucro líquido por unidade."),
+ ("Decisões","alta","Lucro dos meses passados: a receber do ERP ou recebido real?","Hoje o lucro de cada mês usa o que o ERP diz que deveria entrar (1ª parcela no mês da venda), que inclui 231 parcelas nunca pagas (R$ 326.419,64). A alternativa é usar o que entrou nos extratos.","ERP (como está) / Extratos (real)","Lucro bruto e líquido de janeiro a outubro."),
+ ("Decisões","alta","Projeto Hapvida: onde entra o dinheiro?","Os extratos da W3G não trazem as comissões do Projeto Hapvida (100% da 1ª mensalidade). Em outubro o projeto implantou R$ 1.960,53 e em novembro R$ 21.343,07 até 25/11.","Em qual relatório/extrato vem e em que mês","A receber do projeto e lucro de outubro e novembro."),
+ ("Decisões","média","Comissões dos vendedores de janeiro e outubro","Nesses meses o extrato não tem folha; o custo usa a estrutura e falta a comissão dos vendedores.","Valor pago / considerar zero","Resultado de janeiro e outubro."),
+ ("Decisões","média","Vendas fora do projeto do mês: PipeRun ou ERP?","Novembro: PipeRun mostra 15 vendas (R$ 18.213,06); o ERP tem 6 cadastradas.","Qual fonte vale no mês corrente","1ª parcela das vendas fora do projeto do mês."),
+ ("Decisões","baixa","Abatimento do empréstimo (R$ 64.773,05)","Como o abatimento vai aparecer nos extratos (descrição) para eu baixar o saldo.","Texto do lançamento","Saldo de empréstimo."),
+ ("Dados","alta","Situação das propostas no ERP","Exportação com a situação (cancelada, sem confirmação da 1ª, cancelada na operadora, inadimplente, implantada) e a data do cancelamento.","Mesma exportação do ERP + 2 colunas","Cancelamentos saem da conta; explica as 231 parcelas não pagas."),
+ ("Dados","alta","Vendedor de cada proposta","O ERP e os extratos não dizem quem vendeu.","Coluna vendedor no ERP ou planilha","Média por vendedor nos meses passados e conferência da comissão por venda."),
+ ("Dados","média","Extratos novos todo mês","Mogi: falta o de novembro. Consolação: não houve extrato em outubro?","CSV do SisWeb, como os enviados","Recebido, vitalício, folha e créditos/débitos do mês."),
+ ("Dados","média","Comissão da Optas em 5 propostas do ERP","Select, Unimed Santos, Biovida e duas Onmed (Qualicorp) estão sem a comissão da corretora cadastrada.","Cadastrar no ERP","A receber dessas propostas."),
+ ("Acessos","alta","Projeto do Apps Script","Para publicar o painel e atualizar sozinho (chaves OPTAS_KEY, OPTAS_TV_KEY, OPTAS_PLANILHA_LEADS).","Compartilhar o projeto","Painel publicado, vidas e produção ao vivo."),
+ ("Acessos","alta","ERP (exportação automática ou API)","Hoje os arquivos são enviados à mão.","Acesso / rotina de exportação","Propostas, parcelas e situação sem digitação."),
+ ("Acessos","média","Kolmeya: liberar o IP","A leitura das respostas de SMS está com erro 403 (IP não liberado) e a aba Leads WhatsApp (SMS) está vazia.","Pedido ao suporte da Kolmeya","ROI por campanha a partir de dezembro."),
 ]
-registrado = ("Grade de Comissão V3 completa (Amil PME 1% de vitalício; Hapvida/NotreDame PME 290%); Projeto Hapvida 100%; adesão sem a taxa; vitalício depois da última parcela e somando no lucro; Prevent 0 a 18 sem comissão; "
-  "vendedor: faixa pela produção total, projeto 15% + valor por vida a partir de 25; reserva que passa para o mês seguinte; feriados de SP capital e Carnaval; sócios sem VR/VT; custos replicados de outubro; "
-  "SMS de Mogi jan–out (R$ 87.926,48); novembro sem investimento.")
+registrado = ("Grade V3; Projeto Hapvida 100%; adesão sem taxa; vitalício após o agenciamento e no lucro; Prevent por idade; vendedor (faixa pela produção total, 15% + valor por vida só implantadas, a partir de 25); "
+  "reserva que passa para o mês seguinte; feriados de SP e Carnaval; SMS de Mogi jan–out; ROI geral até novembro; ERP (358 propostas, parcelas reais); extratos (23, de-para no centavo); "
+  "créditos/débitos classificados; folha do extrato sobrepõe a estrutura; empréstimos fora do resultado; Valdecir 40% como custo de operação de Mogi; Gileade fora.")
 grupos = []
 for g in [x[0] for x in itens]:
     if g not in grupos: grupos.append(g)
@@ -55,7 +57,7 @@ page = f'''<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta n
 <div class="resumo"><span><b>{cont['alta']}</b> de prioridade alta</span><span><b>{cont['média']}</b> média</span><span><b>{cont['baixa']}</b> baixa</span></div></div>
 {cards}<div class="ft">Já registrado: {H.escape(registrado)} As marcações ficam salvas neste navegador.</div></div>
 <script>
-var K='optas_falta_v3',S={{}};try{{S=JSON.parse(localStorage.getItem(K)||'{{}}')}}catch(e){{}}
+var K='optas_falta_v4',S={{}};try{{S=JSON.parse(localStorage.getItem(K)||'{{}}')}}catch(e){{}}
 function upd(){{var t=0,o=0;document.querySelectorAll('.item').forEach(function(el){{t++;var on=!!S[el.dataset.id];el.classList.toggle('ok',on);el.querySelector('input').checked=on;if(on)o++;}});document.getElementById('cont').textContent=o+' de '+t;document.getElementById('bar').style.width=(t?o/t*100:0)+'%';}}
 document.querySelectorAll('.item').forEach(function(el){{el.querySelector('input').addEventListener('change',function(e){{S[el.dataset.id]=e.target.checked;try{{localStorage.setItem(K,JSON.stringify(S))}}catch(x){{}}upd();}});}});upd();
 </script></body></html>'''
