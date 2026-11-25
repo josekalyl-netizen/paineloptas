@@ -645,3 +645,8 @@ Distribuição de lucros entre W3G e sócias; média de comissões para provisio
 - Recorrentes diferentes de 1%: Unimed CNU 2%, Prudential 5% e 10%, Unicor 2,5%.
 - Mogi não tem extrato com previsão em novembro/2026, e Consolação não tem em outubro/2026.
 - Total de 2026: Mogi 20.394,97 · Consolação 53.881,67 · total 74.276,64.
+
+### Botões, rolagem e aba Ano (25/11/2026)
+- Botões sem código dentro das tags (delegação por `data-a`): funcionam também em visualizadores que bloqueiam `onclick`.
+- Tabelas largas: barra de rolagem maior, arrastar com o mouse e Shift + roda.
+- Aba Ano: lucro bruto, lucro líquido, reserva de marketing e investimento em marketing também em % do a receber. "Investido" passa a se chamar "Investimento em marketing".
