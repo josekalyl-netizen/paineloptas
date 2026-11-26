@@ -1,6 +1,6 @@
 # Painel OPTAS — Memória de cálculo para auditoria
 
-**Versão do sistema:** v4.4 · 26/11/2026 · **Período:** janeiro a novembro de 2026 · **Unidades:** Consolação e Mogi
+**Versão do sistema:** v4.5 · 26/11/2026 · **Período:** janeiro a novembro de 2026 · **Unidades:** Consolação e Mogi
 
 Este documento descreve **todos** os cálculos do painel: de onde vem cada número, qual fórmula é usada e a que ele se refere. No fim estão os números de cada mês, com as somas, para conferência.
 
@@ -15,10 +15,10 @@ Convenções:
 | | Consolação | Mogi | **Total** |
 |---|--:|--:|--:|
 | A receber | 446.655,73 | 516.709,38 | **963.365,11** |
-| Saídas (custos + provisão + imposto) | 463.002,77 | 481.048,24 | **944.051,01** |
-| Lucro bruto | −16.347,04 | 35.661,14 | **19.314,10** |
+| Saídas (custos + provisão + imposto) | 465.297,64 | 489.525,88 | **954.823,52** |
+| Lucro bruto | −18.641,91 | 27.183,50 | **8.541,59** |
 | Investido em marketing | 0,00 | 87.926,48 | **87.926,48** |
-| Lucro líquido | −16.347,04 | −49.895,39 | **−66.242,43** |
+| Lucro líquido | −18.641,91 | −58.373,03 | **−77.014,94** |
 
 ---
 
@@ -71,10 +71,10 @@ Cada unidade, em cada mês, fica em uma de três situações:
 | Situação | Quando | Como calcula |
 |---|---|---|
 | **Relatório** | Existe relatório da unidade com previsão no mês | Vale **só o relatório** (seção 4) + custo operacional + provisão + imposto |
-| **Coberto pelo relatório seguinte** | Não há relatório no mês, mas há relatório depois (o seguinte já traz o que seria deste mês) | A receber = 0 · imposto = 0 · saídas = custo operacional + provisão. Hoje: **Consolação, outubro/2026** |
+| **Coberto pelo relatório seguinte** | Não há relatório no mês, mas há relatório depois (o seguinte já traz o que seria deste mês) | A receber = 0 · imposto = 0 · saídas = gastos com o mês escrito na descrição (vêm no relatório seguinte, seção 4.2) + custo operacional + provisão. Hoje: **Consolação, outubro/2026** |
 | **Estimativa** | Depois do último relatório da unidade | Seção 5. Hoje: **Mogi, novembro/2026** |
 
-Os relatórios de Mogi de 2025 (422414 e 422415) não entram nas contas de 2026.
+Os relatórios de Mogi de 2025 (422414 e 422415) não entram nas contas de 2026, a não ser algum débito deles com mês escrito de 2026 (seção 4.2).
 
 ---
 
@@ -103,9 +103,26 @@ Linha com Líquido R$ 0,00 não conta. São 7 linhas: a 1ª parcela de adesão r
 | Créditos | Todo valor positivo da seção Créditos e Débitos (campanhas, premiações, acertos, devoluções de desconto, estornos devolvidos, departamento de seguros, retiradas, aluguel etc.) |
 | **A receber** | 1ª parcela + parcelas seguintes + vitalício + créditos |
 
-### 4.2 Saídas do relatório
+### 4.2 Saídas do relatório — cada gasto no mês dele
 
-**Valores com "−" no relatório** = soma, em módulo, de todo Líquido negativo: linhas de comissão negativas e débitos.
+**Valores com "−" nos relatórios** = soma, em módulo, de todo Líquido negativo: linhas de comissão negativas e débitos.
+
+**Mês devido (pedido da Optas, 26/11/2026: "cada gasto no seu devido mês, conforme ele se identifica"):** o débito vai para o mês escrito na descrição, venha no relatório que vier. As entradas (valores positivos) continuam no mês do relatório.
+
+| Tipo de débito | Como o mês é lido | Exemplo |
+|---|---|---|
+| Salário, benefícios, férias, rescisão | nome do mês na descrição; sem nome, a data dd/mm | "SALÁRIOS - AGOSTO" (relatório de setembro) → agosto · "SALÁRIO - JOANA 07/09" → setembro |
+| Comissão Valdecir 40% | nome do mês | "COMISSÃO NOVEMBRO 2025" (relatório de jan/26) → nov/25 |
+| Vale, AD de comissão com folha negativa | data dd/mm | "VALE - 07/01" (relatório de fev/26) → jan/26 |
+| 13º sem mês, pago em janeiro ou fevereiro | dezembro do ano anterior | Mogi, jan/26 → dez/25 |
+| Todo o resto (boletos, estornos, AD de parcela, campanhas, 10%, taxa) e débito sem mês escrito | mês do relatório | — |
+
+Sem ano escrito, vale o mês mais recente até o do relatório. Gasto que cai em 2025 sai de 2026.
+
+**Salário ou benefício que ainda não chegou:** como o salário é pago no relatório do mês seguinte, o último mês ainda não tem o seu. Nesse mês entra a **média dos últimos 3 meses** (marcada como estimativa), trocada pelo valor real quando o relatório chegar. Hoje: Consolação nov/26 (salário); Mogi set/26 e out/26 (salário e benefícios).
+
+**Conferência:** a soma dos gastos de todos os meses (sem as estimativas) é igual à soma de todos os "−" de todos os relatórios, por unidade. Nada some e nada conta duas vezes.
+
 
 **O salário não é descontado de novo.** O SisWeb já tira salário, benefícios, férias, 13º etc. do valor que a Optas recebe, e o painel usa exatamente esses valores do relatório.
 
@@ -382,20 +399,20 @@ Os valores abaixo são os do painel. As tabelas de cada unidade somam o total da
 
 #### Consolação — saídas e resultado
 
-| Mês | Valores com "-" no relatório | Folha estimada (média 3 meses) | Custo operacional | Provisão 13º/férias | Imposto | **Saídas** | **Lucro bruto** | Investido | SMS já no relatório | **Lucro líquido** |
+| Mês | Gastos dos relatórios (no mês escrito na descrição) | Estimativa (média 3 meses, ainda sem relatório) | Custo operacional | Provisão 13º/férias | Imposto | **Saídas** | **Lucro bruto** | Investido | SMS já no relatório | **Lucro líquido** |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| jan/26 | 33.097,45 | — | 0,00 | 796,18 | 2.598,42 | **36.492,05** | **−12.854,99** | 0,00 | — | **−12.854,99** |
-| fev/26 | 37.709,50 | — | 0,00 | 796,18 | 6.999,10 | **45.504,78** | **9.172,39** | 0,00 | — | **9.172,39** |
-| mar/26 | 87.404,06 | — | 0,00 | 796,18 | 6.869,28 | **95.069,52** | **−41.610,07** | 0,00 | — | **−41.610,07** |
-| abr/26 | 16.230,34 | — | 0,00 | 796,18 | 617,56 | **17.644,08** | **−12.214,48** | 0,00 | — | **−12.214,48** |
-| mai/26 | 26.669,95 | — | 0,00 | 796,18 | 15.870,89 | **43.337,02** | **71.409,54** | 0,00 | — | **71.409,54** |
-| jun/26 | 34.888,31 | — | 0,00 | 796,18 | 3.827,58 | **39.512,07** | **−7.839,91** | 0,00 | — | **−7.839,91** |
-| jul/26 | 42.199,05 | — | 0,00 | 796,18 | 3.882,89 | **46.878,12** | **−9.578,41** | 0,00 | — | **−9.578,41** |
-| ago/26 | 31.627,17 | — | 0,00 | 796,18 | 2.069,44 | **34.492,79** | **−12.806,88** | 0,00 | — | **−12.806,88** |
-| set/26 | 30.390,68 | — | 0,00 | 796,18 | 4.410,65 | **35.597,51** | **4.276,15** | 0,00 | — | **4.276,15** |
-| out/26 | — | — | 0,00 | 796,18 | 0,00 | **796,18** | **−796,18** | 0,00 | — | **−796,18** |
-| nov/26 | 59.466,20 | — | 0,00 | 796,18 | 7.416,27 | **67.678,65** | **−3.504,20** | 0,00 | — | **−3.504,20** |
-| **Total** | **399.682,71** | **0,00** | **0,00** | **8.757,98** | **54.562,08** | **463.002,77** | **−16.347,04** | **0,00** | **0,00** | **−16.347,04** |
+| jan/26 | 30.509,85 | — | 0,00 | 796,18 | 2.598,42 | **33.904,45** | **−10.267,39** | 0,00 | — | **−10.267,39** |
+| fev/26 | 28.209,50 | — | 0,00 | 796,18 | 6.999,10 | **36.004,78** | **18.672,39** | 0,00 | — | **18.672,39** |
+| mar/26 | 88.656,20 | — | 0,00 | 796,18 | 6.869,28 | **96.321,66** | **−42.862,21** | 0,00 | — | **−42.862,21** |
+| abr/26 | 26.733,55 | — | 0,00 | 796,18 | 617,56 | **28.147,29** | **−22.717,69** | 0,00 | — | **−22.717,69** |
+| mai/26 | 33.095,30 | — | 0,00 | 796,18 | 15.870,89 | **49.762,37** | **64.984,19** | 0,00 | — | **64.984,19** |
+| jun/26 | 30.645,67 | — | 0,00 | 796,18 | 3.827,58 | **35.269,43** | **−3.597,27** | 0,00 | — | **−3.597,27** |
+| jul/26 | 42.418,96 | — | 0,00 | 796,18 | 3.882,89 | **47.098,03** | **−9.798,32** | 0,00 | — | **−9.798,32** |
+| ago/26 | 35.108,20 | — | 0,00 | 796,18 | 2.069,44 | **37.973,82** | **−16.287,91** | 0,00 | — | **−16.287,91** |
+| set/26 | 30.156,84 | — | 0,00 | 796,18 | 4.410,65 | **35.363,67** | **4.509,99** | 0,00 | — | **4.509,99** |
+| out/26 | 26.022,13 | — | 0,00 | 796,18 | 0,00 | **26.818,31** | **−26.818,31** | 0,00 | — | **−26.818,31** |
+| nov/26 | 8.538,91 | 21.882,47 | 0,00 | 796,18 | 7.416,27 | **38.633,83** | **25.540,62** | 0,00 | — | **25.540,62** |
+| **Total** | **380.095,11** | **21.882,47** | **0,00** | **8.757,98** | **54.562,08** | **465.297,64** | **−18.641,91** | **0,00** | **0,00** | **−18.641,91** |
 
 #### Mogi — entradas (a receber)
 
@@ -433,37 +450,37 @@ Os valores abaixo são os do painel. As tabelas de cada unidade somam o total da
 
 #### Mogi — saídas e resultado
 
-| Mês | Valores com "-" no relatório | Folha estimada (média 3 meses) | Custo operacional | Provisão 13º/férias | Imposto | **Saídas** | **Lucro bruto** | Investido | SMS já no relatório | **Lucro líquido** |
+| Mês | Gastos dos relatórios (no mês escrito na descrição) | Estimativa (média 3 meses, ainda sem relatório) | Custo operacional | Provisão 13º/férias | Imposto | **Saídas** | **Lucro bruto** | Investido | SMS já no relatório | **Lucro líquido** |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| jan/26 | 53.213,85 | — | 2.300,00 | 826,97 | 5.219,45 | **61.560,27** | **−10.914,26** | 4.907,06 | 2.369,95 | **−13.451,37** |
-| fev/26 | 23.948,52 | — | 2.300,00 | 826,97 | 6.146,50 | **33.221,99** | **30.793,05** | 10.202,34 | — | **20.590,71** |
-| mar/26 | 23.579,88 | — | 2.300,00 | 826,97 | 2.534,82 | **29.241,67** | **−159,95** | 12.139,44 | — | **−12.299,39** |
-| abr/26 | 16.022,18 | — | 2.300,00 | 826,97 | 1.718,03 | **20.867,18** | **−3.065,05** | 8.018,16 | — | **−11.083,21** |
-| mai/26 | 26.255,87 | — | 2.300,00 | 826,97 | 3.579,59 | **32.962,43** | **−1.761,62** | 5.613,44 | — | **−7.375,06** |
-| jun/26 | 51.695,52 | — | 2.300,00 | 826,97 | 2.864,79 | **57.687,28** | **−28.062,09** | 7.186,38 | — | **−35.248,47** |
-| jul/26 | 44.231,74 | — | 2.300,00 | 826,97 | 5.586,25 | **52.944,96** | **−1.762,39** | 18.612,86 | — | **−20.375,25** |
-| ago/26 | 69.015,32 | — | 2.300,00 | 826,97 | 6.154,79 | **78.297,08** | **−22.358,88** | 17.119,37 | — | **−39.478,25** |
-| set/26 | 49.896,32 | — | 2.300,00 | 826,97 | 6.215,78 | **59.239,07** | **99,57** | 1.774,81 | — | **−1.675,24** |
-| out/26 | 2.947,40 | — | 2.300,00 | 826,97 | 8.479,40 | **14.553,77** | **62.652,43** | 2.352,62 | — | **60.299,81** |
+| jan/26 | 36.353,78 | — | 2.300,00 | 826,97 | 5.219,45 | **44.700,20** | **5.945,81** | 4.907,06 | 2.369,95 | **3.408,70** |
+| fev/26 | 20.136,11 | — | 2.300,00 | 826,97 | 6.146,50 | **29.409,58** | **34.605,46** | 10.202,34 | — | **24.403,12** |
+| mar/26 | 30.748,76 | — | 2.300,00 | 826,97 | 2.534,82 | **36.410,55** | **−7.328,83** | 12.139,44 | — | **−19.468,27** |
+| abr/26 | 48.803,40 | — | 2.300,00 | 826,97 | 1.718,03 | **53.648,40** | **−35.846,27** | 8.018,16 | — | **−43.864,43** |
+| mai/26 | 45.317,90 | — | 2.300,00 | 826,97 | 3.579,59 | **52.024,46** | **−20.823,65** | 5.613,44 | — | **−26.437,09** |
+| jun/26 | 44.693,66 | — | 2.300,00 | 826,97 | 2.864,79 | **50.685,42** | **−21.060,23** | 7.186,38 | — | **−28.246,61** |
+| jul/26 | 41.144,27 | — | 2.300,00 | 826,97 | 5.586,25 | **49.857,49** | **1.325,08** | 18.612,86 | — | **−17.287,78** |
+| ago/26 | 29.077,21 | — | 2.300,00 | 826,97 | 6.154,79 | **38.358,97** | **17.579,23** | 17.119,37 | — | **459,86** |
+| set/26 | 10.572,47 | 29.744,64 | 2.300,00 | 826,97 | 6.215,78 | **49.659,86** | **9.678,78** | 1.774,81 | — | **7.903,97** |
+| out/26 | 2.947,40 | 29.744,64 | 2.300,00 | 826,97 | 8.479,40 | **44.298,41** | **32.907,79** | 2.352,62 | — | **30.555,17** |
 | nov/26 | — | 29.744,64 | 2.300,00 | 826,97 | 7.600,93 | **40.472,54** | **10.200,33** | 0,00 | — | **10.200,33** |
-| **Total** | **360.806,60** | **29.744,64** | **25.300,00** | **9.096,67** | **56.100,33** | **481.048,24** | **35.661,14** | **87.926,48** | **2.369,95** | **−49.895,39** |
+| **Total** | **309.794,96** | **89.233,92** | **25.300,00** | **9.096,67** | **56.100,33** | **489.525,88** | **27.183,50** | **87.926,48** | **2.369,95** | **−58.373,03** |
 
 #### Consolidado (Consolação + Mogi)
 
 | Mês | A receber | Imposto | Saídas | Lucro bruto | Investido | Lucro líquido | Produção (mensalidades vendidas) | Reserva de marketing (15%) |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
-| jan/26 | 74.283,07 | 7.817,87 | 98.052,32 | −23.769,25 | 4.907,06 | −26.306,36 | 33.329,87 | 4.999,48 |
-| fev/26 | 118.692,21 | 13.145,60 | 78.726,77 | 39.965,44 | 10.202,34 | 29.763,10 | 56.868,80 | 8.530,32 |
-| mar/26 | 82.541,17 | 9.404,10 | 124.311,19 | −41.770,02 | 12.139,44 | −53.909,46 | 49.451,80 | 7.417,77 |
-| abr/26 | 23.231,73 | 2.335,59 | 38.511,26 | −15.279,53 | 8.018,16 | −23.297,69 | 71.196,09 | 10.679,41 |
-| mai/26 | 145.947,37 | 19.450,48 | 76.299,45 | 69.647,92 | 5.613,44 | 64.034,48 | 71.186,04 | 10.677,90 |
-| jun/26 | 61.297,35 | 6.692,37 | 97.199,35 | −35.902,00 | 7.186,38 | −43.088,38 | 47.382,46 | 7.107,37 |
-| jul/26 | 88.482,28 | 9.469,14 | 99.823,08 | −11.340,80 | 18.612,86 | −29.953,66 | 58.386,56 | 8.757,98 |
-| ago/26 | 77.624,11 | 8.224,23 | 112.789,87 | −35.165,76 | 17.119,37 | −52.285,13 | 50.849,62 | 7.627,45 |
-| set/26 | 99.212,30 | 10.626,43 | 94.836,58 | 4.375,72 | 1.774,81 | 2.600,91 | 40.534,98 | 6.080,25 |
-| out/26 | 77.206,20 | 8.479,40 | 15.349,95 | 61.856,25 | 2.352,62 | 59.503,63 | 29.134,62 | 4.370,19 |
-| nov/26 | 114.847,32 | 15.017,20 | 108.151,19 | 6.696,13 | 0,00 | 6.696,13 | 50.101,05 | 7.515,16 |
-| **Total** | **963.365,11** | **110.662,41** | **944.051,01** | **19.314,10** | **87.926,48** | **−66.242,43** | **558.421,89** | **83.763,28** |
+| jan/26 | 74.283,07 | 7.817,87 | 78.604,65 | −4.321,58 | 4.907,06 | −6.858,69 | 33.329,87 | 4.999,48 |
+| fev/26 | 118.692,21 | 13.145,60 | 65.414,36 | 53.277,85 | 10.202,34 | 43.075,51 | 56.868,80 | 8.530,32 |
+| mar/26 | 82.541,17 | 9.404,10 | 132.732,21 | −50.191,04 | 12.139,44 | −62.330,48 | 49.451,80 | 7.417,77 |
+| abr/26 | 23.231,73 | 2.335,59 | 81.795,69 | −58.563,96 | 8.018,16 | −66.582,12 | 71.196,09 | 10.679,41 |
+| mai/26 | 145.947,37 | 19.450,48 | 101.786,83 | 44.160,54 | 5.613,44 | 38.547,10 | 71.186,04 | 10.677,90 |
+| jun/26 | 61.297,35 | 6.692,37 | 85.954,85 | −24.657,50 | 7.186,38 | −31.843,88 | 47.382,46 | 7.107,37 |
+| jul/26 | 88.482,28 | 9.469,14 | 96.955,52 | −8.473,24 | 18.612,86 | −27.086,10 | 58.386,56 | 8.757,98 |
+| ago/26 | 77.624,11 | 8.224,23 | 76.332,79 | 1.291,32 | 17.119,37 | −15.828,05 | 50.849,62 | 7.627,45 |
+| set/26 | 99.212,30 | 10.626,43 | 85.023,53 | 14.188,77 | 1.774,81 | 12.413,96 | 40.534,98 | 6.080,25 |
+| out/26 | 77.206,20 | 8.479,40 | 71.116,72 | 6.089,48 | 2.352,62 | 3.736,86 | 29.134,62 | 4.370,19 |
+| nov/26 | 114.847,32 | 15.017,20 | 79.106,37 | 35.740,95 | 0,00 | 35.740,95 | 50.101,05 | 7.515,16 |
+| **Total** | **963.365,11** | **110.662,41** | **954.823,52** | **8.541,59** | **87.926,48** | **−77.014,94** | **558.421,89** | **83.763,28** |
 
 #### Relatórios de pagamento usados
 
@@ -492,8 +509,6 @@ Os valores abaixo são os do painel. As tabelas de cada unidade somam o total da
 | 424782 | Mogi | 10/08/2026 | 05/08/2026 | ago/26 | 52.936,49 | −66.013,61 | **−13.077,12** | 58.873,18 | 45.796,06 | sim |
 | 425400 | Mogi | 26/08/2026 | 04/09/2026 | set/26 | 56.077,66 | −46.635,34 | **9.442,32** | 45.796,06 | 55.238,38 | sim |
 | 426505 | Mogi | 01/10/2026 | 05/10/2026 | out/26 | 67.524,19 | 6.734,61 | **74.258,80** | 55.238,38 | 129.497,18 | sim |
-
----
 
 ## 17. Pontos de atenção para a auditoria
 

@@ -367,7 +367,7 @@ html,body{overflow-x:hidden}
    Alterar aqui apenas quando o usuário confirmar novas regras.
    ===================================================================== */
 var REGRAS = {
-  versao: 'v4.4 · 26/11/2026',
+  versao: 'v4.5 · 26/11/2026',
   unidades: ['Consolação', 'Mogi'],
   // 3. Custos fixos (salários brutos JÁ incluem o PJ das sócias — não somar de novo)
   custos: {
@@ -611,10 +611,10 @@ var REL_EXCECOES = {};
 function relatorioMes(mes, u) {
   var _c = relatorioMes.cache = relatorioMes.cache || {}, k = mes + '|' + u; if (k in _c) return _c[k];
   if (!extratosOn() || !EXTRATOS.extratos.some(function (x) { return x.mes === mes && unidadeCanon(x.unidade) === u; })) return (_c[k] = null);
-  var o = { primeira: 0, anteriores: 0, vitalicio: 0, outras: 0, entradas: 0, custos: 0, base85: 0, base15: 0, ent: [], sai: [], fora: [], extratos: [] };
+  var o = { primeira: 0, anteriores: 0, vitalicio: 0, outras: 0, entradas: 0, custos: 0, custosRel: 0, base85: 0, base15: 0, ent: [], sai: [], fora: [], foiPara: [], extratos: [] };
   EXTRATOS.extratos.forEach(function (x) { if (x.mes === mes && unidadeCanon(x.unidade) === u) o.extratos.push(x.codigo); });
   EXTRATOS.linhas.forEach(function (l) { if (l.mes !== mes || unidadeCanon(l.unidade) !== u || !l.liquido) return;
-    if (l.liquido < 0) { o.custos = r2(o.custos - l.liquido); o.sai.push({ l: l, valor: r2(-l.liquido), cat: 'Sneg' }); return; }
+    if (l.liquido < 0) { o.custosRel = r2(o.custosRel - l.liquido); return; }
     var cat = l.tipo === 'vitalicio' ? 'vit' : l.parc === 1 ? 'ag1' : 'agN';
     if (cat === 'vit') o.vitalicio = r2(o.vitalicio + l.liquido); else if (cat === 'ag1') o.primeira = r2(o.primeira + l.liquido); else o.anteriores = r2(o.anteriores + l.liquido);
     if (l.pct_adm > 0) o.base85 = r2(o.base85 + l.liquido); else o.base15 = r2(o.base15 + l.liquido);
@@ -622,8 +622,29 @@ function relatorioMes(mes, u) {
   EXTRATOS.creditos_debitos.forEach(function (c) { if (c.mes !== mes || unidadeCanon(c.unidade) !== u || !c.liquido) return; var t = tipoCD(c.descricao);
     if (REL_EXCECOES[t[0]]) { o.fora.push({ c: c, t: t, valor: c.liquido, motivo: REL_EXCECOES[t[0]] }); return; }
     if (c.liquido > 0) { o.outras = r2(o.outras + c.liquido); o.base15 = r2(o.base15 + c.liquido); o.ent.push({ c: c, t: t, valor: c.liquido, cat: 'E' + t[0] }); }
-    else { o.custos = r2(o.custos - c.liquido); o.sai.push({ c: c, t: t, valor: r2(-c.liquido), cat: 'S' + t[0] }); } });
+    else { o.custosRel = r2(o.custosRel - c.liquido); if (mesDevido(c) !== mes) o.foiPara.push({ c: c, t: t, valor: r2(-c.liquido), mes: mesDevido(c) }); } });
+  var cc = custosCompetencia(mes, u); o.sai = cc.sai; o.custos = cc.custos;   // custos: cada gasto no mês a que se refere (26/11/2026)
   o.entradas = r2(r2(r2(o.primeira + o.anteriores) + o.vitalicio) + o.outras);
+  return (_c[k] = o);
+}
+// 26/11/2026 (pedido do usuário: "cada gasto no seu devido mês, conforme ele se identifica"): os valores com "-" dos relatórios
+// vão para o mês escrito na descrição (mesDevido: salário, benefícios, férias, 13º, rescisão, vale, Valdecir, AD/folha negativa com data).
+// Sem mês na descrição → mês do relatório. As entradas (valores positivos) continuam no mês do relatório.
+// Mês em que o salário ou o benefício ainda não chegou (vem no relatório seguinte): média dos últimos 3 meses, até o relatório chegar.
+function ultimoRelatorio(u) { var m = ''; EXTRATOS.extratos.forEach(function (e) { if (unidadeCanon(e.unidade) === u && e.mes > m) m = e.mes; }); return m; }
+function custosCompetencia(mes, u) {
+  var _c = custosCompetencia.cache = custosCompetencia.cache || {}, k = mes + '|' + u; if (k in _c) return _c[k];
+  var o = { custos: 0, sai: [] }; if (!extratosOn()) return (_c[k] = o);
+  EXTRATOS.linhas.forEach(function (l) { if (l.mes === mes && unidadeCanon(l.unidade) === u && l.liquido < 0) o.sai.push({ l: l, valor: r2(-l.liquido), cat: 'Sneg' }); });
+  EXTRATOS.creditos_debitos.forEach(function (c) { if (!(c.liquido < 0) || unidadeCanon(c.unidade) !== u || mesDevido(c) !== mes) return; var t = tipoCD(c.descricao);
+    if (REL_EXCECOES[t[0]]) return; o.sai.push({ c: c, t: t, valor: r2(-c.liquido), cat: 'S' + t[0], de: c.mes !== mes ? c.mes : null }); });
+  if (mes >= inicioRelatorios(u) && mes <= ultimoRelatorio(u)) [['A', 'salario'], ['C', 'beneficio']].forEach(function (p) {
+    var tem = function (f) { return EXTRATOS.creditos_debitos.some(function (c) { return c.liquido < 0 && unidadeCanon(c.unidade) === u && tipoCD(c.descricao)[0] === p[0] && f(mesDevido(c)); }); };
+    if (tem(function (m) { return m >= mes; }) || !tem(function (m) { return m < mes; })) return;   // já chegou, ou a série ainda não começou
+    var md = mediaFolha(u, mes, p[1]); if (!md.valor) return;
+    o.sai.push({ est: true, t: CD_TIPOS.filter(function (x) { return x[0] === p[0]; })[0], valor: md.valor, cat: 'S' + p[0], meses: md.meses });
+  });
+  o.custos = soma2(o.sai, function (x) { return x.valor; });
   return (_c[k] = o);
 }
 // Situação do mês por unidade: 'relatorio' (tem relatório) · 'lacuna' (sem relatório, mas há relatório depois: o seguinte já traz o que seria dele)
@@ -836,11 +857,12 @@ function custosUnidade(u, mes) {
   var real = lx.salario !== 0, mSal = null, mBen = null;
   if (!real && extratosOn()) { mSal = mediaFolha(u, mes, 'salario'); if (!mSal.meses.length) mSal = null; else { mBen = lx.beneficio ? null : mediaFolha(u, mes, 'beneficio'); real = true; } }
   var media = mSal ? r2(mSal.valor + (mBen ? mBen.valor : 0)) : 0, modo = modoMes(mes, u), rel = modo === 'relatorio' ? relatorioMes(mes, u) : null;
+  var comp = rel ? { sai: rel.sai, custos: rel.custos } : modo === 'lacuna' ? custosCompetencia(mes, u) : null;
   return { unidade: u, modo: modo, rel: rel, fonteCustos: rel ? 'relatorio' : modo === 'lacuna' ? 'lacuna' : mSal ? 'media' : real ? 'extratos' : 'estrutura', mediaSalario: mSal, mediaBeneficio: mBen, media: media, mes: mes, diasUteis: du, vrDia: vrDia, vtDia: vtDia, vrPessoaDia: vrDia / c.clt, vtPessoaDia: vtDia / c.clt,
            salariosBrutos: c.salariosBrutos, pj: c.pjSocia, clt: clt, vr: vr, vt: vt, operacional: c.operacional, fixoEstrutura: fixo,
            folhaRel: rel || modo === 'lacuna' ? null : real ? r2(lx.folha + media) : null,
            // 26/11/2026: folha = relatório (ou média dos últimos 3 relatórios); o operacional (aluguel, água, luz, internet de Mogi) não vem no relatório e soma sempre
-           extrato: lx, fixo: rel ? r2(rel.custos + c.operacional) : modo === 'lacuna' ? c.operacional : real ? r2(r2(lx.folha + media + lx.custos) + c.operacional) : r2(fixo + lx.custos),   // relatório: tudo com "-" + operacional   // + custos lançados nos extratos do mês (custo da unidade e de operação)
+           extrato: lx, comp: comp, fixo: comp ? r2(comp.custos + c.operacional) : real ? r2(r2(lx.folha + media + lx.custos) + c.operacional) : r2(fixo + lx.custos),   // relatório: tudo com "-" + operacional   // + custos lançados nos extratos do mês (custo da unidade e de operação)
            // 26/11/2026 (pedido do usuário): a provisão de 13º e férias vale todo mês, sobre os salários CLT informados, com ou sem relatório
            prov13: p13, provFerias: pFer, provEncargos: pEnc, provisao: r2(p13 + pFer + pEnc), cltPessoas: c.clt };
 }
@@ -1444,19 +1466,20 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
 // Mês com relatório: o custo é o que veio com "-" no relatório (por tipo) + custo operacional; o cadastro de salários não entra.
 // Relatório que traz junto o(s) mês(es) sem relatório anterior(es) (ex.: Consolação, nov/2026 traz outubro): aviso no quadro de custo
 function notaLacuna(c) {
-  if (!c.rel) return ''; var ms = [], m = addMes(c.mes, -1);
-  while (modoMes(m, c.unidade) === 'lacuna') { ms.unshift(m); m = addMes(m, -1); }
-  if (!ms.length) return '';
-  return '<div class="m" style="margin:4px 0 8px">Este relatório traz também ' + ms.map(mesLabel).join(' e ') + ', que não teve relatório (está na descrição das linhas, ex.: salários e benefícios de ' + ms.map(function (x) { return MESES[+x.slice(5, 7) - 1].toLowerCase(); }).join(' e ') + '). Por isso o custo deste mês é maior; o mês sem relatório fica só com a provisão.</div>';
+  var h = '';
+  if (c.rel && c.rel.foiPara.length) { var g = {}; c.rel.foiPara.forEach(function (x) { g[x.mes] = r2((g[x.mes] || 0) + x.valor); });
+    h += '<div class="m" style="margin:4px 0 8px">O relatório deste mês (' + c.rel.extratos.join(', ') + ') também trouxe gastos de outros meses, escritos na descrição. Eles foram para o mês deles: ' + Object.keys(g).sort().map(function (m) { return mesLabel(m) + ' ' + brl(g[m]); }).join(' · ') + '.</div>'; }
+  if (c.comp && c.comp.sai.some(function (s) { return s.est; })) h += '<div class="m" style="margin:4px 0 8px">O salário ou o benefício deste mês só é pago no relatório seguinte. Até ele chegar, entra a média dos últimos 3 meses (marcado como estimativa).</div>';
+  return h;
 }
+function nomeGasto(s) { return s.est ? s.t[1] + ' · estimativa (média de 3 meses, até chegar o relatório)' : s.t ? s.t[1] + (s.de ? ' · veio no relatório de ' + mesLabel(s.de) : '') : 'Parcelas negativas (estornos de comissão)'; }
 function custoLinhas(c) {
-  if (c.rel) {
+  if (c.comp) {
     var g = {}, ordem = [];
-    c.rel.sai.forEach(function (s) { var k = s.t ? s.t[1] : 'Parcelas negativas (estornos de comissão)'; if (!(k in g)) { g[k] = 0; ordem.push(k); } g[k] = r2(g[k] + s.valor); });
+    c.comp.sai.forEach(function (s) { var k = nomeGasto(s); if (!(k in g)) { g[k] = 0; ordem.push(k); } g[k] = r2(g[k] + s.valor); });
     ordem.sort(function (a, b) { return g[b] - g[a]; });
-    return [['Saídas do relatório de pagamento (' + c.rel.extratos.join(', ') + ')', c.rel.custos, 'b']].concat(ordem.map(function (k) { return ['   ' + k, g[k], 'sub']; })).concat([['Custo operacional', c.operacional]]);
+    return [['Gastos do mês (relatórios de pagamento, pelo mês escrito na descrição)', c.comp.custos, 'b']].concat(ordem.map(function (k) { return ['   ' + k, g[k], 'sub']; })).concat([['Custo operacional', c.operacional]]);
   }
-  if (c.modo === 'lacuna') return [['Sem relatório · o relatório seguinte já traz este mês', 0], ['Custo operacional', c.operacional]];
   if (c.folhaRel != null) return [[c.fonteCustos === 'media' ? 'Folha · média dos últimos 3 relatórios' : 'Folha do relatório de pagamento', c.folhaRel], ['Custo operacional', c.operacional], ['Outros custos lançados no relatório', c.extrato.custos]];
   return [['Salários brutos (CLT + PJ)', c.salariosBrutos], ['   dos quais PJ sócia', c.pj, 'sub'], ['   dos quais CLT', c.clt, 'sub'], ['Vale-refeição', c.vr], ['Vale-transporte', c.vt], ['Custos operacionais', c.operacional]];
 }
@@ -1468,7 +1491,7 @@ function vUnidade(u) {
     + card('Comissões dos vendedores', brl(U.comissao), U.vendedores + ' vendedores', { tag: T.real })
     + card('Custo fixo', brl(c.fixo), c.cltPessoas + ' CLT + sócia PJ')
     + card('Provisão 13º e férias', brl(c.provisao), 'base CLT ' + brl(c.clt)) + '</div>';
-  h += '<div class="grid g2 mt"><div class="box dk"><div class="lbl">Custo mensal <em>' + ({ relatorio: 'conforme o relatório de pagamento do mês', lacuna: 'mês sem relatório', media: 'estimativa pela média dos últimos 3 relatórios', estrutura: 'estrutura cadastrada' }[c.fonteCustos] || '') + '</em></div>' + notaLacuna(c) + '<div class="tw"><table><tbody>'
+  h += '<div class="grid g2 mt"><div class="box dk"><div class="lbl">Custo mensal <em>' + ({ relatorio: 'gastos dos relatórios, cada um no mês escrito na descrição', lacuna: 'mês sem relatório · gastos vindos do relatório seguinte, pelo mês da descrição', media: 'estimativa pela média dos últimos 3 relatórios', estrutura: 'estrutura cadastrada' }[c.fonteCustos] || '') + '</em></div>' + notaLacuna(c) + '<div class="tw"><table><tbody>'
     + custoLinhas(c).map(function (r) { return '<tr class="' + (r[2] === 'sub' ? 'sub' : '') + '"><td>' + (r[2] === 'b' ? '<b>' + r[0] + '</b>' : r[0]) + '</td><td class="r">' + brl(r[1]) + '</td></tr>'; }).join('')
     + '<tr><td>Provisão 13º e férias</td><td class="r">' + brl(c.provisao) + '</td></tr>'
     + '<tr class="tot"><td>Custo mensal total</td><td class="r">' + brl(c.fixo + c.provisao) + '</td></tr></tbody></table></div></div>';
@@ -1556,7 +1579,9 @@ function custoDetalhe(mes) {
       add('Imposto', '15% sobre ' + brl(ip.sem) + ' (% Adm. 0,00% ou sem relatório)', resto, '', 'imq'); }
     add('Comissões dos vendedores', x.comissoes ? 'Comissões à parte' : 'Já descontadas nos relatórios de pagamento (nada à parte)', x.comissoes || 0, '', 'com');
     if (c.rel || c.modo === 'lacuna') {   // regra do relatório (26/11/2026): todo valor com "-" no Líquido é custo, seja o que for
-      if (c.rel) c.rel.sai.forEach(function (i) { if (i.c) add('Valores com "-" no relatório', i.c.descricao, i.valor, i.t[1] + ' · relatório ' + i.c.extrato, i.cat); else add('Valores com "-" no relatório', i.l.operadora + ' · ' + i.l.proposta + ' · parcela ' + i.l.parc, i.valor, 'linha de comissão negativa · relatório ' + i.l.extrato, 'Sneg'); });
+      c.comp.sai.forEach(function (i) { if (i.est) add('Estimativa (ainda não chegou no relatório)', i.t[1] + ' · média de ' + i.meses.length + ' meses', i.valor, i.meses.map(function (x) { return mesLabel(x.mes).slice(0, 3).toLowerCase() + '/' + x.mes.slice(2, 4) + ' ' + brl(x.valor); }).join(' · '), i.cat);
+        else if (i.c) add('Gastos do mês (valores com "-" nos relatórios)', i.c.descricao, i.valor, i.t[1] + ' · relatório ' + i.c.extrato + (i.de ? ' de ' + mesLabel(i.de) + ' (mês escrito na descrição: ' + mesLabel(mes) + ')' : ''), i.cat);
+        else add('Gastos do mês (valores com "-" nos relatórios)', i.l.operadora + ' · ' + i.l.proposta + ' · parcela ' + i.l.parc, i.valor, 'linha de comissão negativa · relatório ' + i.l.extrato, 'Sneg'); });
       if (c.operacional) add('Custo operacional', 'Aluguel, água, luz e internet', c.operacional, 'não vem no relatório', 'op');
       if (c.rel) c.rel.fora.forEach(function (i) { fora.push({ nome: i.c.descricao, valor: i.c.liquido, como: 'não entra (' + i.motivo + ')' }); });
     } else if (c.fonteCustos !== 'estrutura') {
@@ -1580,7 +1605,7 @@ function custoDetalhe(mes) {
     });
     var tot = soma2(L, function (l) { return l.valor; });
     out.unidades[u] = { linhas: L, fora: fora, total: tot, guardado: x.saiu != null ? x.saiu : null, fonte: c.fonteCustos,
-      real: c.rel ? 'Regra do relatório: tudo com "-" no Líquido dos relatórios de ' + mesLabel(mes) + ' (' + c.rel.extratos.join(', ') + ') + custo operacional + provisão 13º e férias + imposto' : c.modo === 'lacuna' ? 'Sem relatório neste mês: o relatório seguinte já traz o que seria dele. Entram só o custo operacional e a provisão.' : c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido) + custo operacional + provisão 13º e férias (salários CLT informados)' : c.fonteCustos === 'media' ? 'Sem salário no relatório deste mês: média dos últimos 3 relatórios (troca pelo real quando chegar o relatório do dia 5) + custo operacional + provisão 13º e férias (salários CLT informados)' : 'Sem relatório: vale a estrutura informada + provisão' };
+      real: c.comp ? 'Tudo com "-" nos relatórios, cada gasto no mês escrito na descrição (sem mês escrito: mês do relatório) + custo operacional + provisão 13º e férias + imposto' + (c.modo === 'lacuna' ? '. Este mês não teve relatório: os gastos dele vieram no relatório seguinte.' : '') : c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido) + custo operacional + provisão 13º e férias (salários CLT informados)' : c.fonteCustos === 'media' ? 'Sem salário no relatório deste mês: média dos últimos 3 relatórios (troca pelo real quando chegar o relatório do dia 5) + custo operacional + provisão 13º e férias (salários CLT informados)' : 'Sem relatório: vale a estrutura informada + provisão' };
     out.total = r2(out.total + tot);
   });
   return out;
@@ -1699,7 +1724,7 @@ function pRec(v, rec) { return rec ? pct(v / rec, 1) : '—'; }
 function tabelaUnidadeAno(t, u, ano) {
   var SIT = { relatorio: 'Relatório', lacuna: 'Sem relatório · coberto pelo seguinte', estimativa: 'Estimativa' };
   var T = { recebidas: 0, imposto: 0, saiu: 0, resultado: 0, mkt: 0, depois: 0 }, acum = 0, n = 0;
-  var h = '<div class="box mt"><div class="lbl">' + u + ' · ' + ano + ' mês a mês <em>lucro bruto = a receber − imposto − custos · custos = débitos do relatório + custo operacional + provisão (sem o imposto) · marketing = investido no mês, sem o que já veio descontado no relatório</em></div><div class="tw"><table><thead><tr><th>Mês</th><th>Situação</th><th class="r">A receber</th><th class="r">Imposto</th><th class="r">Custos (sem imposto)</th><th class="r">Lucro bruto</th><th class="r">Investimento em marketing</th><th class="r">Lucro líquido</th><th class="r">Acumulado</th><th></th></tr></thead><tbody>';
+  var h = '<div class="box mt"><div class="lbl">' + u + ' · ' + ano + ' mês a mês <em>lucro bruto = a receber − imposto − custos · custos = gastos dos relatórios, cada um no mês escrito na descrição (estimativa pela média quando o salário ainda não chegou) + custo operacional + provisão (sem o imposto) · marketing = investido no mês, sem o que já veio descontado no relatório</em></div><div class="tw"><table><thead><tr><th>Mês</th><th>Situação</th><th class="r">A receber</th><th class="r">Imposto</th><th class="r">Custos (sem imposto)</th><th class="r">Lucro bruto</th><th class="r">Investimento em marketing</th><th class="r">Lucro líquido</th><th class="r">Acumulado</th><th></th></tr></thead><tbody>';
   t.meses.forEach(function (m) {
     var x = (m.unidades || {})[u]; if (!x || x.resultado == null) return;
     var mk = r2((x.investido || 0) - (x.invNoRel || 0)); n++;

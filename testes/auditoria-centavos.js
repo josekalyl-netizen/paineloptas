@@ -82,9 +82,12 @@ const path = require('path');
             ok(k + ' ' + u + ' relatório: vitalício', x.vitalicio, pos(Ls.filter(l => l.tipo === 'vitalicio').map(l => l.liquido)));
             ok(k + ' ' + u + ' relatório: créditos positivos', x.outrasReceitas, pos(Cs.map(c => c.liquido)));
             ok(k + ' ' + u + ' relatório: a receber = Σ positivos', x.recebidas, pos(Ls.map(l => l.liquido)) + pos(Cs.map(c => c.liquido)));
-            const cu = custosUnidade(u, k); ok(k + ' ' + u + ' relatório: custos = Σ "-" + operacional', cu.fixo, -Ls.filter(l => l.liquido < 0).reduce((t, l) => t + l.liquido, 0) - Cs.filter(c => c.liquido < 0).reduce((t, c) => t + c.liquido, 0) + REGRAS.custos[u].operacional);
-            ok(k + ' ' + u + ' relatório: a receber − custos do relatório = Σ líquido do relatório', x.recebidas - (cu.fixo - REGRAS.custos[u].operacional), EXTRATOS.extratos.filter(e => e.mes === k && unidadeCanon(e.unidade) === u).reduce((t, e) => t + e.comissoes_liquido, 0) + Cs.reduce((t, c) => t + c.liquido, 0));
-          } else if (md === 'lacuna') { ok(k + ' ' + u + ' lacuna: a receber 0', x.recebidas, 0); ok(k + ' ' + u + ' lacuna: custos = operacional', custosUnidade(u, k).fixo, REGRAS.custos[u].operacional); }
+            // custos (26/11/2026): cada "-" dos relatórios no mês escrito na descrição (de qualquer relatório) + linhas negativas do mês + estimativa + operacional
+            const cu = custosUnidade(u, k), devidos = EXTRATOS.creditos_debitos.filter(c => c.liquido < 0 && unidadeCanon(c.unidade) === u && mesDevido(c) === k), est = cu.comp.sai.filter(s => s.est);
+            ok(k + ' ' + u + ' relatório: custos = Σ "-" do mês devido + estimativa + operacional', cu.fixo, -Ls.filter(l => l.liquido < 0).reduce((t, l) => t + l.liquido, 0) - devidos.reduce((t, c) => t + c.liquido, 0) + est.reduce((t, s) => t + s.valor, 0) + REGRAS.custos[u].operacional);
+            ok(k + ' ' + u + ' relatório: a receber − débitos do relatório = Σ líquido do relatório', x.recebidas - relatorioMes(k, u).custosRel, EXTRATOS.extratos.filter(e => e.mes === k && unidadeCanon(e.unidade) === u).reduce((t, e) => t + e.comissoes_liquido, 0) + Cs.reduce((t, c) => t + c.liquido, 0));
+          } else if (md === 'lacuna') { ok(k + ' ' + u + ' lacuna: a receber 0', x.recebidas, 0); const cu = custosUnidade(u, k), devidos = EXTRATOS.creditos_debitos.filter(c => c.liquido < 0 && unidadeCanon(c.unidade) === u && mesDevido(c) === k);
+            ok(k + ' ' + u + ' lacuna: custos = Σ "-" do mês devido + estimativa + operacional', cu.fixo, -devidos.reduce((t, c) => t + c.liquido, 0) + cu.comp.sai.filter(s => s.est).reduce((t, s) => t + s.valor, 0) + REGRAS.custos[u].operacional); }
           else ok(k + ' ' + u + ' outras receitas', x.outrasReceitas || 0, lancExtratos(k, u).receitas);
           const cad = ERP.filter(c => c.data_venda.slice(0, 7) === k && unidadeCanon(c.unidade) === u && statusProposta(c) !== 'cancelada');
           ok(k + ' ' + u + ' produção ERP', x.producao, cad.reduce((t, c) => t + c.valor_mensal, 0)); if (md === 'estimativa') ok(k + ' ' + u + ' 1ª parcela ERP', x.primeira, cad.reduce((t, c) => t + valorParcelaERP(c, 0, c.tabela.valores[0] || 0, true), 0)); });
@@ -146,6 +149,9 @@ const path = require('path');
         if (extratosOn()) { const L = EXTRATOS.linhas.filter(l => l.mes === R.mes && l.tipo === 'vitalicio'); ok('vitalício recebido = Σ linhas dos extratos', R.vit.recebido, L.reduce((t, l) => t + l.bruto, 0)); ok('mensalidades do vitalício = Σ linhas', R.vit.mensalRec, L.reduce((t, l) => t + l.vl_parcela, 0)); } }
       // ano
       const a = resumoAno(+R.mes.slice(0, 4)); a.meses.forEach(m => { if (m.resultado != null) { ok(m.mes + ' lucro bruto', m.resultado, m.recebidas - m.saiu); ok(m.mes + ' lucro líquido = bruto − investido', m.depois, m.resultado - ((m.investido || 0) - (m.invNoRel || 0))); } });
+      // nenhum gasto some nem duplica: Σ de todos os meses devidos (sem estimativa) = Σ de todos os "-" dos relatórios, por unidade
+      if (EXTRATOS && EXTRATOS.extratos) REGRAS.unidades.forEach(u => { const ms = new Set(); EXTRATOS.creditos_debitos.forEach(c => { if (unidadeCanon(c.unidade) === u) ms.add(mesDevido(c)); }); EXTRATOS.linhas.forEach(l => { if (unidadeCanon(l.unidade) === u) ms.add(l.mes); });
+        ok(u + ' todos os gastos dos relatórios caem em um único mês', [...ms].reduce((t, m) => t + custosCompetencia(m, u).sai.filter(s => !s.est).reduce((a, s) => a + s.valor, 0), 0), -EXTRATOS.creditos_debitos.filter(c => c.liquido < 0 && unidadeCanon(c.unidade) === u).reduce((t, c) => t + c.liquido, 0) - EXTRATOS.linhas.filter(l => l.liquido < 0 && unidadeCanon(l.unidade) === u).reduce((t, l) => t + l.liquido, 0)); });
       // detalhe dos custos (aba Ano): Σ itens = custos do mês, por unidade e no total
       // entradas e saídas: Σ categorias = a receber e custos de cada unidade; resultado = lucro bruto guardado
       Object.keys(ESTADO.fechamentos).forEach(m => { const f = fluxoMes(m), d = ESTADO.fechamentos[m]; if (!f || d.resultado == null) return; REGRAS.unidades.forEach(u => {
