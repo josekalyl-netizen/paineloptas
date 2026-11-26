@@ -1784,6 +1784,50 @@ function vRec() {
     + '</tbody></table></div></div>';
   el.innerHTML = h;
 }
+// Carteira de vitalício por unidade (auditoria de 26/11/2026): cada contrato conta uma vez no mês (mensalidade da última
+// parcela paga); "acumuladas" = parcelas a mais do mesmo contrato no mesmo relatório (atrasadas pagas juntas).
+function carteiraMes(mes, u) {
+  var L = EXTRATOS.linhas.filter(function (l) { return l.mes === mes && l.tipo === 'vitalicio' && unidadeCanon(l.unidade) === u; });
+  var tem = EXTRATOS.extratos.some(function (e) { return e.mes === mes && unidadeCanon(e.unidade) === u; });
+  var c = {}; L.forEach(function (l) { var k = l.proposta + '|' + l.grupo; if (!c[k] || l.parc > c[k].parc) c[k] = l; });
+  var ks = Object.keys(c);
+  return { tem: tem, parcelas: L.length, contratos: ks.length, acumuladas: L.length - ks.length, mensal: soma2(ks, function (k) { return c[k].vl_parcela; }), mensalParcelas: soma2(L, function (l) { return l.vl_parcela; }) };
+}
+function blocoCarteira(ano) {
+  var us = REGRAS.unidades, h = '<div class="box mt"><div class="lbl">Carteira de vitalício por unidade · ' + ano + ' <em>cada contrato conta uma vez</em></div><div class="tw"><table><thead><tr><th>Mês</th>'
+    + us.map(function (u) { return '<th class="r">' + u + ' · contratos</th><th class="r">Mensalidades</th><th class="r">Parcelas acumuladas</th>'; }).join('') + '</tr></thead><tbody>';
+  for (var m = 1; m <= 12; m++) {
+    var k = ano + '-' + String(m).padStart(2, '0'); if (k > R.mes) break;
+    h += '<tr><td><b>' + mesLabel(k) + '</b></td>' + us.map(function (u) { var x = carteiraMes(k, u);
+      return x.tem ? '<td class="r"><b>' + x.contratos + '</b></td><td class="r gr">' + brl(x.mensal) + '</td><td class="r">' + (x.acumuladas || '—') + '</td>' : '<td colspan="3" style="text-align:center"><span class="tag proj">sem relatório</span></td>'; }).join('') + '</tr>';
+  }
+  return h + '</tbody></table></div></div>';
+}
+// Composição de todas as parcelas pagas no ano: vendas novas (1ª, 2ª, 3ª, 4ª em diante) × carteira de vitalício
+function composicaoAno(ano) {
+  var G = [['p1', '1ª parcela'], ['p2', '2ª parcela'], ['p3', '3ª parcela'], ['p4', '4ª parcela em diante'], ['vit', 'Vitalício (carteira recorrente)']], o = {};
+  G.forEach(function (g) { o[g[0]] = { nome: g[1], n: 0, mensal: 0, liquido: 0 }; });
+  EXTRATOS.linhas.forEach(function (l) { if (l.mes.slice(0, 4) !== String(ano) || l.mes > R.mes) return;
+    var k = l.tipo === 'vitalicio' ? 'vit' : l.parc <= 1 ? 'p1' : l.parc === 2 ? 'p2' : l.parc === 3 ? 'p3' : 'p4', g = o[k];
+    g.n++; g.mensal = r2(g.mensal + l.vl_parcela); g.liquido = r2(g.liquido + l.liquido); });
+  var lst = G.map(function (g) { return o[g[0]]; });
+  return { grupos: lst, n: lst.reduce(function (t, g) { return t + g.n; }, 0), mensal: soma2(lst, function (g) { return g.mensal; }), liquido: soma2(lst, function (g) { return g.liquido; }) };
+}
+function blocoComposicao(ano) {
+  var c = composicaoAno(ano), h = '<div class="box mt"><div class="lbl">Carteira recorrente × vendas novas · ' + ano + ' <em>todas as parcelas pagas nos relatórios</em></div><div class="tw"><table><thead><tr><th></th><th class="r">Parcelas</th><th class="r">Mensalidades</th><th class="r">% das mensalidades</th><th class="r">Comissão líquida</th><th class="r">% da comissão</th></tr></thead><tbody>';
+  c.grupos.forEach(function (g, i) { h += (i === 4 ? '<tr style="background:var(--green-t)">' : '<tr>') + '<td><b>' + g.nome + '</b></td><td class="r">' + g.n + '</td><td class="r">' + brl(g.mensal) + '</td><td class="r">' + pct(c.mensal ? g.mensal / c.mensal : null, 1) + '</td><td class="r gr">' + brl(g.liquido) + '</td><td class="r"><b>' + pct(c.liquido ? g.liquido / c.liquido : null, 1) + '</b></td></tr>'; });
+  return h + '<tr class="tot"><td>Total</td><td class="r">' + c.n + '</td><td class="r">' + brl(c.mensal) + '</td><td class="r">100%</td><td class="r">' + brl(c.liquido) + '</td><td class="r">100%</td></tr></tbody></table></div></div>';
+}
+// Situação dos pagamentos: último relatório de cada unidade (o saldo vai sendo transferido enquanto a nota fiscal não é recebida)
+function blocoPagamentos() {
+  var h = '<div class="box mt"><div class="lbl">Situação dos pagamentos <em>último relatório de cada unidade</em></div><div class="tw"><table><thead><tr><th>Unidade</th><th>Extrato</th><th>Previsão</th><th class="r">Saldo acumulado</th><th>Situação</th></tr></thead><tbody>';
+  REGRAS.unidades.forEach(function (u) {
+    var e = EXTRATOS.extratos.filter(function (x) { return unidadeCanon(x.unidade) === u; }).sort(function (a, b) { return a.previsao < b.previsao ? 1 : -1; })[0]; if (!e) return;
+    var nf = /nota fiscal n[aã]o recebida/i.test(e.obs || ''), tr = /transferido/i.test(e.obs || '');
+    h += '<tr><td><b>' + u + '</b></td><td>' + e.codigo + '</td><td>' + e.previsao.split('-').reverse().join('/') + '</td><td class="r"><b>' + brl(e.liquido) + '</b></td><td>' + (nf ? '<span class="tag proj">nota fiscal não recebida</span> ' : '') + (tr ? '<span class="tag proj">transferido para o próximo extrato</span>' : (nf ? '' : '<span class="tag proj">previsto</span>')) + '</td></tr>';
+  });
+  return h + '</tbody></table></div></div>';
+}
 function vVit() {
   // Só o recebido (relatórios de pagamento): % de vitalício = recebido ÷ mensalidade das parcelas pagas. Sem previsão (decisão de 25/11/2026).
   var v = R.vit, ano = +R.mes.slice(0, 4), pc = function (rec, men) { return men ? pct(rec / men, 2) : '—'; };
@@ -1811,6 +1855,7 @@ function vVit() {
     h += '<tr' + (k === R.mes ? ' style="background:var(--peach)"' : '') + '><td><b>' + mesLabel(k) + '</b></td><td class="r">' + (x.recebido != null ? x.linhas : '—') + '</td><td class="r">' + (x.mensalRec ? brl(x.mensalRec) : '—') + '</td><td class="r">' + (x.recebido != null ? pc(x.recebido, x.mensalRec) : '—') + '</td><td class="r gr">' + (x.recebido != null ? brl(x.recebido) : '—') + '</td><td class="r">' + (x.mensalRec ? brl(x.liqRec) : '—') + '</td></tr>';
   }
   h += '<tr class="tot"><td>Total</td><td class="r">' + tl + '</td><td class="r">' + brl(tm) + '</td><td class="r">' + pc(tr, tm) + '</td><td class="r">' + brl(tr) + '</td><td class="r">' + brl(tq) + '</td></tr></tbody></table></div></div>';
+  if (extratosOn()) h += blocoCarteira(ano) + blocoComposicao(ano) + blocoPagamentos();
   document.getElementById('v-vit').innerHTML = h;
 }
 

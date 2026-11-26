@@ -151,6 +151,14 @@ const path = require('path');
           ESTADO.cancelados = JSON.parse(bak); _livro = null; calcular(); ok('desfazer cancelamento volta ao a receber', R.recebidas, antes); } }
       // comissões exportadas
       const d = linhasComissao(); R.vendedores.forEach(v => { const pv = d.propostas.filter(x => x['Vendedor(a)'] === v.nome); if (pv.length) ok(v.nome + ' comissão exportada = Σ propostas', v.comissao, pv.reduce((t, x) => t + x['Comissão do vendedor (R$)'], 0)); });
+      // aba Vitalício: carteira por unidade e composição do ano
+      if (extratosOn()) { const ano = R.mes.slice(0, 4);
+        for (let m = 1; m <= 12; m++) { const k = ano + '-' + String(m).padStart(2, '0'); if (k > R.mes) break; let n = 0, men = 0;
+          REGRAS.unidades.forEach(u => { const x = carteiraMes(k, u); ok(k + ' ' + u + ' parcelas = contratos + acumuladas', x.parcelas, x.contratos + x.acumuladas); n += x.parcelas; men += x.mensalParcelas; });
+          const v = calcVitalicio(k); if (v.recebido != null) { ok(k + ' carteira: parcelas = vitalício do mês', n, v.linhas); ok(k + ' carteira: mensalidades = vitalício do mês', men, v.mensalRec); } }
+        const c = composicaoAno(+ano), L = EXTRATOS.linhas.filter(l => l.mes.slice(0, 4) === ano && l.mes <= R.mes);
+        ok('composição: parcelas = Σ linhas', c.n, L.length); ok('composição: mensalidades = Σ linhas', c.mensal, L.reduce((t, l) => t + l.vl_parcela, 0)); ok('composição: comissão = Σ linhas', c.liquido, L.reduce((t, l) => t + l.liquido, 0));
+        ok('composição: vitalício = Σ linhas de vitalício', c.grupos[4].liquido, L.filter(l => l.tipo === 'vitalicio').reduce((t, l) => t + l.liquido, 0)); }
       return { falhas, resumo: R.res ? { primeiraParcela: R.primeira, parcelasAnteriores: R.caixaAnt.total, aReceber: R.res.recebidas, impostos: R.res.imposto, custoOperacao: R.res.custoOp, custoOperacaoTotal: R.res.custoOpTotal, comissoes: R.res.comissoes, custosDoMes: R.res.custos, lucroBruto: R.res.operacional, margemBruta: +(R.res.mBruta * 100).toFixed(2), investido: R.res.investido, reserva: R.res.reserva, lucroLiquido: R.res.financeiro, margemLiquida: +(R.res.mLiquida * 100).toFixed(2), roi: R.roi.roi } : 'sem a receber' };
     });
     saida.push([f, r, errs]); await p.close();

@@ -667,3 +667,10 @@ Vale linha a linha, pela coluna **"% Adm."** do relatório de comissões da W3G:
 - **Vale para o sistema inteiro:** resultado do mês e do ano, unidades, consolidado, mínimo para não fechar no vermelho, vitalício e entradas/saídas.
 - **Conferência:** `testes/auditoria-centavos.js` recalcula esse imposto em cada unidade e em cada mês.
 - **2026:** desconto W3G 34.103,50 · imposto 8,5% 31.204,75 · imposto 15% 79.970,78 · total 145.279,03 (antes, com 15% em tudo: 140.153,52).
+
+### Aba Vitalício: carteira, composição e pagamentos (26/11/2026)
+- A tabela "mês a mês" do vitalício mostra só a carteira de vitalício, não as vendas novas. Diferença para "só as linhas de 1%": vitalício com outro percentual (Unimed 2%, Prudential 5% e 10%, Unicor 2,5%) entra; as linhas de 1% que ainda estão na grade de agenciamento (Bradesco parcelas 5 e 6, Porto parcelas 1 e 2) saem.
+- **Carteira por unidade:** cada contrato conta uma vez no mês. "Parcelas acumuladas" = parcelas a mais do mesmo contrato no mesmo relatório. Mês sem relatório da unidade aparece como "sem relatório".
+- **Carteira recorrente × vendas novas:** todas as linhas dos relatórios do ano, separadas em 1ª, 2ª, 3ª, 4ª parcela em diante e vitalício, com mensalidades e comissão líquida. Em 2026, o vitalício é 88,2% das mensalidades e 10,2% da comissão.
+- **Situação dos pagamentos:** último relatório de cada unidade, com saldo acumulado e a observação (nota fiscal não recebida / transferido).
+- A oscilação mensal vem de: unidades com relatórios em meses diferentes (outubro só Mogi, novembro só Consolação), Consolação aparecendo de fato só a partir de março, e parcelas acumuladas (março 168, novembro 139).
