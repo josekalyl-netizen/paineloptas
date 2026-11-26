@@ -50,7 +50,7 @@ for arq in sorted(pasta.glob('*.csv')):
             vit = d['parc'] > 1 and d['pct'] <= Decimal('0.05'); esperado = None
         linhas.append({'extrato': cod, 'unidade': unidade, 'mes': ex['mes'], 'grupo': d['grupo'], 'operadora': d['grupo'].split(' - ')[0], 'cliente': d['cliente'],
                        'cadastro': d['cadastro'], 'proposta': d['proposta'], 'parc': d['parc'], 'vl_parcela': f2(d['vlparc']), 'pct': f2(d['pct']),
-                       'bruto': f2(d['bruto']), 'desp_adm': f2(d['desp']), 'liquido': f2(d['liq']), 'tipo': 'vitalicio' if vit else 'agenciamento',
+                       'bruto': f2(d['bruto']), 'desp_adm': f2(d['desp']), 'pct_adm': f2(abs(pct(d['padm']))), 'liquido': f2(d['liq']), 'tipo': 'vitalicio' if vit else 'agenciamento',
                        'erp': e['id'] if e else None, 'esperado_erp': esperado})
         ck = tuple(r[101:128])
         if ck not in vistos[cod]['cd'] and r[121]:

@@ -667,3 +667,7 @@ Distribuição de lucros entre W3G e sócias; média de comissões para provisio
   - Sobre o resto do a receber: 15%.
   - Mês sem relatório: 15% sobre tudo.
   - Se o bruto com desconto passar do a receber do mês, conta só até o a receber, e o desconto da W3G entra na mesma proporção.
+- **Atualização 26/11/2026 (3) — vale esta:** linha a linha pela coluna "% Adm." do relatório.
+  - 8,50%: a W3G já descontou; a Optas paga 8,5% sobre o valor que sobrou (bruto − desconto).
+  - 0,00%: 15%.
+  - Mês sem relatório: 15% sobre tudo.
