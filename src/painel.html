@@ -1442,6 +1442,13 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
 
 // Linhas do quadro "Custo mensal" conforme a situação do mês (relatório · lacuna · média · estrutura cadastrada).
 // Mês com relatório: o custo é o que veio com "-" no relatório (por tipo) + custo operacional; o cadastro de salários não entra.
+// Relatório que traz junto o(s) mês(es) sem relatório anterior(es) (ex.: Consolação, nov/2026 traz outubro): aviso no quadro de custo
+function notaLacuna(c) {
+  if (!c.rel) return ''; var ms = [], m = addMes(c.mes, -1);
+  while (modoMes(m, c.unidade) === 'lacuna') { ms.unshift(m); m = addMes(m, -1); }
+  if (!ms.length) return '';
+  return '<div class="m" style="margin:4px 0 8px">Este relatório traz também ' + ms.map(mesLabel).join(' e ') + ', que não teve relatório (está na descrição das linhas, ex.: salários e benefícios de ' + ms.map(function (x) { return MESES[+x.slice(5, 7) - 1].toLowerCase(); }).join(' e ') + '). Por isso o custo deste mês é maior; o mês sem relatório fica só com a provisão.</div>';
+}
 function custoLinhas(c) {
   if (c.rel) {
     var g = {}, ordem = [];
@@ -1461,7 +1468,7 @@ function vUnidade(u) {
     + card('Comissões dos vendedores', brl(U.comissao), U.vendedores + ' vendedores', { tag: T.real })
     + card('Custo fixo', brl(c.fixo), c.cltPessoas + ' CLT + sócia PJ')
     + card('Provisão 13º e férias', brl(c.provisao), 'base CLT ' + brl(c.clt)) + '</div>';
-  h += '<div class="grid g2 mt"><div class="box dk"><div class="lbl">Custo mensal <em>' + ({ relatorio: 'conforme o relatório de pagamento do mês', lacuna: 'mês sem relatório', media: 'estimativa pela média dos últimos 3 relatórios', estrutura: 'estrutura cadastrada' }[c.fonteCustos] || '') + '</em></div><div class="tw"><table><tbody>'
+  h += '<div class="grid g2 mt"><div class="box dk"><div class="lbl">Custo mensal <em>' + ({ relatorio: 'conforme o relatório de pagamento do mês', lacuna: 'mês sem relatório', media: 'estimativa pela média dos últimos 3 relatórios', estrutura: 'estrutura cadastrada' }[c.fonteCustos] || '') + '</em></div>' + notaLacuna(c) + '<div class="tw"><table><tbody>'
     + custoLinhas(c).map(function (r) { return '<tr class="' + (r[2] === 'sub' ? 'sub' : '') + '"><td>' + (r[2] === 'b' ? '<b>' + r[0] + '</b>' : r[0]) + '</td><td class="r">' + brl(r[1]) + '</td></tr>'; }).join('')
     + '<tr><td>Provisão 13º e férias</td><td class="r">' + brl(c.provisao) + '</td></tr>'
     + '<tr class="tot"><td>Custo mensal total</td><td class="r">' + brl(c.fixo + c.provisao) + '</td></tr></tbody></table></div></div>';
