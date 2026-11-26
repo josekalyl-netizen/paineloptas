@@ -97,7 +97,7 @@ const path = require('path');
           const cu = custosUnidade(u, m), real = cs.some(c => tipoCD(c.descricao)[0] === 'A');
           ok(m + ' ' + u + ' folha dos extratos', lx.folha, -cs.filter(c => tipoCD(c.descricao)[3] === 'folha').reduce((t, c) => t + c.liquido, 0));
           const med = cu.fonteCustos === 'media';
-          ok(m + ' ' + u + ' custo fixo (' + (real ? 'folha real + extratos' : med ? 'média 3 meses + extratos' : 'estrutura + extratos') + ')', cu.fixo, real ? lx.folha + lx.custos : med ? lx.folha + cu.media + lx.custos : cu.fixoEstrutura + lx.custos);
+          ok(m + ' ' + u + ' custo fixo (' + (real ? 'folha real + extratos + operacional' : med ? 'média 3 meses + extratos + operacional' : 'estrutura + extratos') + ')', cu.fixo, real ? lx.folha + lx.custos + REGRAS.custos[u].operacional : med ? lx.folha + cu.media + lx.custos + REGRAS.custos[u].operacional : cu.fixoEstrutura + lx.custos);   // 26/11/2026: operacional soma junto da folha do relatório
           if (med) { const ms = []; for (let i = 1; i <= 36 && ms.length < 3; i++) { const d = new Date(+m.slice(0, 4), +m.slice(5, 7) - 1 - i, 1), k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), v = lancExtratos(k, u).salario; if (v) ms.push(v); }
             for (let i = 1; i <= 36 && ms.length < 3; i++) { const d = new Date(+m.slice(0, 4), +m.slice(5, 7) - 1 + i, 1), k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), v = lancExtratos(k, u).salario; if (v) ms.push(v); }
             ok(m + ' ' + u + ' salário = média de 3 meses registrados', cu.mediaSalario.valor, r2(ms.reduce((t, v) => t + v, 0) / ms.length));

@@ -4,3 +4,8 @@ __pycache__/
 data/erp/
 index.html
 apps-script/Index.html
+
+# prints de teste (podem ter nomes de clientes)
+undefined/
+*.png
+!assets/*.png

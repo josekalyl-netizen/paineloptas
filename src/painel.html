@@ -374,7 +374,7 @@ var REGRAS = {
     'Consolação': { salariosBrutos: 15315.76, pjSocia: 10000.00, vr: 4140.40, vt: 1576.24, operacional: 0.00, clt: 5 },
     'Mogi':       { salariosBrutos: 10521.33, pjSocia:  5000.00, vr: 3640.40, vt: 1691.30, operacional: 2300.00, clt: 4 }
   },
-  custoMensalInformado: 39185.43,                              // referência de outubro/2026
+  custoMensalInformado: 39185.43,                              // referência de outubro/2026 (26/11/2026: não é mais conferido; vale o relatório)
   // VR e VT informados são os totais de OUTUBRO/2026. O sistema tira o valor por dia útil desse mês
   // e recalcula cada mês pelos dias úteis dele (segunda a sexta, menos feriados).
   beneficios: { baseMes: '2026-10' },
@@ -766,29 +766,30 @@ function hojeISO() { var d = new Date(); return d.getFullYear() + '-' + String(d
    4. MOTOR DE CÁLCULO
    ===================================================================== */
 // Feriados nacionais (Lei 662/49, Lei 6.802/80, Lei 14.759/23) + Sexta-feira Santa
-// + São Paulo capital (decisão de 25/11/2026): Aniversário de SP (25/1), Revolução Constitucionalista (9/7, estadual), Corpus Christi (Lei municipal 14.485/07) + Carnaval (segunda e terça)
+// + estadual (9/7), Corpus Christi, Carnaval (segunda e terça) e o municipal de cada unidade: Consolação 25/1 (São Paulo) · Mogi 1/9 (Mogi das Cruzes) — 26/11/2026
 function pascoa(a) { var b = a % 19, c = Math.floor(a / 100), d = a % 100, e = Math.floor(c / 4), f = c % 4, g = Math.floor((c + 8) / 25), h = Math.floor((c - g + 1) / 3), i = (19 * b + c - e - h + 15) % 30, k = Math.floor(d / 4), l = d % 4, m = (32 + 2 * f + 2 * k - i - l) % 7, n = Math.floor((b + 11 * i + 22 * m) / 451), mes = Math.floor((i + m - 7 * n + 114) / 31), dia = ((i + m - 7 * n + 114) % 31) + 1; return new Date(a, mes - 1, dia); }
-function feriados(ano) {
+function feriados(ano, u) {
   var f = {}, add = function (m, d, n) { f[ano + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0')] = n; };
   add(1, 1, 'Confraternização Universal'); add(4, 21, 'Tiradentes'); add(5, 1, 'Dia do Trabalho'); add(9, 7, 'Independência');
   add(10, 12, 'Nossa Senhora Aparecida'); add(11, 2, 'Finados'); add(11, 15, 'Proclamação da República'); add(11, 20, 'Consciência Negra'); add(12, 25, 'Natal');
   var sx = pascoa(ano); sx.setDate(sx.getDate() - 2); f[isoDe(sx)] = 'Sexta-feira Santa';
-  add(1, 25, 'Aniversário de São Paulo'); add(7, 9, 'Revolução Constitucionalista');
+  add(7, 9, 'Revolução Constitucionalista');                                    // estadual (SP)
+  if (u === 'Mogi') add(9, 1, 'Aniversário de Mogi das Cruzes'); else add(1, 25, 'Aniversário de São Paulo');   // municipal de cada unidade
   var cc = pascoa(ano); cc.setDate(cc.getDate() + 60); f[isoDe(cc)] = 'Corpus Christi';
   [48, 47].forEach(function (n) { var cv = pascoa(ano); cv.setDate(cv.getDate() - n); f[isoDe(cv)] = 'Carnaval'; });   // a Optas não trabalha no Carnaval (decisão de 25/11/2026)
   return f;
 }
-function diasUteis(mes) {
-  var _du = diasUteis.cache = diasUteis.cache || {};
-  if (_du[mes]) return _du[mes];
-  var a = +mes.slice(0, 4), m = +mes.slice(5, 7), fer = feriados(a), n = 0, lista = [];
+function diasUteis(mes, u) {
+  var _du = diasUteis.cache = diasUteis.cache || {}, ck = mes + '|' + (u || '');
+  if (_du[ck]) return _du[ck];
+  var a = +mes.slice(0, 4), m = +mes.slice(5, 7), fer = feriados(a, u), n = 0, lista = [];
   for (var d = 1; d <= new Date(a, m, 0).getDate(); d++) { var dt = new Date(a, m - 1, d), k = isoDe(dt), w = dt.getDay(); if (w === 0 || w === 6) continue; if (fer[k]) { lista.push(d + '/' + m + ' ' + fer[k]); continue; } n++; }
-  return (_du[mes] = { n: n, feriados: lista });
+  return (_du[ck] = { n: n, feriados: lista });
 }
 function custosUnidade(u, mes) {
   var c = REGRAS.custos[u], base = REGRAS.beneficios.baseMes;
   mes = typeof mes === 'string' ? mes : base;
-  var duB = diasUteis(base).n, du = diasUteis(mes).n;
+  var duB = diasUteis(base, u).n, du = diasUteis(mes, u).n;
   var vrDia = c.vr / duB, vtDia = c.vt / duB, vr = r2(vrDia * du), vt = r2(vtDia * du);
   var clt = r2(c.salariosBrutos - c.pjSocia);
   var fixo = r2(c.salariosBrutos + vr + vt + c.operacional);           // PJ já está dentro de salariosBrutos
@@ -798,11 +799,13 @@ function custosUnidade(u, mes) {
   // a folha do extrato sobrepõe a estrutura no mês devido quando há salário lançado para o mês;
   // sem salário no extrato, vale a estrutura (que já inclui benefícios e provisões) — decisões de 25/11/2026
   var real = lx.salario !== 0, mSal = null, mBen = null;
-  if (!real && extratosOn() && mes >= inicioRelatorios(u)) { mSal = mediaFolha(u, mes, 'salario'); if (!mSal.meses.length) mSal = null; else { mBen = lx.beneficio ? null : mediaFolha(u, mes, 'beneficio'); real = true; } }
+  if (!real && extratosOn()) { mSal = mediaFolha(u, mes, 'salario'); if (!mSal.meses.length) mSal = null; else { mBen = lx.beneficio ? null : mediaFolha(u, mes, 'beneficio'); real = true; } }
   var media = mSal ? r2(mSal.valor + (mBen ? mBen.valor : 0)) : 0;
   return { unidade: u, fonteCustos: mSal ? 'media' : real ? 'extratos' : 'estrutura', mediaSalario: mSal, mediaBeneficio: mBen, media: media, mes: mes, diasUteis: du, vrDia: vrDia, vtDia: vtDia, vrPessoaDia: vrDia / c.clt, vtPessoaDia: vtDia / c.clt,
            salariosBrutos: c.salariosBrutos, pj: c.pjSocia, clt: clt, vr: vr, vt: vt, operacional: c.operacional, fixoEstrutura: fixo,
-           extrato: lx, fixo: real ? r2(lx.folha + media + lx.custos) : r2(fixo + lx.custos),   // + custos lançados nos extratos do mês (custo da unidade e de operação)
+           folhaRel: real ? r2(lx.folha + media) : null,
+           // 26/11/2026: folha = relatório (ou média dos últimos 3 relatórios); o operacional (aluguel, água, luz, internet de Mogi) não vem no relatório e soma sempre
+           extrato: lx, fixo: real ? r2(r2(lx.folha + media + lx.custos) + c.operacional) : r2(fixo + lx.custos),   // + custos lançados nos extratos do mês (custo da unidade e de operação)
            prov13: real ? 0 : p13, provFerias: real ? 0 : pFer, provEncargos: real ? 0 : pEnc, provisao: real ? 0 : p13 + pFer + pEnc, cltPessoas: c.clt };
 }
 
@@ -831,9 +834,7 @@ function calcular() {
   var custoTot = 0, provTot = 0;
   REGRAS.unidades.forEach(function (u) { var c = custosUnidade(u, R.mes); R.unidades[u] = { custos: c }; custoTot += c.fixo; provTot += c.provisao; });
   R.custoFixo = r2(custoTot); R.provisao = provTot;
-  var custoBase = r2(sum(REGRAS.unidades, function (u) { return custosUnidade(u, REGRAS.beneficios.baseMes).fixo; }));
-  if (Math.abs(custoBase - REGRAS.custoMensalInformado) > 0.01)
-    R.alertas.push({ sev: 'er', cod: 'CUSTO', titulo: 'Soma das rubricas difere do custo mensal informado', texto: 'Rubricas de outubro/2026: ' + brl(custoBase) + ' · informado: ' + brl(REGRAS.custoMensalInformado) + '.', impacto: 'Resultado operacional' });
+  // 26/11/2026: o custo que vale é o do relatório de pagamento (o custo mensal informado não é mais conferido)
 
   // ---------- Produção por vendedor (fonte integrada) ----------
   var contratosMes = ESTADO.contratos.filter(function (c) { return (c.data_venda || '').slice(0, 7) === R.mes; });
@@ -933,14 +934,14 @@ function calcular() {
     ag.naoCalc += vFora; ag.naoCalcQtd += D.geral.fora.qtd; ag.semMod = vFora; }
     semMod = foraERP ? 0 : D.geral.fora.qtd || 0;
     semOrigem = (D.geral.hap.qtd || 0) + (foraERP ? 0 : D.geral.fora.qtd || 0); semOrigemValor = vHap + vFora;
-    R.alertas.push({ sev: 'er', cod: 'GRAN', titulo: 'A integração entrega produção agregada por vendedor, não por contrato',
+    if (DEMO) R.alertas.push({ sev: 'er', cod: 'GRAN', titulo: 'A integração entrega produção agregada por vendedor, não por contrato',
       texto: 'O painel gerencial informa totais (Projeto Hapvida / fora do projeto). Não há identificação individual de venda, contrato, operadora, modalidade nem origem.',
       impacto: 'Agenciamento e vitalício por operadora, produção PF/PME, atribuição de contratos a investimentos (ROI) e preservação da tabela vigente por venda.',
       acao: 'Solicitar à equipe responsável que o painel gerencial exporte as vendas linha a linha (campos da seção 10).' });
     if (vFora > 0) R.alertas.push({ sev: 'er', cod: 'OPERADORA', titulo: D.geral.fora.qtd + ' vendas "fora do projeto" sem operadora identificada', texto: 'Produção de ' + brl(vFora) + ' sem operadora.', impacto: 'Agenciamento a receber, vitalício e impostos dessas vendas não podem ser calculados (' + brl(vFora) + ' de mensalidade fora do cálculo).', acao: 'Incluir a operadora de cada venda na integração (planilha/CRM). Venda Hapvida fora do projeto segue a grade (PF 200% · PME 310%).', registros: D.geral.fora.qtd });
   }
   if (semMod > 0) R.alertas.push({ sev: 'wa', cod: 'MODALIDADE', titulo: semMod + ' venda(s) sem modalidade PF/PME', texto: 'Não é possível confirmar qual tabela (PF ou PME) se aplica.', impacto: 'O agenciamento calculado usa o percentual informado sem distinção de modalidade e fica marcado como PROVISÓRIO.', acao: 'Corrigir os registros no painel gerencial e informar a modalidade das operadoras (Pendência 1).', registros: semMod });
-  if (semOrigem > 0) R.alertas.push({ sev: 'er', cod: 'ORIGEM', titulo: semOrigem + ' contrato(s) sem origem ou campanha', texto: brl(semOrigemValor) + ' de produção mensal sem origem identificada.', impacto: 'Esses contratos não podem ser atribuídos a nenhum investimento: o ROI fica sem base.', acao: 'Confirmar se a integração disponibilizará origem/campanha (Pendência 6).', registros: semOrigem });
+  if (semOrigem > 0 && DEMO) R.alertas.push({ sev: 'er', cod: 'ORIGEM', titulo: semOrigem + ' contrato(s) sem origem ou campanha', texto: brl(semOrigemValor) + ' de produção mensal sem origem identificada.', impacto: 'Esses contratos não podem ser atribuídos a nenhum investimento: o ROI fica sem base.', acao: 'Confirmar se a integração disponibilizará origem/campanha (Pendência 6).', registros: semOrigem });
   if (Object.keys(opSemRegra).length) R.alertas.push({ sev: 'er', cod: 'TABELA', titulo: 'Sem tabela de comissão: ' + Object.keys(opSemRegra).join(', '), texto: ag.naoCalcQtd + ' venda(s), ' + brl(ag.naoCalc) + ' de mensalidade.', impacto: 'Agenciamento e vitalício dessas vendas não calculados.', acao: opSemRegra['Projeto Hapvida'] ? 'Informar agenciamento e vitalício do Projeto Hapvida (Pendência 8)' + (Object.keys(opSemRegra).length > 1 ? ' e das demais operadoras (Pendência 1).' : '.') : 'Informar agenciamento, vitalício e modalidade (Pendência 1).' });
   Object.keys(camposFaltando).forEach(function (f) {
     if (f === 'origem' || f === 'modalidade' || f === 'operadora') return;
@@ -1027,7 +1028,7 @@ function calcular() {
 
   // ---------- Vitalício da carteira ----------
   R.vitalicio = soma2(REGRAS.unidades, function (u) { return R.unidades[u].vitalicio || 0; });
-  if (!DEMO && ERP.length && !ERP.some(function (c) { return c.situacao; })) R.alertas.push({ sev: 'wa', cod: 'STATUS_ERP', titulo: 'Propostas do SisWeb sem situação', texto: ERP.length + ' propostas importadas do SisWeb sem a coluna de situação (cancelada, implantada, inadimplente). Todas estão sendo tratadas como válidas; as que têm data de implantação, como implantadas.', impacto: 'Cancelamentos ainda não saem da conta (a receber, vitalício e produção dos meses anteriores).', acao: 'Exportar do SisWeb a situação de cada proposta e a data do cancelamento.' });
+  if (!DEMO && ERP.length && !ERP.some(function (c) { return c.situacao; })) R.alertas.push({ sev: 'wa', cod: 'STATUS_ERP', titulo: 'Propostas do SisWeb sem situação', texto: ERP.length + ' propostas importadas do SisWeb sem a coluna de situação (cancelada, implantada, inadimplente). Todas estão sendo tratadas como válidas; as que têm data de implantação, como implantadas.', impacto: 'Cancelamentos ainda não saem da conta (a receber, vitalício e produção dos meses anteriores).', acao: 'No relatório do dia 5, exportar do SisWeb a situação de cada proposta e a data do cancelamento.' });
   if (extratosOn()) { var vald = EXTRATOS.creditos_debitos.filter(function (c) { return /VALDECIR OPTAS 40/.test(norm(c.descricao).toUpperCase()) && c.mes > '2026-09'; });
     if (vald.length) R.alertas.push({ sev: 'er', cod: 'VALDECIR', titulo: 'Comissão do Valdecir (40%) descontada depois de julho/2026', texto: vald.map(function (c) { return mesLabel(c.mes) + ' · ' + c.descricao + ' · ' + brl(c.liquido); }).join(' | '), impacto: 'Essa comissão foi encerrada em julho/2026; o valor entrou como custo de operação de Mogi.', acao: 'Conferir com a W3G o desconto.' }); }
   var semComOptas = DEMO ? [] : ERP.filter(function (c) { return !c.tabela || !c.tabela.parc.length; });
@@ -1054,8 +1055,15 @@ function parcelasAnteriores(mes) {
     o.total = r2(o.total + v); o.porUnidade[u] = r2((o.porUnidade[u] || 0) + v); o.porOperadora[nome] = r2((o.porOperadora[nome] || 0) + v);
     o.itens.push({ c: c, parcela: k + 1, valor: v, unidade: u });
   });
+  // 26/11/2026 ("conta sim"): agenciamento pago no relatório de propostas que não estão no SisWeb (vendas antigas) entra no mês do pagamento
+  agForaSisweb(mes).forEach(function (l) {
+    var u = unidadeCanon(l.unidade) || REGRAS.unidades[0];
+    o.total = r2(o.total + l.bruto); o.porUnidade[u] = r2((o.porUnidade[u] || 0) + l.bruto); o.porOperadora[l.operadora] = r2((o.porOperadora[l.operadora] || 0) + l.bruto);
+    o.itens.push({ c: { numero: l.proposta, operadora: l.operadora, cliente: l.cliente, data_venda: l.cadastro }, parcela: l.parc, valor: l.bruto, unidade: u, foraSisweb: true });
+  });
   return o;
 }
+function agForaSisweb(mes) { if (!extratosOn()) return []; return EXTRATOS.linhas.filter(function (l) { return l.mes === mes && l.tipo === 'agenciamento' && !l.erp && l.bruto; }); }
 // O que já está garantido para os próximos meses (vendas já feitas até o mês, sem novas vendas)
 function aReceberFuturo(mes, n) {
   var out = [], todas = vendasConhecidas().filter(function (c) { return String(c.data_venda || c.data_inicio || '').slice(0, 7) <= mes; });
@@ -1368,14 +1376,18 @@ function vUnidade(u) {
     + card('Custo fixo', brl(c.fixo), c.cltPessoas + ' CLT + sócia PJ')
     + card('Provisão 13º e férias', brl(c.provisao), 'base CLT ' + brl(c.clt)) + '</div>';
   h += '<div class="grid g2 mt"><div class="box dk"><div class="lbl">Custo mensal</div><div class="tw"><table><tbody>'
-    + '<tr><td>Salários brutos (CLT + PJ)</td><td class="r">' + brl(c.salariosBrutos) + '</td></tr>'
+    + (c.folhaRel != null ? '<tr><td>' + (c.fonteCustos === 'media' ? 'Folha · média dos últimos 3 relatórios' : 'Folha do relatório de pagamento') + '</td><td class="r">' + brl(c.folhaRel) + '</td></tr>'
+      + '<tr><td>Custos operacionais</td><td class="r">' + brl(c.operacional) + '</td></tr>'
+      + '<tr><td>Outros custos lançados no relatório</td><td class="r">' + brl(c.extrato.custos) + '</td></tr>'
+      + '<tr class="tot"><td>Custo mensal</td><td class="r">' + brl(c.fixo) + '</td></tr></tbody></table></div></div>' : '')
+    + (c.folhaRel != null ? '' : '<tr><td>Salários brutos (CLT + PJ)</td><td class="r">' + brl(c.salariosBrutos) + '</td></tr>'
     + '<tr class="sub"><td>   dos quais PJ sócia</td><td class="r">' + brl(c.pj) + '</td></tr>'
     + '<tr class="sub"><td>   dos quais CLT</td><td class="r">' + brl(c.clt) + '</td></tr>'
     + '<tr><td>Vale-refeição</td><td class="r">' + brl(c.vr) + '</td></tr>'
     + '<tr><td>Vale-transporte</td><td class="r">' + brl(c.vt) + '</td></tr>'
     + '<tr><td>Custos operacionais</td><td class="r">' + brl(c.operacional) + '</td></tr>'
     + '<tr><td>Provisão 13º e férias</td><td class="r">' + brl(c.provisao) + '</td></tr>'
-    + '<tr class="tot"><td>Estrutura mensal</td><td class="r">' + brl(c.fixo + c.provisao) + '</td></tr></tbody></table></div></div>';
+    + '<tr class="tot"><td>Estrutura mensal</td><td class="r">' + brl(c.fixo + c.provisao) + '</td></tr></tbody></table></div></div>');
   h += '<div class="box"><div class="lbl">Vendedores</div><div class="tw"><table><thead><tr><th>Vendedor(a)</th><th class="r">Projeto Hapvida</th><th class="r">Vidas</th><th class="r">Fora</th><th class="r">Faixa</th><th class="r">Comissão</th></tr></thead><tbody>';
   R.vendedores.filter(function (v) { return v.unidade === u; }).forEach(function (v) { h += '<tr><td><b>' + esc(v.nome) + '</b></td><td class="r">' + brl(v.prodHap) + '</td><td class="r">' + (v.vidasProjeto != null ? v.vidasProjeto : '—') + '</td><td class="r">' + brl(v.prodFora) + '</td><td class="r"><span class="tier' + (v.faixa.max ? ' max' : '') + '">' + pct(v.pct) + '</span></td><td class="r rd">' + brl(v.comissao) + '</td></tr>'; });
   h += '<tr class="tot"><td>Total</td><td class="r">' + brl(U.prodHap) + '</td><td></td><td class="r">' + brl(U.prodFora) + '</td><td></td><td class="r">' + brl(U.comissao) + '</td></tr></tbody></table></div></div></div>';
@@ -1462,6 +1474,7 @@ function custoDetalhe(mes) {
       var mm = function (m) { return m.meses.map(function (x) { return mesLabel(x.mes).slice(0, 3).toLowerCase() + '/' + x.mes.slice(2, 4) + ' ' + brl(x.valor); }).join(' · '); };
       if (c.mediaSalario) add('Folha (média de 3 meses)', 'Salários · média de ' + c.mediaSalario.meses.length + ' meses', c.mediaSalario.valor, mm(c.mediaSalario), 'SA');
       if (c.mediaBeneficio && c.mediaBeneficio.meses.length) add('Folha (média de 3 meses)', 'Benefícios · média de ' + c.mediaBeneficio.meses.length + ' meses', c.mediaBeneficio.valor, mm(c.mediaBeneficio), 'SC');
+      if (c.operacional) add('Custo operacional', 'Aluguel, água, luz e internet', c.operacional, 'não vem no relatório', 'op');
     } else {
       add('Estrutura informada', 'Salários brutos (inclui PJ da sócia ' + brl(c.pj) + ')', c.salariosBrutos, '', 'est');
       add('Estrutura informada', 'Vale-refeição · ' + c.diasUteis + ' dias úteis', c.vr, '', 'est');
@@ -1477,7 +1490,7 @@ function custoDetalhe(mes) {
     });
     var tot = soma2(L, function (l) { return l.valor; });
     out.unidades[u] = { linhas: L, fora: fora, total: tot, guardado: x.saiu != null ? x.saiu : null, fonte: c.fonteCustos,
-      real: c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido; sobrepõe a estrutura informada)' : c.fonteCustos === 'media' ? 'Sem salário no relatório deste mês: média dos últimos 3 meses registrados (troca pelo real quando chegar o relatório do dia 5)' : 'Sem salário no relatório deste mês: vale a estrutura informada + provisão' };
+      real: c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido) + custo operacional' : c.fonteCustos === 'media' ? 'Sem salário no relatório deste mês: média dos últimos 3 relatórios (troca pelo real quando chegar o relatório do dia 5) + custo operacional' : 'Sem relatório: vale a estrutura informada + provisão' };
     out.total = r2(out.total + tot);
   });
   return out;
@@ -1496,7 +1509,7 @@ function receberDetalhe(mes) {
       add('1ª parcela das vendas do mês', ref(c), pr[0] || 0, 'mensalidade ' + brl(c.valor_mensal), 'ag1');
     });
     if (R && mes === R.mes && R.unidades[u].primeiraProjeto) add('1ª parcela das vendas do mês', 'Projeto Hapvida · vendas do mês', R.unidades[u].primeiraProjeto, '100% da 1ª mensalidade · ainda sem relatório de pagamento', 'ag1');
-    ant.itens.forEach(function (i) { if (i.unidade === u) add('Parcelas de vendas anteriores', ref(i.c), i.valor, i.parcela + 'ª parcela · venda de ' + mesLabel(String(i.c.data_venda || i.c.data_inicio).slice(0, 7)), 'agN'); });
+    ant.itens.forEach(function (i) { if (i.unidade === u) add('Parcelas de vendas anteriores', ref(i.c), i.valor, i.parcela + 'ª parcela · venda de ' + mesLabel(String(i.c.data_venda || i.c.data_inicio).slice(0, 7)) + (i.foraSisweb ? ' · fora do SisWeb (pago no relatório)' : ''), 'agN'); });
     var vo = {}; vrec.forEach(function (x) { if (unidadeCanon(x.unidade) !== u) return; var g = vo[x.operadora] = vo[x.operadora] || { v: 0, n: 0 }; g.v = r2(g.v + (+x.valor || 0)); g.n++; });
     Object.keys(vo).sort().forEach(function (o) { add('Vitalício recebido', o, vo[o].v, vo[o].n + ' parcela' + (vo[o].n > 1 ? 's' : '') + ' nos relatórios de pagamento', 'vit'); });
     if (R && mes === R.mes) { var semU = r2((R.vitUnidade[u] || 0) - soma2(Object.keys(vo), function (o) { return vo[o].v; })); add('Vitalício recebido', 'Recebido sem unidade no relatório (rateado)', semU, '', 'vit'); }
@@ -1527,7 +1540,7 @@ function blocoReceberDetalhe(mes) {
 }
 // Entradas e saídas do mês: categorias × unidades (mesmas linhas do a receber detalhado e do detalhe dos custos)
 var FLUXO_ENT = [['ag1', 'Agenciamento · 1ª parcela'], ['agN', 'Agenciamento · parcelas seguintes'], ['vit', 'Vitalício'], ['EE', 'Campanhas de operadora'], ['EP', 'Premiações de operadora'], ['ET', 'Depto. de Seguros'], ['EF', 'Acertos'], ['EN|EO', 'Desconto da 1ª parcela devolvido'], ['EJ', 'Estornos devolvidos'], ['E*', 'Outros créditos']];
-var FLUXO_SAI = [['imw', 'Desconto W3G 8,5% (% Adm. do relatório)'], ['imp', 'Imposto 8,5% · sobre o que sobrou do desconto W3G'], ['imq', 'Imposto 15% · sem desconto W3G'], ['com', 'Comissões de vendedores'], ['SA', 'Salários'], ['SC', 'Benefícios'], ['SM', 'Férias'], ['SL', '13º salário'], ['SK', 'Rescisões'], ['SG', 'Vales'], ['est', 'Estrutura informada'], ['prov', 'Provisão 13º e férias'], ['SH|SI|SS', 'Adiantamentos de comissão'], ['SJ', 'Estornos de comissão'], ['SD', 'Boletos de clientes'], ['SB', 'Comissão Valdecir 40%'], ['SR', 'Premiação de vendedor'], ['SU', 'Taxa de implantação'], ['SE|SP|SF|SN|SO|ST', 'Campanhas e créditos estornados'], ['S*', 'Outros débitos']];
+var FLUXO_SAI = [['imw', 'Desconto W3G 8,5% (% Adm. do relatório)'], ['imp', 'Imposto 8,5% · sobre o que sobrou do desconto W3G'], ['imq', 'Imposto 15% · sem desconto W3G'], ['com', 'Comissões de vendedores'], ['SA', 'Salários'], ['SC', 'Benefícios'], ['SM', 'Férias'], ['SL', '13º salário'], ['SK', 'Rescisões'], ['SG', 'Vales'], ['est', 'Estrutura informada'], ['op', 'Custo operacional (aluguel, água, luz, internet)'], ['prov', 'Provisão 13º e férias'], ['SH|SI|SS', 'Adiantamentos de comissão'], ['SJ', 'Estornos de comissão'], ['SD', 'Boletos de clientes'], ['SB', 'Comissão Valdecir 40%'], ['SR', 'Premiação de vendedor'], ['SU', 'Taxa de implantação'], ['SE|SP|SF|SN|SO|ST', 'Campanhas e créditos estornados'], ['S*', 'Outros débitos']];
 function fluxoCat(lista, cat) {
   var i; cat = cat || '';
   for (i = 0; i < lista.length; i++) if (lista[i][0].split('|').indexOf(cat) >= 0) return i;
@@ -1827,7 +1840,7 @@ function vRec() {
   // Fora do ERP (vendas antigas e vitalício da carteira)
   var fora = X.linhas.filter(function (l) { return !l.erp; }), porAno = {};
   fora.forEach(function (l) { var k = (l.cadastro || '????').slice(0, 4) + '|' + l.tipo; porAno[k] = porAno[k] || { n: 0, v: 0 }; porAno[k].n++; porAno[k].v = r2(porAno[k].v + l.liquido); });
-  h += '<div class="box mt"><div class="lbl">Recebido de propostas que não estão no SisWeb <em>vendas anteriores e vitalício da carteira</em></div><div class="tw"><table><thead><tr><th>Ano do cadastro</th><th>Tipo</th><th class="r">Linhas</th><th class="r">Líquido</th></tr></thead><tbody>'
+  h += '<div class="box mt"><div class="lbl">Recebido de propostas que não estão no SisWeb <em>vendas anteriores e vitalício da carteira · entra no a receber do mês do pagamento</em></div><div class="tw"><table><thead><tr><th>Ano do cadastro</th><th>Tipo</th><th class="r">Linhas</th><th class="r">Líquido</th></tr></thead><tbody>'
     + Object.keys(porAno).sort().map(function (k) { var p = k.split('|'); return '<tr><td>' + p[0] + '</td><td>' + (p[1] === 'vitalicio' ? 'Vitalício' : 'Agenciamento') + '</td><td class="r">' + porAno[k].n + '</td><td class="r gr">' + brl(porAno[k].v) + '</td></tr>'; }).join('')
     + '</tbody></table></div></div>';
   // Tipos de crédito/débito e o que o painel faz com cada um
@@ -1875,13 +1888,14 @@ function blocoComposicao(ano) {
   c.grupos.forEach(function (g, i) { h += (i === 4 ? '<tr style="background:var(--green-t)">' : '<tr>') + '<td><b>' + g.nome + '</b></td><td class="r">' + g.n + '</td><td class="r">' + brl(g.mensal) + '</td><td class="r">' + pct(c.mensal ? g.mensal / c.mensal : null, 1) + '</td><td class="r gr">' + brl(g.liquido) + '</td><td class="r"><b>' + pct(c.liquido ? g.liquido / c.liquido : null, 1) + '</b></td></tr>'; });
   return h + '<tr class="tot"><td>Total</td><td class="r">' + c.n + '</td><td class="r">' + brl(c.mensal) + '</td><td class="r">100%</td><td class="r">' + brl(c.liquido) + '</td><td class="r">100%</td></tr></tbody></table></div></div>';
 }
-// Situação dos pagamentos: último relatório de cada unidade (o saldo vai sendo transferido enquanto a nota fiscal não é recebida)
+// Situação dos pagamentos: último relatório de cada unidade (a previsão é a data em que o valor cai)
 function blocoPagamentos() {
   var h = '<div class="box mt"><div class="lbl">Situação dos pagamentos <em>último relatório de cada unidade</em></div><div class="tw"><table><thead><tr><th>Unidade</th><th>Extrato</th><th>Previsão</th><th class="r">Saldo acumulado</th><th>Situação</th></tr></thead><tbody>';
   REGRAS.unidades.forEach(function (u) {
     var e = EXTRATOS.extratos.filter(function (x) { return unidadeCanon(x.unidade) === u; }).sort(function (a, b) { return a.previsao < b.previsao ? 1 : -1; })[0]; if (!e) return;
-    var nf = /nota fiscal n[aã]o recebida/i.test(e.obs || ''), tr = /transferido/i.test(e.obs || '');
-    h += '<tr><td><b>' + u + '</b></td><td>' + e.codigo + '</td><td>' + e.previsao.split('-').reverse().join('/') + '</td><td class="r"><b>' + brl(e.liquido) + '</b></td><td>' + (nf ? '<span class="tag proj">nota fiscal não recebida</span> ' : '') + (tr ? '<span class="tag proj">transferido para o próximo extrato</span>' : (nf ? '' : '<span class="tag proj">previsto</span>')) + '</td></tr>';
+    // 26/11/2026: todo relatório é pago na data de previsão; não precisa de nota fiscal nem recibo
+    var pago = e.previsao <= hojeISO();
+    h += '<tr><td><b>' + u + '</b></td><td>' + e.codigo + '</td><td>' + e.previsao.split('-').reverse().join('/') + '</td><td class="r"><b>' + brl(e.liquido) + '</b></td><td>' + (pago ? '<span class="tag ok">pago na previsão</span>' : '<span class="tag proj">cai em ' + e.previsao.split('-').reverse().join('/') + '</span>') + '</td></tr>';
   });
   return h + '</tbody></table></div></div>';
 }
@@ -1987,8 +2001,11 @@ function vFin() {
 
   // Custos
   var cs = REGRAS.unidades.map(function (u) { return custosUnidade(u, R.mes); });
-  h += '<div class="sec">Estrutura de custos <small>' + mesLabel(R.mes) + ' · ' + cs[0].diasUteis + ' dias úteis</small></div><div class="grid g2"><div class="box dk"><div class="lbl">Custo mensal</div><div class="tw"><table><thead><tr><th>Rubrica</th><th class="r">Consolação</th><th class="r">Mogi</th><th class="r">Total</th></tr></thead><tbody>';
-  [['Salários brutos (CLT + PJ)', 'salariosBrutos'], ['   dos quais PJ sócia', 'pj', 'sub'], ['   dos quais CLT', 'clt', 'sub'], ['Vale-refeição (' + cs[0].diasUteis + ' dias úteis)', 'vr'], ['Vale-transporte (' + cs[0].diasUteis + ' dias úteis)', 'vt'], ['Custos operacionais', 'operacional']].forEach(function (r) {
+  h += '<div class="sec">Estrutura de custos <small>' + mesLabel(R.mes) + ' · dias úteis: ' + cs.map(function (c) { return c.unidade + ' ' + c.diasUteis; }).join(' · ') + '</small></div><div class="grid g2"><div class="box dk"><div class="lbl">Custo mensal</div><div class="tw"><table><thead><tr><th>Rubrica</th><th class="r">Consolação</th><th class="r">Mogi</th><th class="r">Total</th></tr></thead><tbody>';
+  var relF = cs.every(function (c) { return c.folhaRel != null; });
+  (relF ? [['Folha (relatório ou média de 3)', 'folhaRel'], ['Custo operacional', 'operacional'], ['Outros custos do relatório', function (c) { return c.extrato.custos; }]]
+    : [['Salários brutos (CLT + PJ)', 'salariosBrutos'], ['   dos quais PJ sócia', 'pj', 'sub'], ['   dos quais CLT', 'clt', 'sub'], ['Vale-refeição', 'vr'], ['Vale-transporte', 'vt'], ['Custos operacionais', 'operacional']]).forEach(function (r) {
+    if (typeof r[1] === 'function') { var fn = r[1]; h += '<tr><td>' + r[0] + '</td>' + cs.map(function (c) { return '<td class="r">' + brl(fn(c)) + '</td>'; }).join('') + '<td class="r">' + brl(sum(cs, fn)) + '</td></tr>'; return; }
     h += '<tr class="' + (r[2] || '') + '"><td>' + r[0] + '</td>' + cs.map(function (c) { return '<td class="r">' + brl(c[r[1]]) + '</td>'; }).join('') + '<td class="r">' + brl(sum(cs, function (c) { return c[r[1]]; })) + '</td></tr>';
   });
   h += '<tr class="tot"><td>Custo mensal total</td>' + cs.map(function (c) { return '<td class="r">' + brl(c.fixo) + '</td>'; }).join('') + '<td class="r">' + brl(R.custoFixo) + '</td></tr></tbody></table></div></div>';
@@ -2001,8 +2018,8 @@ function vFin() {
   document.getElementById('v-fin').innerHTML = h;
 }
 function vrvtDiario(cs) {
-  var base = REGRAS.beneficios.baseMes, b = diasUteis(base);
-  var h = '<div class="box dk"><div class="lbl">VR e VT por dia útil <em>base: ' + mesLabel(base).toLowerCase() + ' · ' + b.n + ' dias úteis</em></div><div class="tw"><table><thead><tr><th></th><th class="r">Consolação</th><th class="r">Mogi</th></tr></thead><tbody>';
+  var base = REGRAS.beneficios.baseMes;
+  var h = '<div class="box dk"><div class="lbl">VR e VT por dia útil <em>base: ' + mesLabel(base).toLowerCase() + ' · ' + REGRAS.unidades.map(function (u) { return u + ' ' + diasUteis(base, u).n; }).join(' · ') + ' dias úteis</em></div><div class="tw"><table><thead><tr><th></th><th class="r">Consolação</th><th class="r">Mogi</th></tr></thead><tbody>';
   var cb = REGRAS.unidades.map(function (u) { return custosUnidade(u, base); });
   [['Total de outubro · VR', function (c) { return brl(c.vr); }], ['Total de outubro · VT', function (c) { return brl(c.vt); }], ['Pessoas (CLT)', function (c) { return c.cltPessoas; }],
    ['VR por dia · unidade', function (c) { return brl(c.vrDia); }], ['VT por dia · unidade', function (c) { return brl(c.vtDia); }],
@@ -2012,9 +2029,11 @@ function vrvtDiario(cs) {
   h += '</tbody></table></div></div>';
   // calendário do ano
   var ano = +R.mes.slice(0, 4);
-  h += '<div class="box dk" style="grid-column:1/-1;order:9"><div class="lbl">VR + VT mês a mês em ' + ano + ' <em>dias úteis = segunda a sexta − feriados nacionais e de São Paulo capital</em></div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">Dias úteis</th><th class="r">Consolação</th><th class="r">Mogi</th><th class="r">Total VR + VT</th><th>Feriados</th></tr></thead><tbody>';
+  h += '<div class="box dk" style="grid-column:1/-1;order:9"><div class="lbl">VR + VT mês a mês em ' + ano + ' <em>dias úteis = segunda a sexta − feriados nacionais, estaduais, Carnaval e o municipal de cada unidade · feriado não paga VR nem VT</em></div><div class="tw"><table><thead><tr><th>Mês</th><th class="r">Dias úteis<br><small>Consolação · Mogi</small></th><th class="r">Consolação</th><th class="r">Mogi</th><th class="r">Total VR + VT</th><th>Feriados</th></tr></thead><tbody>';
   for (var m = 1; m <= 12; m++) {
-    var k = ano + '-' + String(m).padStart(2, '0'), d = diasUteis(k), cm = REGRAS.unidades.map(function (u) { return custosUnidade(u, k); });
+    var k = ano + '-' + String(m).padStart(2, '0'), dU = REGRAS.unidades.map(function (u) { return diasUteis(k, u); }), cm = REGRAS.unidades.map(function (u) { return custosUnidade(u, k); });
+    var fl = []; dU.forEach(function (x, i) { x.feriados.forEach(function (f) { var o = fl.filter(function (y) { return y.f === f; })[0]; if (o) o.u.push(REGRAS.unidades[i]); else fl.push({ f: f, u: [REGRAS.unidades[i]] }); }); });
+    var d = { n: dU.map(function (x) { return x.n; }).join(' · '), feriados: fl.map(function (y) { return y.f + (y.u.length < REGRAS.unidades.length ? ' (' + y.u.join(', ') + ')' : ''); }) };
     var t = sum(cm, function (c) { return c.vr + c.vt; });
     h += '<tr' + (k === R.mes ? ' style="background:var(--peach)"' : '') + '><td><b>' + mesLabel(k) + '</b></td><td class="r">' + d.n + '</td>' + cm.map(function (c) { return '<td class="r">' + brl(c.vr + c.vt) + '</td>'; }).join('') + '<td class="r"><b>' + brl(t) + '</b></td><td class="m" style="white-space:normal">' + (d.feriados.join(' · ') || '—') + '</td></tr>';
   }
@@ -2194,7 +2213,7 @@ function vRoi() {
     + (geral && !roiReal() ? '<div class="mrow m"><span>ROI só aparece quando chegar a lista das vendas que vieram do SMS. Sem ela, o número não é real.</span><b>—</b></div>' : '')
     + (geral && !roiReal() ? '' : '<div class="mrow"><span>' + (geral ? '1ª parcela gerada · vendas do SMS' : '1ª parcela gerada · vendas das campanhas') + '</span><b class="gr">' + brl(o.retorno) + '</b></div>')
     + '<div class="mrow"><span>Retorno para cada R$ 1,00 investido</span><b>' + (o.retornoPorReal != null ? brl(o.retornoPorReal) : '—') + '</b></div>'
-    + (geral && roiReal() && o.geralDet && o.geralDet.unidades ? '<div class="mrow m"><span>Informativo (não entra no ROI): − imposto 15% ' + brl(o.geralDet.imposto) + ' · − comissão dos vendedores ' + brl(o.geralDet.comissao) + (o.geralDet.estimada ? ' (% estimado)' : '') + '</span><b>sobra ' + brl(o.geralDet.contribuicao) + '</b></div>' : '')
+    + (geral && roiReal() && o.geralDet && o.geralDet.unidades ? '<div class="mrow m"><span>Informativo (não entra no ROI): − imposto 15% ' + brl(o.geralDet.imposto) + ' · − comissão dos vendedores ' + brl(o.geralDet.comissao) + (o.geralDet.estimada ? ' (% médio dos meses com vendedores registrados: não existe relatório de comissão dos vendedores de jan–out)' : '') + '</span><b>sobra ' + brl(o.geralDet.contribuicao) + '</b></div>' : '')
     + (geral && roiReal() ? REGRAS.unidades.map(function (u) { var x = o.porUnidade[u]; return '<div class="mrow"><span>' + u + (x.roi != null ? ' · investido ' + brl(x.investido) + ' · contribuição ' + brl(x.contribuicao) : ' · sem investimento, sem ROI') + '</span><b class="' + (x.roi == null ? '' : (x.roi >= 0 ? 'gr' : 'rd')) + '">' + (x.roi != null ? pct(x.roi) : '—') + '</b></div>'; }).join('') : '')
     + '</div></div>';
   h += '</div>';
@@ -2323,15 +2342,15 @@ function copiarAlertas() {
 }
 
 var PENDENCIAS = [
-  ['7', 'Validação contábil dos encargos', 'FPAS/terceiros, RAT, incidências efetivas e encargos já incluídos nos R$ 39.185,43.', 'Provisão de R$ 1.623,15 é estimativa gerencial.'],
+  ['7', 'Encargos da folha', 'O relatório não mostra quem é CLT. Decisão de 26/11/2026: segue a estimativa.', 'Provisão de 13º e férias só entra em mês sem relatório (estimativa gerencial).'],
   ['10', 'Vendas que vieram do SMS (Mogi)', 'Mogi envia a lista das vendas que vieram do SMS do Kolmeya (proposta/cliente, data, campanha). Alternativa: exportação dos envios do Kolmeya (celular, data, campanha) + celular do cliente nas propostas, para cruzar pelo número.', 'ROI aparece como "—" até essa lista chegar.'],
-  ['9', 'Vínculo com planilha e CRM', 'Link da planilha e campos do CRM (PipeRun) com venda a venda: projeto, operadora, modalidade, valor, vendedor, unidade, data, origem/campanha.', 'Painel usa os totais por vendedor do painel atual.'],
+  ['9', 'Atualização do dia 5 (manual, com o Claude)', 'Todo dia 5: relatório de pagamento da W3G + exportação do SisWeb com a situação das propostas. As vendas chegam antes pelo Movimenta; faltar proposta no relatório é normal.', 'A planilha/PipeRun não é mais fonte (26/11/2026): vale o SisWeb.'],
 ];
 function vPen() {
   if (!document.getElementById('v-pen')) return;
   var h = '<div class="box brd"><div class="lbl">Pendências para finalizar a modelagem <em>mantidas separadas das regras confirmadas</em></div><div class="tw"><table><thead><tr><th>#</th><th>Pendência</th><th>O que falta</th><th>Como o painel trata hoje</th></tr></thead><tbody>';
   PENDENCIAS.forEach(function (p) { h += '<tr><td><b>' + p[0] + '</b></td><td style="white-space:normal;min-width:160px"><b>' + p[1] + '</b></td><td style="white-space:normal;min-width:280px">' + p[2] + '</td><td style="white-space:normal;min-width:220px" class="m">' + p[3] + '</td></tr>'; });
-  h += '</tbody></table></div><div class="note">Resolvidas: base do ROI (ROI sobre as vendas), categorias de investimento (registro por nome de campanha) origem dos contratos (não é mais necessária para o ROI), acúmulo da reserva (passa para o mês seguinte) e feriados (nacionais + São Paulo capital).</div></div>';
+  h += '</tbody></table></div><div class="note">Resolvidas: base do ROI (ROI sobre as vendas), categorias de investimento (registro por nome de campanha) origem dos contratos (não é mais necessária para o ROI), acúmulo da reserva (passa para o mês seguinte), feriados (nacionais, estaduais, Carnaval e o municipal de cada unidade), custo (vale o relatório), salário (relatório ou média dos últimos 3 relatórios), custo operacional de Mogi R$ 2.300,00 (aluguel, água, luz, internet; Consolação não tem), agenciamento fora do SisWeb (conta), pagamento (cai na data de previsão, sem nota fiscal), grade de comissões (Trasmontano PF, São Cristóvão, MedSênior PME já estão na grade; sem vitalício informado = não tem), investimentos (100% lançados) e Kolmeya (sem cruzamento: o sistema já sabe de onde veio o cliente).</div></div>';
   h += '<div class="box mt"><div class="lbl">Fora do escopo desta etapa</div><p class="m">Distribuição de lucros entre W3G e sócias · média de comissões para provisionamento da folha · controle individual de salários fixos · CPL/ROI avançado sem atribuição confiável · conciliação detalhada por pagamento de operadora · estornos, cancelamentos, descontos e recebimentos parciais.</p></div>';
   document.getElementById('v-pen').innerHTML = h;
 }
@@ -2367,7 +2386,7 @@ function vReg() {
     + card('Vitalício', 'depois da última parcela', 'Começa no mês seguinte à última parcela de agenciamento e segue enquanto o contrato estiver ativo, com o % da grade.', { box: 'dk' }) + '</div>';
   h += '<div class="sec">Fórmulas do sistema <small>cada regra nova entra aqui</small></div><div class="grid g2">'
     + regra('Vendedor no Projeto Hapvida', 'Comissão = 15% da mensalidade das vendas do projeto + valor por vida: 25 a 34 vidas R$ 20 · 35 a 49 R$ 25 · 50 ou mais R$ 35 (sobre todas as vidas IMPLANTADAS no mês; abaixo de 25 não paga)', 'Vendas fora do projeto seguem a faixa da unidade. A faixa é atingida com a produção total do vendedor (projeto + fora) e o percentual incide sobre as vendas fora do projeto.')
-    + regra('Custo da operação', 'Custo da operação = custos fixos (salários, VR, VT, operação) + provisão 13º/férias', '')
+    + regra('Custo da operação', 'Custo da operação = folha do relatório de pagamento (sem salário no relatório: média dos últimos 3 relatórios) + custo operacional + custos lançados no relatório', 'Decisão de 26/11/2026: vale o relatório; a estrutura informada só é usada sem nenhum relatório. Custo operacional = Mogi R$ 2.300,00 (aluguel, água, luz, internet); Consolação não tem.')
     + regra('Custo de operação total', 'Custo de operação total = custo da operação + desconto W3G do relatório + imposto (8,5% sobre o que sobrou do desconto W3G · 15% sem desconto)', '')
     + regra('Lucro bruto', 'Lucro bruto = a receber das operadoras − comissões dos vendedores − custo de operação total', 'Positivo = LUCRO BRUTO; negativo = PREJUÍZO. Margem bruta = lucro bruto ÷ a receber.')
     + regra('Lucro líquido', 'Lucro líquido = lucro bruto − investimento real em marketing', 'Margem líquida = lucro líquido ÷ a receber. A reserva de marketing (15% da produção) é o planejado; o que entra na conta é o que foi realmente investido.')
@@ -2382,7 +2401,7 @@ function vReg() {
     + regra('Limite de investimento', 'Limite = 15% × produção do mês + saldo dos meses anteriores do ano (reserva − investido) · Dentro se investido ≤ limite', 'A reserva não usada passa para o mês seguinte; o que passou do limite reduz o saldo.')
     + regra('Provisão de 13º e férias no ano', 'Obrigação do ano = R$ 1.623,15 × 12 · Coberta se o resultado do ano ≥ 0', 'A provisão já é descontada todo mês no resultado.')
     + regra('Balanço anual e virada de ano', 'Em dezembro: fechar o ano grava o balanço geral e o saldo (lucro líquido do ano) passa para o ano seguinte', 'Acumulado = saldo do ano anterior + lucro líquido do ano atual.')
-    + regra('VR e VT do mês', 'VR do mês = (VR de outubro ÷ 21 dias úteis) × dias úteis do mês · mesma regra para VT', 'Dias úteis = segunda a sexta menos feriados nacionais (inclui Sexta-feira Santa) e de São Paulo capital (25/1, 9/7, Corpus Christi) + Carnaval (segunda e terça). Por pessoa = valor por dia da unidade ÷ número de CLT (sócios não recebem VR nem VT).')
+    + regra('VR e VT do mês', 'VR do mês = (VR de outubro ÷ 21 dias úteis) × dias úteis do mês · mesma regra para VT', 'Dias úteis = segunda a sexta menos feriados nacionais (inclui Sexta-feira Santa), estaduais (9/7), Corpus Christi, Carnaval (segunda e terça) e o municipal de cada unidade (Consolação 25/1 · Mogi 1/9). Feriado não paga VR nem VT. Por pessoa = valor por dia da unidade ÷ número de CLT (sócios não recebem VR nem VT).')
     + regra('Arredondamento em centavos', 'Cada valor é arredondado em centavos (meio centavo para cima) no momento do cálculo · total = soma exata das linhas', 'Comissão por vendedor; a receber por proposta; imposto = 15% do a receber da unidade, rateado entre as propostas centavo a centavo; consolidado = soma das unidades.')
     + regra('A receber · vitalício', 'Vitalício do mês = Σ (valor mensal × % de vitalício) dos contratos ativos depois da última parcela de agenciamento', 'Parcela = meses desde o início do contrato + 1. Cancelados saem a partir do mês do cancelamento. Comparado com o recebido dos relatórios das operadoras.')
     + regra('Comissão do vendedor', 'Faixa = pela produção total do mês (projeto + fora) · Comissão fora = produção fora do projeto × percentual da faixa', 'Sem médias históricas.')

@@ -708,3 +708,29 @@ Mogi 2026 (jan–out): investido R$ 87.926,48 · 1ª parcela R$ 172.406,43 · im
   - Telefones ficam fora do GitHub (pasta `data/erp/`); o painel mostra só totais.
 - Referência dos números anteriores (não são reais, só para comparação): todas as vendas fora do projeto de Mogi davam ROI de 96,1% em jan–out/2026; com Consolação e Projeto Hapvida juntos, 224%.
 - Pendência 10 criada: "Vendas que vieram do SMS (Mogi)".
+
+## Respostas de 26/11/2026: dados e dúvidas (v4.4)
+
+**Dados**
+1. **Vendas que vieram do SMS (Mogi):** continua pendente. O ROI fica "—" até a lista chegar.
+2. **Planilha / PipeRun linha a linha:** não é mais fonte. **Daqui em diante vale o SisWeb.** Os alertas que dependiam da planilha (produção agregada por vendedor e contratos sem origem) saíram do painel real.
+3. **Relatório da W3G:** traz operadoras, parcelas e a **data de previsão, que é a data do pagamento**. Junto com a exportação do SisWeb (situação e cancelamento das propostas), não falta nada para o mês.
+4. **Atualização do dia 5:** manual, com o Claude. As vendas chegam antes pelo **Movimenta** (antes de entrar no SisWeb); no relatório é normal faltar proposta.
+5. **Confirmação de pagamento:** não precisa. Todo relatório é pago na data de previsão, sem nota fiscal nem recibo. O painel mostra "pago na previsão" (ou "cai em dd/mm").
+6. **Comissão dos vendedores jan–out:** fica a média dos meses com vendedores registrados (novembro, 37,59% em Mogi), dizendo claramente que **não existe relatório** de comissão dos vendedores de jan–out. Só serve para o painel funcionar (informativo do ROI).
+7. **Investimentos:** 100% lançados até hoje; novos gastos o usuário lança.
+8. **Kolmeya:** o usuário manda o relatório de gastos à mão. **Não há cruzamento de telefones**: o sistema já sabe de onde veio o cliente.
+
+**Dúvidas**
+1. **Operacional de Mogi R$ 2.300,00:** correto (aluguel da sala, água, luz, internet). Consolação não tem. Como não vem no relatório, passa a somar **todo mês**, também quando a folha vem do relatório (antes só somava sem relatório).
+2. **Salário:** vale o do relatório. Mês sem salário no relatório → **média dos últimos 3 relatórios** (em qualquer mês, não só depois do primeiro relatório). A estrutura informada (salários, VR, VT) só é usada se não houver nenhum relatório. Na aba Financeiro, o custo mensal mostra folha (relatório ou média) + operacional + outros custos do relatório.
+3. **Custo:** vale o relatório. O alerta "soma das rubricas difere do custo mensal informado" saiu.
+4. **Agenciamento fora do SisWeb:** conta. Todo agenciamento pago no relatório de propostas que não estão no SisWeb (vendas antigas, quase todas de 2025) entra no a receber do **mês do pagamento**, como "parcelas de vendas anteriores · fora do SisWeb", pelo valor bruto (como as parcelas do SisWeb). Em 2026 isso soma **R$ 215.025,09** (não só os R$ 56,50 da ADC, como foi dito antes).
+5. **Grade:** Trasmontano PF, São Cristóvão (PF e PME) e MedSênior PME já estão na grade (PF = individual; PME = coletivo empresarial). Operadora sem vitalício informado = não tem vitalício.
+6. **Encargos:** segue a estimativa (o relatório não mostra quem é CLT).
+7. **Feriados:** tiram VR e VT. Dias úteis por unidade: nacionais + Sexta-feira Santa, estadual (9/7), Corpus Christi, Carnaval e o municipal de cada unidade (Consolação: 25/1 aniversário de São Paulo; Mogi: 1/9 aniversário de Mogi das Cruzes).
+8. **Automação:** não. A atualização é manual (o relatório chega num sistema interno com senha).
+
+**Efeito no ano de 2026 (jan–nov):** a receber R$ 934.356,82 → R$ 1.149.381,91 (+ agenciamento fora do SisWeb); custos R$ 942.971,42 → R$ 1.000.958,46 (+ operacional de Mogi e imposto sobre o a receber maior); lucro bruto −R$ 8.614,60 → R$ 148.423,45; lucro líquido −R$ 96.541,08 → R$ 60.496,97.
+
+**Ainda em aberto:** 5 propostas do SisWeb sem comissão da Optas cadastrada (Onmed ×2 e Unimed Santos não estão na grade; Select PME e Biovida PME estão na grade, mas o SisWeb veio sem comissão).
