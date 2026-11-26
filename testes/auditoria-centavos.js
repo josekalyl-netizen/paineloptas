@@ -76,14 +76,14 @@ const path = require('path');
       if (!DEMO && ERP.length) Object.keys(ESTADO.fechamentos).filter(k => ESTADO.fechamentos[k].fonte === 'ERP').forEach(k => { const f = ESTADO.fechamentos[k];
         REGRAS.unidades.forEach(u => { const x = f.unidades[u]; ok(k + ' ' + u + ' a receber ERP', x.recebidas, x.primeira + x.anteriores + x.vitalicio + (x.outrasReceitas || 0)); const md = modoMes(k, u);
           if (md === 'relatorio') { // REGRA DO RELATÓRIO, conta independente: positivo = a receber, "-" = custo, pelo Líquido
-            const Ls = EXTRATOS.linhas.filter(l => l.mes === k && unidadeCanon(l.unidade) === u), Cs = EXTRATOS.creditos_debitos.filter(c => c.mes === k && unidadeCanon(c.unidade) === u), pos = a => a.filter(v => v > 0).reduce((t, v) => t + v, 0);
+            const Ls = EXTRATOS.linhas.filter(l => l.mes === k && unidadeCanon(l.unidade) === u), Cs = EXTRATOS.creditos_debitos.filter(c => c.mes === k && unidadeCanon(c.unidade) === u && !/^(LEADS|SMS)|SMS|^AD \d|^AD COMISS(?!.*FOLHA NEGATIVA)|ACERTO FOLHA|RETIRADA|ALUGUEL/.test(norm(c.descricao).toUpperCase())), /* exceções: SMS, AD devolvido, acerto folha, retiradas/aluguel */ pos = a => a.filter(v => v > 0).reduce((t, v) => t + v, 0);
             ok(k + ' ' + u + ' relatório: 1ª parcela', x.primeira, pos(Ls.filter(l => l.tipo !== 'vitalicio' && l.parc === 1).map(l => l.liquido)));
             ok(k + ' ' + u + ' relatório: parcelas seguintes', x.anteriores, pos(Ls.filter(l => l.tipo !== 'vitalicio' && l.parc !== 1).map(l => l.liquido)));
             ok(k + ' ' + u + ' relatório: vitalício', x.vitalicio, pos(Ls.filter(l => l.tipo === 'vitalicio').map(l => l.liquido)));
             ok(k + ' ' + u + ' relatório: créditos positivos', x.outrasReceitas, pos(Cs.map(c => c.liquido)));
             ok(k + ' ' + u + ' relatório: a receber = Σ positivos', x.recebidas, pos(Ls.map(l => l.liquido)) + pos(Cs.map(c => c.liquido)));
             const cu = custosUnidade(u, k); ok(k + ' ' + u + ' relatório: custos = Σ "-" + operacional', cu.fixo, -Ls.filter(l => l.liquido < 0).reduce((t, l) => t + l.liquido, 0) - Cs.filter(c => c.liquido < 0).reduce((t, c) => t + c.liquido, 0) + REGRAS.custos[u].operacional);
-            ok(k + ' ' + u + ' relatório: a receber − custos do relatório = Σ líquido do relatório', x.recebidas - (cu.fixo - REGRAS.custos[u].operacional), EXTRATOS.extratos.filter(e => e.mes === k && unidadeCanon(e.unidade) === u).reduce((t, e) => t + e.comissoes_liquido + e.creditos_debitos, 0));
+            ok(k + ' ' + u + ' relatório: a receber − custos do relatório = Σ líquido do relatório', x.recebidas - (cu.fixo - REGRAS.custos[u].operacional), EXTRATOS.extratos.filter(e => e.mes === k && unidadeCanon(e.unidade) === u).reduce((t, e) => t + e.comissoes_liquido, 0) + Cs.reduce((t, c) => t + c.liquido, 0));
           } else if (md === 'lacuna') { ok(k + ' ' + u + ' lacuna: a receber 0', x.recebidas, 0); ok(k + ' ' + u + ' lacuna: custos = operacional', custosUnidade(u, k).fixo, REGRAS.custos[u].operacional); }
           else ok(k + ' ' + u + ' outras receitas', x.outrasReceitas || 0, lancExtratos(k, u).receitas);
           const cad = ERP.filter(c => c.data_venda.slice(0, 7) === k && unidadeCanon(c.unidade) === u && statusProposta(c) !== 'cancelada');

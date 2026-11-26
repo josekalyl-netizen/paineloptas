@@ -604,10 +604,17 @@ function extratosOn() { return !DEMO && EXTRATOS && EXTRATOS.extratos && EXTRATO
 // REGRA DO RELATÓRIO (decisão do usuário, 26/11/2026): no mês que tem relatório de pagamento vale só o relatório, pelo Líquido
 // (última coluna, à direita), linha por linha: valor positivo = a receber · valor com "-" = custo, seja o que for.
 // Mês de referência = previsão do relatório. Fora do relatório só entram o custo operacional (Mogi), a provisão e o imposto.
+// Exceções à regra (decisão do usuário, 26/11/2026): seguir o sinal contaria errado nestes lançamentos
+var REL_EXCECOES = {
+  Q: 'SMS: já está no investimento de marketing (contaria duas vezes)',
+  H: 'Adiantamento devolvido: a Optas já recebeu antes; a comissão conta pela linha do relatório',
+  X: 'Acerto do saldo devedor: foi a Optas que pagou a W3G; não é dinheiro a receber',
+  V: 'Retiradas/aluguel pagos por fora (empréstimo): não é a receber nem custo da operação'
+};
 function relatorioMes(mes, u) {
   var _c = relatorioMes.cache = relatorioMes.cache || {}, k = mes + '|' + u; if (k in _c) return _c[k];
   if (!extratosOn() || !EXTRATOS.extratos.some(function (x) { return x.mes === mes && unidadeCanon(x.unidade) === u; })) return (_c[k] = null);
-  var o = { primeira: 0, anteriores: 0, vitalicio: 0, outras: 0, entradas: 0, custos: 0, base85: 0, base15: 0, ent: [], sai: [], extratos: [] };
+  var o = { primeira: 0, anteriores: 0, vitalicio: 0, outras: 0, entradas: 0, custos: 0, base85: 0, base15: 0, ent: [], sai: [], fora: [], extratos: [] };
   EXTRATOS.extratos.forEach(function (x) { if (x.mes === mes && unidadeCanon(x.unidade) === u) o.extratos.push(x.codigo); });
   EXTRATOS.linhas.forEach(function (l) { if (l.mes !== mes || unidadeCanon(l.unidade) !== u || !l.liquido) return;
     if (l.liquido < 0) { o.custos = r2(o.custos - l.liquido); o.sai.push({ l: l, valor: r2(-l.liquido), cat: 'Sneg' }); return; }
@@ -616,6 +623,7 @@ function relatorioMes(mes, u) {
     if (l.pct_adm > 0) o.base85 = r2(o.base85 + l.liquido); else o.base15 = r2(o.base15 + l.liquido);
     o.ent.push({ l: l, valor: l.liquido, cat: cat }); });
   EXTRATOS.creditos_debitos.forEach(function (c) { if (c.mes !== mes || unidadeCanon(c.unidade) !== u || !c.liquido) return; var t = tipoCD(c.descricao);
+    if (REL_EXCECOES[t[0]]) { o.fora.push({ c: c, t: t, valor: c.liquido, motivo: REL_EXCECOES[t[0]] }); return; }
     if (c.liquido > 0) { o.outras = r2(o.outras + c.liquido); o.base15 = r2(o.base15 + c.liquido); o.ent.push({ c: c, t: t, valor: c.liquido, cat: 'E' + t[0] }); }
     else { o.custos = r2(o.custos - c.liquido); o.sai.push({ c: c, t: t, valor: r2(-c.liquido), cat: 'S' + t[0] }); } });
   o.entradas = r2(r2(r2(o.primeira + o.anteriores) + o.vitalicio) + o.outras);
@@ -1531,6 +1539,7 @@ function custoDetalhe(mes) {
     if (c.rel || c.modo === 'lacuna') {   // regra do relatório (26/11/2026): todo valor com "-" no Líquido é custo, seja o que for
       if (c.rel) c.rel.sai.forEach(function (i) { if (i.c) add('Valores com "-" no relatório', i.c.descricao, i.valor, i.t[1] + ' · relatório ' + i.c.extrato, i.cat); else add('Valores com "-" no relatório', i.l.operadora + ' · ' + i.l.proposta + ' · parcela ' + i.l.parc, i.valor, 'linha de comissão negativa · relatório ' + i.l.extrato, 'Sneg'); });
       if (c.operacional) add('Custo operacional', 'Aluguel, água, luz e internet', c.operacional, 'não vem no relatório', 'op');
+      if (c.rel) c.rel.fora.forEach(function (i) { fora.push({ nome: i.c.descricao, valor: i.c.liquido, como: 'não entra (' + i.motivo + ')' }); });
     } else if (c.fonteCustos !== 'estrutura') {
       c.extrato.itens.forEach(function (i) { if (i.a === 'folha') add('Folha (relatórios de pagamento)', i.c.descricao, -i.c.liquido, orig(i), 'S' + i.t[0]); });
       var mm = function (m) { return m.meses.map(function (x) { return mesLabel(x.mes).slice(0, 3).toLowerCase() + '/' + x.mes.slice(2, 4) + ' ' + brl(x.valor); }).join(' · '); };
