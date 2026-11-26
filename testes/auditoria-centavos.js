@@ -62,10 +62,10 @@ const path = require('path');
       U.forEach(u => ok(u.custos.unidade + ' comissão no resultado (0 com folha do extrato ou média)', u.res ? u.res.comissoes : 0, u.res ? (u.custos.fonteCustos !== 'estrutura' ? 0 : u.comissao) : 0));
       ok('reserva = Σ unidades', R.reservaMkt, U.reduce((t, u) => t + u.reservaMkt, 0));
       // mínimos: menor 1ª parcela que zera o lucro bruto / cobre a reserva
-      // imposto (26/11/2026): parte com desconto W3G (proporção do bruto das linhas com despesa adm. no mês/unidade) = 8,5% W3G + 8,5%; resto = 15%
+      // imposto (26/11/2026): parte com desconto W3G (proporção do bruto das linhas com despesa adm. no mês/unidade) = W3G paga metade → Optas 6,5%; resto = 15%
       const imp = (rec, mes, u) => { let b = 0, d = 0; (extratosOn() ? EXTRATOS.linhas : []).forEach(l => { if (l.mes !== mes || !(l.pct_adm > 0) || !(l.liquido > 0) || (u && unidadeCanon(l.unidade) !== u)) return; b += l.liquido; });   // 26/11/2026: base = Líquido (desconto W3G já saiu)
-        b = r2(b); d = r2(d); const com = Math.min(b, Math.max(rec, 0)), sem = r2(rec - com), w = b ? r2(d * com / b) : 0; return r2(w + r2((com - w) * 0.085) + r2(sem * 0.15)); };
-      U.forEach(u => { if (u.res) ok(u.custos.unidade + ' imposto (% Adm. 8,5%: desconto W3G + 8,5% sobre o que sobrou · 0%: 15%)', u.res.imposto, imp(u.recebidas, R.mes, u.custos.unidade)); });
+        b = r2(b); d = r2(d); const com = Math.min(b, Math.max(rec, 0)), sem = r2(rec - com), w = b ? r2(d * com / b) : 0; return r2(w + r2((com - w) * 0.065) + r2(sem * 0.15)); };
+      U.forEach(u => { if (u.res) ok(u.custos.unidade + ' imposto (% Adm. 8,5%: W3G paga metade → 6,5% · 0%: 15%)', u.res.imposto, imp(u.recebidas, R.mes, u.custos.unidade)); });
       Object.keys(ESTADO.fechamentos).forEach(k => { const f = ESTADO.fechamentos[k]; if (!f.base) return; REGRAS.unidades.forEach(u => { const x = f.unidades[u]; if (x && x.recebidas != null) ok(k + ' ' + u + ' imposto', x.imposto, imp(x.recebidas, k, u)); }); if (f.recebidas != null) ok(k + ' imposto = Σ unidades', f.imposto, REGRAS.unidades.reduce((t, u) => t + (f.unidades[u].imposto || 0), 0)); });
       [['consolidado', R.res, undefined]].concat(U.map(u => [u.custos.unidade, u.res, u.custos.unidade])).forEach(([n, x, un]) => { if (!x) return;
         const lb = rec => r2(rec - imp(rec, R.mes, un) - x.comissoes - x.custoOp);
