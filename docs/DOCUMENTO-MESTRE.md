@@ -244,7 +244,7 @@ Ainda é necessário confirmar: se a quarta parcela é a regra de todas as opera
 
 # 8. IMPOSTOS
 
-- Alíquota: 15%.
+- Alíquota: 15%. **Substituído em 26/11/2026:** ver "Imposto — regra definitiva" (15% só nas linhas com % Adm. 0,00%; nas de 8,50%, 8,5% sobre o que sobrou).
 - Incide sobre comissões de todas as operadoras, sobre agenciamento e sobre vitalício.
 - Não é descontada da comissão paga ao funcionário.
 - Não criar alíquotas diferentes por operadora.
@@ -651,23 +651,19 @@ Distribuição de lucros entre W3G e sócias; média de comissões para provisio
 - Tabelas largas: barra de rolagem maior, arrastar com o mouse e Shift + roda.
 - Aba Ano: lucro bruto, lucro líquido, reserva de marketing e investimento em marketing também em % do a receber. "Investido" passa a se chamar "Investimento em marketing".
 
-### Imposto: 8,5% W3G + 8,5% Optas (26/11/2026)
-- Corrige a regra anterior (15%). Sobre o a receber saem dois descontos, cada um arredondado em centavos:
-  - Desconto W3G 8,5%: já sai no recebimento.
-  - Imposto 8,5%: pago pela Optas.
-- Vale para o sistema inteiro: resultado do mês, ano, unidades, mínimo para não fechar no vermelho, vitalício e entradas/saídas (duas linhas separadas).
-- **Atualização 26/11/2026 (substitui o item acima):** o imposto depende de a linha do relatório vir com ou sem desconto da W3G.
-  - Linha sem desconto da W3G → 15% (a conta de antes).
-  - Linha com desconto da W3G (8,5%, já sai no recebimento) → mais 8,5% de imposto.
-  - A parte "com desconto" do a receber = proporção do bruto das linhas dos relatórios do mês e da unidade que vieram com despesa administrativa. Sem relatório no mês: proporção de todos os relatórios da unidade.
-  - Em 2026: Consolação 50,8% com desconto, Mogi 60,5%.
-  - Nas saídas: três linhas (Desconto W3G 8,5% · Imposto 8,5% parte com desconto · Imposto 15% parte sem desconto).
-- **Atualização 26/11/2026 (2) — vale esta:** o desconto da W3G é o valor exato que os relatórios do mês mostram (despesa administrativa das linhas).
-  - Sobre o bruto dessas linhas: mais 8,5% de imposto.
-  - Sobre o resto do a receber: 15%.
-  - Mês sem relatório: 15% sobre tudo.
-  - Se o bruto com desconto passar do a receber do mês, conta só até o a receber, e o desconto da W3G entra na mesma proporção.
-- **Atualização 26/11/2026 (3) — vale esta:** linha a linha pela coluna "% Adm." do relatório.
-  - 8,50%: a W3G já descontou; a Optas paga 8,5% sobre o valor que sobrou (bruto − desconto).
-  - 0,00%: 15%.
-  - Mês sem relatório: 15% sobre tudo.
+### Imposto — regra definitiva (confirmada pelo usuário em 26/11/2026)
+Substitui o imposto de 15% sobre tudo (seção 8 e demais menções a "15% de imposto").
+
+Vale linha a linha, pela coluna **"% Adm."** do relatório de comissões da W3G:
+
+| % Adm. na linha | O que acontece | Imposto que a Optas paga |
+|---|---|---|
+| **8,50%** | A W3G já descontou 8,5% (Desp. Adm.) no recebimento | **8,5% sobre o valor que sobrou** (bruto − desconto da W3G) |
+| **0,00%** | Nada foi descontado | **15% sobre o valor** |
+
+- **Mês sem relatório:** 15% sobre tudo.
+- **Como o painel aplica:** o a receber do mês vem da tabela de parcelas do SisWeb. A parte com desconto é o bruto das linhas com 8,50% nos relatórios daquele mês e unidade (no máximo o a receber), e o desconto da W3G entra na mesma proporção. O resto paga 15%. Cada valor é arredondado em centavos.
+- **Nas saídas do mês aparecem três linhas:** Desconto W3G 8,5% · Imposto 8,5% sobre o que sobrou · Imposto 15% sem desconto W3G.
+- **Vale para o sistema inteiro:** resultado do mês e do ano, unidades, consolidado, mínimo para não fechar no vermelho, vitalício e entradas/saídas.
+- **Conferência:** `testes/auditoria-centavos.js` recalcula esse imposto em cada unidade e em cada mês.
+- **2026:** desconto W3G 34.103,50 · imposto 8,5% 31.204,75 · imposto 15% 79.970,78 · total 145.279,03 (antes, com 15% em tudo: 140.153,52).
