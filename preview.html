@@ -526,10 +526,11 @@ var CD_TIPOS = [
   ['H', 'Adiantamento de parcela devolvido (AD nª PARC / AD COMISSÃO): a comissão conta pela linha', /^AD \d|^AD COMISS(?!.*FOLHA NEGATIVA)/, 'ignora'],
   ['I', 'Adiantamento de comissão com folha negativa', /AD COMISS|FOLHA NEGATIVA/, 'custo'],
   ['S', '10% sobre parcela', /^10%.*PARC/, 'custo'],
-  // 26/11/2026: os vales de jan–mar/2026 e o boleto Consthruir (apartamento) são a mesma retirada da Joana devolvida em maio (+64.773,05) → fora da conta, como a devolução.
-  ['V', 'Empréstimo (retiradas/vales Joana · boleto apartamento · aluguel Verus) — pago por fora, o sistema não considera', /RETIRADA|ALUGUEL|^(10% - )?VALE\b|CONSTHRUIR/, 'ignora'],
+  ['G', 'Vale', /VALE/, 'custo'],
+  // 26/11/2026: retiradas da Joana (salário + apartamento) e aluguel Verus reembolsado — só justificativa; no mês com relatório contam pelo sinal como tudo
+  ['V', 'Retiradas Joana · aluguel Verus (empréstimo/reembolso)', /RETIRADA|ALUGUEL/, 'ignora'],
   ['D', 'Boleto de cliente', /BOLETO/, 'custoOp'],
-  // 26/11/2026 (revisto): "ACERTO FOLHA" +33.342,54 entra no a receber, e o "AD COMISSÃO ... FOLHA NEGATIVA" −14.587,60 continua no custo (contar os dois).
+  // 26/11/2026 (revisto): "ACERTO FOLHA" +33.342,54 entra no a receber.
   ['X', 'Acerto de folha', /ACERTO FOLHA/, 'receita'],
   ['F', 'Acerto de parcela', /ACERTO/, 'receita'],
   ['K', 'Rescisão', /RESCIS/, 'custo'],
@@ -605,11 +606,8 @@ function extratosOn() { return !DEMO && EXTRATOS && EXTRATOS.extratos && EXTRATO
 // (última coluna, à direita), linha por linha: valor positivo = a receber · valor com "-" = custo, seja o que for.
 // Mês de referência = previsão do relatório. Fora do relatório só entram o custo operacional (Mogi), a provisão e o imposto.
 // Exceções à regra (decisão do usuário, 26/11/2026): seguir o sinal contaria errado nestes lançamentos
-var REL_EXCECOES = {
-  Q: 'SMS: já está no investimento de marketing (contaria duas vezes)',
-  H: 'Adiantamento devolvido: a Optas já recebeu antes; a comissão conta pela linha do relatório',
-  V: 'Retiradas/vales da Joana, boleto do apartamento e aluguel pagos por fora (empréstimo): não é a receber nem custo da operação'
-};
+// 26/11/2026 (decisão final do usuário): sem exceções. No mês com relatório, positivo = entrada e negativo = saída, ponto final.
+var REL_EXCECOES = {};
 function relatorioMes(mes, u) {
   var _c = relatorioMes.cache = relatorioMes.cache || {}, k = mes + '|' + u; if (k in _c) return _c[k];
   if (!extratosOn() || !EXTRATOS.extratos.some(function (x) { return x.mes === mes && unidadeCanon(x.unidade) === u; })) return (_c[k] = null);

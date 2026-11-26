@@ -76,7 +76,7 @@ const path = require('path');
       if (!DEMO && ERP.length) Object.keys(ESTADO.fechamentos).filter(k => ESTADO.fechamentos[k].fonte === 'ERP').forEach(k => { const f = ESTADO.fechamentos[k];
         REGRAS.unidades.forEach(u => { const x = f.unidades[u]; ok(k + ' ' + u + ' a receber ERP', x.recebidas, x.primeira + x.anteriores + x.vitalicio + (x.outrasReceitas || 0)); const md = modoMes(k, u);
           if (md === 'relatorio') { // REGRA DO RELATÓRIO, conta independente: positivo = a receber, "-" = custo, pelo Líquido
-            const Ls = EXTRATOS.linhas.filter(l => l.mes === k && unidadeCanon(l.unidade) === u), Cs = EXTRATOS.creditos_debitos.filter(c => c.mes === k && unidadeCanon(c.unidade) === u && !/^(LEADS|SMS)|SMS|^AD \d|^AD COMISS(?!.*FOLHA NEGATIVA)|RETIRADA|ALUGUEL|^(10% - )?VALE\b|CONSTHRUIR/.test(norm(c.descricao).toUpperCase())), /* exceções: SMS, AD devolvido, retiradas/vales/apartamento/aluguel */ pos = a => a.filter(v => v > 0).reduce((t, v) => t + v, 0);
+            const Ls = EXTRATOS.linhas.filter(l => l.mes === k && unidadeCanon(l.unidade) === u), Cs = EXTRATOS.creditos_debitos.filter(c => c.mes === k && unidadeCanon(c.unidade) === u), /* sem exceções: positivo = entrada, negativo = saída */ pos = a => a.filter(v => v > 0).reduce((t, v) => t + v, 0);
             ok(k + ' ' + u + ' relatório: 1ª parcela', x.primeira, pos(Ls.filter(l => l.tipo !== 'vitalicio' && l.parc === 1).map(l => l.liquido)));
             ok(k + ' ' + u + ' relatório: parcelas seguintes', x.anteriores, pos(Ls.filter(l => l.tipo !== 'vitalicio' && l.parc !== 1).map(l => l.liquido)));
             ok(k + ' ' + u + ' relatório: vitalício', x.vitalicio, pos(Ls.filter(l => l.tipo === 'vitalicio').map(l => l.liquido)));
