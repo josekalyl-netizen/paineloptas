@@ -1685,6 +1685,21 @@ function blocoCustoDetalhe(mes) {
 }
 // % do a receber (aba Ano): lucros, reserva e investimento em marketing
 function pRec(v, rec) { return rec ? pct(v / rec, 1) : '—'; }
+function tabelaUnidadeAno(t, u, ano) {
+  var SIT = { relatorio: 'Relatório', lacuna: 'Sem relatório · coberto pelo seguinte', estimativa: 'Estimativa' };
+  var T = { recebidas: 0, imposto: 0, saiu: 0, resultado: 0, mkt: 0, depois: 0 }, acum = 0, n = 0;
+  var h = '<div class="box mt"><div class="lbl">' + u + ' · ' + ano + ' mês a mês <em>custos já incluem imposto, custos do relatório, provisão e custo operacional · marketing = investido no mês, sem o que já veio descontado no relatório</em></div><div class="tw"><table><thead><tr><th>Mês</th><th>Situação</th><th class="r">A receber</th><th class="r">Imposto</th><th class="r">Custos</th><th class="r">Lucro bruto</th><th class="r">Investimento em marketing</th><th class="r">Lucro líquido</th><th class="r">Acumulado</th><th></th></tr></thead><tbody>';
+  t.meses.forEach(function (m) {
+    var x = (m.unidades || {})[u]; if (!x || x.resultado == null) return;
+    var mk = r2((x.investido || 0) - (x.invNoRel || 0)); n++;
+    T.recebidas = r2(T.recebidas + (x.recebidas || 0)); T.imposto = r2(T.imposto + (x.imposto || 0)); T.saiu = r2(T.saiu + (x.saiu || 0)); T.resultado = r2(T.resultado + x.resultado); T.mkt = r2(T.mkt + mk); T.depois = r2(T.depois + x.depois); acum = T.depois;
+    var md = modoMes(m.mes, u);
+    h += '<tr class="clk" data-a="anoMes" data-p="' + m.mes + '"><td><b>' + mesLabel(m.mes) + '</b></td><td><span class="tag' + (md === 'relatorio' ? '' : ' proj') + '">' + (SIT[md] || md) + '</span></td><td class="r gr">' + brl(x.recebidas) + '</td><td class="r rd">' + brl(x.imposto || 0) + '</td><td class="r rd">' + brl(x.saiu) + '</td><td class="r ' + (x.resultado >= 0 ? 'pos' : 'neg') + '"><b>' + brl(x.resultado) + '</b></td><td class="r inv">' + brl(mk) + (x.invNoRel ? '<i class="pc">+ ' + brl(x.invNoRel) + ' já no relatório</i>' : '') + '</td><td class="r ' + (x.depois >= 0 ? 'pos' : 'neg') + '"><b>' + brl(x.depois) + '</b></td><td class="r ' + (acum >= 0 ? 'pos' : 'neg') + '">' + brl(acum) + '</td><td><span class="st ' + (x.resultado >= 0 ? 'lucro' : 'prej') + '">' + (x.resultado >= 0 ? 'SE PAGOU' : 'NÃO SE PAGOU') + '</span></td></tr>';
+  });
+  if (!n) return '';
+  h += '<tr class="tot"><td>Total ' + u + '</td><td></td><td class="r gr">' + brl(T.recebidas) + '</td><td class="r rd">' + brl(T.imposto) + '</td><td class="r rd">' + brl(T.saiu) + '</td><td class="r ' + (T.resultado >= 0 ? 'pos' : 'neg') + '">' + brl(T.resultado) + '</td><td class="r inv">' + brl(T.mkt) + '</td><td class="r ' + (T.depois >= 0 ? 'pos' : 'neg') + '">' + brl(T.depois) + '</td><td></td><td></td></tr></tbody></table></div></div>';
+  return h;
+}
 function vAno() {
   var anos = {}; Object.keys(ESTADO.fechamentos).forEach(function (k) { anos[k.slice(0, 4)] = 1; }); anos[R.mes.slice(0, 4)] = 1;
   var lista = Object.keys(anos).sort(), ano = +(vAno.sel || R.mes.slice(0, 4)), t = resumoAno(ano), fechadoAno = ESTADO.anos[ano];
@@ -1736,6 +1751,8 @@ function vAno() {
   h += '<div class="grid g2 mt">';
   REGRAS.unidades.forEach(function (u) { var x = t.unidades[u], o2 = x.depois >= 0; h += '<div class="box ' + (x.n ? (o2 ? 'bgr' : 'brd') : '') + '"><div class="split"><div class="lbl">' + u + ' em ' + ano + '</div>' + (x.n ? '<span class="st ' + (o2 ? 'lucro' : 'prej') + '">' + (o2 ? 'SE SUSTENTANDO' : 'NÃO SE SUSTENTANDO') + '</span>' : '') + '</div><table class="dre"><tr><td class="op"></td><td>A receber</td><td class="r gr">' + brl(x.recebidas) + '</td></tr><tr><td class="op">−</td><td>Custos</td><td class="r rd">' + brl(x.saiu) + '</td></tr><tr class="sub"><td class="op">=</td><td>Lucro bruto</td><td class="r ' + (x.resultado >= 0 ? 'gr' : 'rd') + '">' + brl(x.resultado) + '<i class="pc">' + pRec(x.resultado, x.recebidas) + '</i></td></tr><tr><td class="op">−</td><td>Investimento em marketing</td><td class="r inv">' + brl(x.investido) + '<i class="pc">' + pRec(x.investido, x.recebidas) + '</i></td></tr><tr class="sub"><td class="op">=</td><td>Lucro líquido</td><td class="r ' + (o2 ? 'gr' : 'rd') + '">' + brl(x.depois) + '<i class="pc">' + pRec(x.depois, x.recebidas) + '</i></td></tr></table></div>'; });
   h += '</div>';
+  // Mês a mês por unidade (pedido 26/11/2026): mesmos números do fechamento de cada unidade
+  REGRAS.unidades.forEach(function (u) { h += tabelaUnidadeAno(t, u, ano); });
   // Fechar o ano
   if (!fechadoAno) {
     var podeFechar = !!ESTADO.fechamentos[ano + '-12'];
