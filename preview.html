@@ -1020,6 +1020,8 @@ function calcular() {
   var pTot = sum(REGRAS.unidades, function (u) { return prodU[u]; }), rat = REGRAS.unidades.map(function (u) { return { u: u, x: 0 }; });
   ratear(rat, livre, function (o) { return pTot ? livre * prodU[o.u] / pTot : livre / REGRAS.unidades.length; }, 'x');
   R.invUnidade = {}; REGRAS.unidades.forEach(function (u, k) { R.invUnidade[u] = r2(invU[k].v + rat[k].x); });
+  // 26/11/2026: SMS que o relatório da unidade já descontou ("LEADS – 44.716 SMS") entra pelo relatório (saída); no resultado não desconta de novo como investimento (continua no ROI)
+  R.invNoRel = {}; REGRAS.unidades.forEach(function (u) { R.invNoRel[u] = soma2(invMes.filter(function (i) { return unidadeCanon(i.unidade) === u && invNoRelatorio(i); }), function (i) { return +i.valor || 0; }); });
   // Vitalício do mês no a receber: SÓ o que os relatórios de pagamento mostram como recebido; sem previsão (decisão de 25/11/2026).
   // O recebido sem unidade (lançamento manual) é rateado pelo recebido de cada unidade (ou pela produção).
   R.vit = calcVitalicio(R.mes);
@@ -1064,7 +1066,7 @@ function calcular() {
     U.investido = R.invUnidade[u];
     // folha do extrato já inclui as comissões dos vendedores: no resultado, comissão à parte = 0
     U.comissaoResultado = U.custos.fonteCustos !== 'estrutura' ? 0 : U.comissao;   // folha real ou média dos relatórios já inclui as comissões
-    U.res = resultado(U.recebidas, U.comissaoResultado, U.custos.fixo, U.custos.provisao, U.producao, U.recebidas != null ? impostoDe(U.recebidas, R.mes, u) : null, U.investido);
+    U.res = resultado(U.recebidas, U.comissaoResultado, U.custos.fixo, U.custos.provisao, U.producao, U.recebidas != null ? impostoDe(U.recebidas, R.mes, u) : null, r2(U.investido - (R.invNoRel[u] || 0)));
     prodTot = r2(prodTot + U.producao); comTot = r2(comTot + U.comissao);
   });
   R.producao = prodTot; R.comissoes = comTot; R.comissoesResultado = soma2(REGRAS.unidades, function (u) { return R.unidades[u].comissaoResultado; });
@@ -1144,6 +1146,13 @@ function impactoCampo(f) {
 //   custo de operação total = custo de operação + impostos
 //   lucro bruto             = a receber − comissões dos vendedores − custo de operação total
 //   lucro líquido           = lucro bruto − investimento REAL em marketing
+// Investimento de SMS já descontado num relatório da mesma unidade (mesmo nº de envios na descrição) → mês desse relatório; senão null
+function invNoRelatorio(i) {
+  if (DEMO || !extratosOn() || !i || !i.envios || !/SMS/i.test(i.categoria || '')) return null;
+  var n = String(i.envios), u = unidadeCanon(i.unidade);
+  var c = EXTRATOS.creditos_debitos.filter(function (c) { var d = norm(c.descricao).toUpperCase(); return unidadeCanon(c.unidade) === u && /SMS/.test(d) && d.replace(/[.\s]/g, '').indexOf(n) >= 0; })[0];
+  return c ? c.mes : null;
+}
 function resultado(recebidas, comissoes, fixo, provisao, producao, impostoDado, investido) {
   if (recebidas == null) return null;
   var imp = impostoDado != null ? impostoDado : impostoDe(recebidas);
@@ -1297,16 +1306,16 @@ function aplicarBaseMeses() {
     var inv = ESTADO.investimentos.filter(function (i) { return (i.data || '').slice(0, 7) === mes; }), un = {}, t = { producao: null, recebidas: null, comissoes: null, fixo: 0, provisao: 0, investido: 0 };
     var ex = erpMes(mes);
     REGRAS.unidades.forEach(function (u) {
-      var c = custosUnidade(u, mes), iv = soma2(inv.filter(function (i) { return unidadeCanon(i.unidade) === u; }), function (i) { return +i.valor || 0; }), e = ex.porUnidade[u];
+      var c = custosUnidade(u, mes), iv = soma2(inv.filter(function (i) { return unidadeCanon(i.unidade) === u; }), function (i) { return +i.valor || 0; }), nr = soma2(inv.filter(function (i) { return unidadeCanon(i.unidade) === u && invNoRelatorio(i); }), function (i) { return +i.valor || 0; }), e = ex.porUnidade[u];
       // os relatórios de pagamento (extratos) já mostram as comissões pagas aos vendedores: comissões do mês = 0 à parte, com ou sem folha no extrato
-      un[u] = compor({ producao: ex.n ? e.producao : null, recebidas: ex.n ? e.recebidas : null, imposto: ex.n ? impostoDe(e.recebidas, mes, u) : null, comissoes: 0, fonteCustos: c.fonteCustos, fixo: c.fixo, provisao: c.provisao, investido: iv, contratado: ex.n ? e.contratado : null, primeira: e.primeira, anteriores: e.anteriores, vitalicio: e.vitalicio, outrasReceitas: e.outrasReceitas, vidas: e.vidas, propostas: e.n });
+      un[u] = compor({ producao: ex.n ? e.producao : null, recebidas: ex.n ? e.recebidas : null, imposto: ex.n ? impostoDe(e.recebidas, mes, u) : null, comissoes: 0, fonteCustos: c.fonteCustos, fixo: c.fixo, provisao: c.provisao, investido: iv, invNoRel: nr, contratado: ex.n ? e.contratado : null, primeira: e.primeira, anteriores: e.anteriores, vitalicio: e.vitalicio, outrasReceitas: e.outrasReceitas, vidas: e.vidas, propostas: e.n });
       t.fixo = r2(t.fixo + c.fixo); t.provisao = r2(t.provisao + c.provisao);
     });
     if (ex.n) ['producao', 'recebidas', 'contratado', 'primeira', 'anteriores', 'vitalicio', 'outrasReceitas'].forEach(function (k) { t[k] = soma2(REGRAS.unidades, function (u) { return un[u][k] || 0; }); });
     t.fonte = ex.n ? 'ERP' : '';
     if (REGRAS.unidades.every(function (u) { return un[u].comissoes != null; })) t.comissoes = 0;
     if (t.recebidas != null) t.imposto = soma2(REGRAS.unidades, function (u) { return un[u].imposto || 0; });   // imposto do total = Σ unidades (no centavo)
-    t.investido = soma2(inv, function (i) { return +i.valor || 0; });
+    t.investido = soma2(inv, function (i) { return +i.valor || 0; }); t.invNoRel = soma2(REGRAS.unidades, function (u) { return un[u].invNoRel || 0; });
     ESTADO.fechamentos[mes] = Object.assign(compor(t), { mes: mes, unidades: un, fechado: false, base: true, versao: REGRAS.versao });
   }
 }
@@ -1468,13 +1477,14 @@ function compor(p) {
   o.saiu = temC ? r2(o.imposto + p.comissoes + p.fixo + p.provisao) : null;
   o.resultado = temC ? r2(p.recebidas - o.saiu) : null;
   o.reserva = r2((p.producao || 0) * REGRAS.reservaMarketing);
-  o.depois = temC ? r2(o.resultado - r2(p.investido || 0)) : null;   // lucro líquido = lucro bruto − investido real
+  // 26/11/2026: SMS já descontado num relatório (saída pelo relatório) não desconta de novo como investimento
+  o.depois = temC ? r2(o.resultado - r2((p.investido || 0) - (p.invNoRel || 0))) : null;   // lucro líquido = lucro bruto − investido real
   return o;
 }
 function fotoMes() {
   var un = {};
-  REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; un[u] = compor({ producao: U.producao, recebidas: U.recebidas, imposto: U.res ? U.res.imposto : null, comissoes: U.comissaoResultado, fixo: U.custos.fixo, provisao: U.custos.provisao, investido: U.investido, imposto: U.res ? U.res.imposto : null, contratado: U.contratado, primeira: U.primeira }); });
-  return Object.assign(compor({ producao: R.producao, recebidas: R.recebidas, comissoes: R.comissoesResultado, fixo: R.custoFixo, provisao: R.provisao, investido: R.investido, imposto: R.res ? R.res.imposto : null, aReceber: R.ag.base ? r2(R.ag.valor) : null, contratado: R.ag.base ? R.ag.contratado : null, primeira: R.primeira }),
+  REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; un[u] = compor({ producao: U.producao, recebidas: U.recebidas, imposto: U.res ? U.res.imposto : null, comissoes: U.comissaoResultado, fixo: U.custos.fixo, provisao: U.custos.provisao, investido: U.investido, invNoRel: R.invNoRel[u] || 0, imposto: U.res ? U.res.imposto : null, contratado: U.contratado, primeira: U.primeira }); });
+  return Object.assign(compor({ producao: R.producao, recebidas: R.recebidas, comissoes: R.comissoesResultado, fixo: R.custoFixo, provisao: R.provisao, investido: R.investido, invNoRel: soma2(REGRAS.unidades, function (u) { return R.invNoRel[u] || 0; }), imposto: R.res ? R.res.imposto : null, aReceber: R.ag.base ? r2(R.ag.valor) : null, contratado: R.ag.base ? R.ag.contratado : null, primeira: R.primeira }),
     { mes: R.mes, unidades: un, versao: REGRAS.versao, fechado: false, vendedores: R.vendedores.map(function (v) { return { nome: v.nome, unidade: v.unidade, prodHap: v.prodHap, prodFora: v.prodFora, vidas: v.vidasProjeto, comissao: v.comissao }; }) });
 }
 // O mês corrente é gravado automaticamente enquanto estiver aberto; mês fechado não muda mais.
@@ -1502,6 +1512,7 @@ function resumoAno(ano) {
   ['producao', 'recebidas', 'imposto', 'comissoes', 'fixo', 'provisao', 'saiu', 'resultado', 'reserva', 'depois', 'investido'].forEach(function (x) { t[x] = soma2(comRec, function (m) { return m[x] || 0; }); });
   t.producaoTotal = soma2(ms, function (m) { return m.producao || 0; });
   t.investidoTotal = soma2(ms, function (m) { return m.investido || 0; });
+  t.invNoRelTotal = soma2(ms, function (m) { return m.invNoRel || 0; });   // SMS já descontado no relatório (não desconta de novo no líquido)
   t.provisaoAnual = REGRAS.provisaoReferencia * 12;
   t.provisaoAcum = soma2(ms, function (m) { return m.provisao || 0; });
   var ant = ESTADO.anos[ano - 1]; t.saldoAnterior = ant ? ant.depois : 0;
@@ -1510,7 +1521,7 @@ function resumoAno(ano) {
   t.pior = comRec.slice().sort(function (a, b) { return a.resultado - b.resultado; })[0];
   t.mesesLucro = comRec.filter(function (m) { return m.resultado >= 0; }).length;
   t.unidades = {};
-  REGRAS.unidades.forEach(function (u) { var us = comRec.map(function (m) { return (m.unidades || {})[u]; }).filter(Boolean); t.unidades[u] = { producao: soma2(us, function (x) { return x.producao || 0; }), recebidas: soma2(us, function (x) { return x.recebidas || 0; }), saiu: soma2(us, function (x) { return x.saiu || 0; }), resultado: soma2(us, function (x) { return x.resultado || 0; }), depois: soma2(us, function (x) { return x.depois || 0; }), investido: soma2(us, function (x) { return x.investido || 0; }), n: us.length }; });
+  REGRAS.unidades.forEach(function (u) { var us = comRec.map(function (m) { return (m.unidades || {})[u]; }).filter(Boolean); t.unidades[u] = { producao: soma2(us, function (x) { return x.producao || 0; }), recebidas: soma2(us, function (x) { return x.recebidas || 0; }), saiu: soma2(us, function (x) { return x.saiu || 0; }), resultado: soma2(us, function (x) { return x.resultado || 0; }), depois: soma2(us, function (x) { return x.depois || 0; }), investido: soma2(us, function (x) { return x.investido || 0; }), invNoRel: soma2(us, function (x) { return x.invNoRel || 0; }), n: us.length }; });
   return t;
 }
 function faixaAno() {

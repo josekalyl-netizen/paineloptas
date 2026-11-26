@@ -145,7 +145,7 @@ const path = require('path');
       if (R.vit.recebido != null) { ok('vitalício recebido = Σ por operadora', R.vit.recebido, Object.keys(R.vit.porOp).reduce((t, k) => t + (R.vit.porOp[k].recebido || 0), 0));
         if (extratosOn()) { const L = EXTRATOS.linhas.filter(l => l.mes === R.mes && l.tipo === 'vitalicio'); ok('vitalício recebido = Σ linhas dos extratos', R.vit.recebido, L.reduce((t, l) => t + l.bruto, 0)); ok('mensalidades do vitalício = Σ linhas', R.vit.mensalRec, L.reduce((t, l) => t + l.vl_parcela, 0)); } }
       // ano
-      const a = resumoAno(+R.mes.slice(0, 4)); a.meses.forEach(m => { if (m.resultado != null) { ok(m.mes + ' lucro bruto', m.resultado, m.recebidas - m.saiu); ok(m.mes + ' lucro líquido = bruto − investido', m.depois, m.resultado - (m.investido || 0)); } });
+      const a = resumoAno(+R.mes.slice(0, 4)); a.meses.forEach(m => { if (m.resultado != null) { ok(m.mes + ' lucro bruto', m.resultado, m.recebidas - m.saiu); ok(m.mes + ' lucro líquido = bruto − investido', m.depois, m.resultado - ((m.investido || 0) - (m.invNoRel || 0))); } });
       // detalhe dos custos (aba Ano): Σ itens = custos do mês, por unidade e no total
       // entradas e saídas: Σ categorias = a receber e custos de cada unidade; resultado = lucro bruto guardado
       Object.keys(ESTADO.fechamentos).forEach(m => { const f = fluxoMes(m), d = ESTADO.fechamentos[m]; if (!f || d.resultado == null) return; REGRAS.unidades.forEach(u => {
@@ -155,8 +155,8 @@ const path = require('path');
       // ano: Σ unidades = total (bruto, investido e líquido); líquido = bruto − investido
       { const t = resumoAno(+R.mes.slice(0, 4)); if (t.nRec) { const us = REGRAS.unidades.map(u => t.unidades[u]);
         ok('ano lucro bruto = Σ unidades', t.resultado, us.reduce((a, x) => a + x.resultado, 0)); ok('ano lucro líquido = Σ unidades', t.depois, us.reduce((a, x) => a + x.depois, 0));
-        ok('ano investido = Σ unidades', t.investidoTotal, us.reduce((a, x) => a + x.investido, 0)); ok('ano líquido = bruto − investido', t.depois, t.resultado - t.investidoTotal);
-        us.forEach((x, k) => ok(REGRAS.unidades[k] + ' ano líquido = bruto − investido', x.depois, x.resultado - x.investido)); } }
+        ok('ano investido = Σ unidades', t.investidoTotal, us.reduce((a, x) => a + x.investido, 0)); ok('ano líquido = bruto − investido', t.depois, t.resultado - (t.investidoTotal - (t.invNoRelTotal || 0)));
+        us.forEach((x, k) => ok(REGRAS.unidades[k] + ' ano líquido = bruto − investido', x.depois, x.resultado - (x.investido - (x.invNoRel || 0)))); } }
       // a receber detalhado: Σ de onde vem = a receber guardado do mês, por unidade
       Object.keys(ESTADO.fechamentos).forEach(m => { const rd = receberDetalhe(m); if (!rd) return; REGRAS.unidades.forEach(u => { const x = rd.unidades[u]; if (x.guardado != null) ok(m + ' ' + u + ' a receber detalhado', x.total, x.guardado); ok(m + ' ' + u + ' Σ linhas do a receber', x.total, x.linhas.reduce((t, l) => t + l.valor, 0)); }); });
       Object.keys(ESTADO.fechamentos).forEach(m => { const f = ESTADO.fechamentos[m]; if (f.resultado == null || f.exemplo) return; const cd = custoDetalhe(m); if (!cd) return;
