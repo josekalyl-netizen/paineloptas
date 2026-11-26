@@ -526,11 +526,11 @@ var CD_TIPOS = [
   ['H', 'Adiantamento de parcela devolvido (AD nª PARC / AD COMISSÃO): a comissão conta pela linha', /^AD \d|^AD COMISS(?!.*FOLHA NEGATIVA)/, 'ignora'],
   ['I', 'Adiantamento de comissão com folha negativa', /AD COMISS|FOLHA NEGATIVA/, 'custo'],
   ['S', '10% sobre parcela', /^10%.*PARC/, 'custo'],
-  ['G', 'Vale', /VALE/, 'custo'],
-  ['V', 'Empréstimo (retiradas Joana · aluguel Verus) — pago por fora, o sistema não considera', /RETIRADA|ALUGUEL/, 'ignora'],
+  // 26/11/2026: os vales de jan–mar/2026 e o boleto Consthruir (apartamento) são a mesma retirada da Joana devolvida em maio (+64.773,05) → fora da conta, como a devolução.
+  ['V', 'Empréstimo (retiradas/vales Joana · boleto apartamento · aluguel Verus) — pago por fora, o sistema não considera', /RETIRADA|ALUGUEL|^(10% - )?VALE\b|CONSTHRUIR/, 'ignora'],
   ['D', 'Boleto de cliente', /BOLETO/, 'custoOp'],
-  // 26/11/2026: "ACERTO FOLHA" zera o saldo que a Optas devia à W3G; foi a Optas que pagou. Não é receita (os custos já entraram no mês deles).
-  ['X', 'Acerto do saldo devedor (pago pela Optas)', /ACERTO FOLHA/, 'ignora'],
+  // 26/11/2026 (revisto): "ACERTO FOLHA" +33.342,54 entra no a receber, e o "AD COMISSÃO ... FOLHA NEGATIVA" −14.587,60 continua no custo (contar os dois).
+  ['X', 'Acerto de folha', /ACERTO FOLHA/, 'receita'],
   ['F', 'Acerto de parcela', /ACERTO/, 'receita'],
   ['K', 'Rescisão', /RESCIS/, 'custo'],
   ['M', 'Férias', /FERIAS/, 'folha'],
@@ -608,8 +608,7 @@ function extratosOn() { return !DEMO && EXTRATOS && EXTRATOS.extratos && EXTRATO
 var REL_EXCECOES = {
   Q: 'SMS: já está no investimento de marketing (contaria duas vezes)',
   H: 'Adiantamento devolvido: a Optas já recebeu antes; a comissão conta pela linha do relatório',
-  X: 'Acerto do saldo devedor: foi a Optas que pagou a W3G; não é dinheiro a receber',
-  V: 'Retiradas/aluguel pagos por fora (empréstimo): não é a receber nem custo da operação'
+  V: 'Retiradas/vales da Joana, boleto do apartamento e aluguel pagos por fora (empréstimo): não é a receber nem custo da operação'
 };
 function relatorioMes(mes, u) {
   var _c = relatorioMes.cache = relatorioMes.cache || {}, k = mes + '|' + u; if (k in _c) return _c[k];
