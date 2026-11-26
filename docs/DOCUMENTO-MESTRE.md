@@ -650,3 +650,9 @@ Distribuição de lucros entre W3G e sócias; média de comissões para provisio
 - Botões sem código dentro das tags (delegação por `data-a`): funcionam também em visualizadores que bloqueiam `onclick`.
 - Tabelas largas: barra de rolagem maior, arrastar com o mouse e Shift + roda.
 - Aba Ano: lucro bruto, lucro líquido, reserva de marketing e investimento em marketing também em % do a receber. "Investido" passa a se chamar "Investimento em marketing".
+
+### Imposto: 8,5% W3G + 8,5% Optas (26/11/2026)
+- Corrige a regra anterior (15%). Sobre o a receber saem dois descontos, cada um arredondado em centavos:
+  - Desconto W3G 8,5%: já sai no recebimento.
+  - Imposto 8,5%: pago pela Optas.
+- Vale para o sistema inteiro: resultado do mês, ano, unidades, mínimo para não fechar no vermelho, vitalício e entradas/saídas (duas linhas separadas).

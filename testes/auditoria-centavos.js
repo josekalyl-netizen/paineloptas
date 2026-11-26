@@ -62,7 +62,7 @@ const path = require('path');
       U.forEach(u => ok(u.custos.unidade + ' comissão no resultado (0 com folha do extrato ou média)', u.res ? u.res.comissoes : 0, u.res ? (u.custos.fonteCustos !== 'estrutura' ? 0 : u.comissao) : 0));
       ok('reserva = Σ unidades', R.reservaMkt, U.reduce((t, u) => t + u.reservaMkt, 0));
       // mínimos: menor 1ª parcela que zera o lucro bruto / cobre a reserva
-      const lb = (rec, x) => r2(rec - r2(rec * REGRAS.imposto) - x.comissoes - x.custoOp);
+      const lb = (rec, x) => r2(rec - r2(r2(rec * 0.085) + r2(rec * 0.085)) - x.comissoes - x.custoOp);   // W3G 8,5% + imposto 8,5%
       [['consolidado', R.res]].concat(U.map(u => [u.custos.unidade, u.res])).forEach(([n, x]) => { if (!x) return;
         const m = minimos(x.comissoes, x.custoOp, x.reserva);
         if (lb(m.empate, x) < 0 || lb(r2(m.empate - 0.01), x) >= 0) falhas.push(n + ' mínimo para não fechar no vermelho');
