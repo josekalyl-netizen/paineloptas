@@ -113,9 +113,10 @@ Linha com Líquido R$ 0,00 não conta. São 7 linhas: a 1ª parcela de adesão r
 |---|---|---|
 | Salário, benefícios, férias, rescisão | nome do mês na descrição; sem nome, a data dd/mm | "SALÁRIOS - AGOSTO" (relatório de setembro) → agosto · "SALÁRIO - JOANA 07/09" → setembro |
 | Comissão Valdecir 40% | nome do mês | "COMISSÃO NOVEMBRO 2025" (relatório de jan/26) → nov/25 |
-| Vale, AD de comissão com folha negativa | data dd/mm | "VALE - 07/01" (relatório de fev/26) → jan/26 |
+| Salário sem mês nem data | mês anterior ao do relatório (decisão de 26/11/2026) | "SALÁRIO - Victor Brito Marino" (Consolação, relatório de fev/26) → jan/26 |
+| Vale, AD de comissão com folha negativa | data dd/mm: é o mês a que o vale pertence (confirmado pela Optas em 26/11/2026) | "VALE - 07/01" (relatório de fev/26) → jan/26 |
 | 13º sem mês, pago em janeiro ou fevereiro | dezembro do ano anterior | Mogi, jan/26 → dez/25 |
-| Todo o resto (boletos, estornos, AD de parcela, campanhas, 10%, taxa) e débito sem mês escrito | mês do relatório | — |
+| Todo o resto (boletos, estornos, AD de parcela, campanhas, 10%, taxa) e os demais débitos sem mês escrito | mês do relatório | — |
 
 Sem ano escrito, vale o mês mais recente até o do relatório. Gasto que cai em 2025 sai de 2026.
 
@@ -363,6 +364,7 @@ Também foi feita uma conta independente, direto dos arquivos dos relatórios e 
 
 Os valores abaixo são os do painel. As tabelas de cada unidade somam o total da linha final, e o consolidado é a soma das duas unidades.
 
+
 #### Consolação — entradas (a receber)
 
 | Mês | Situação | Relatório(s) | 1ª parcela | Parcelas seguintes | Vitalício | Créditos (campanhas, acertos…) | **A receber** |
@@ -401,9 +403,9 @@ Os valores abaixo são os do painel. As tabelas de cada unidade somam o total da
 
 | Mês | Gastos dos relatórios (no mês escrito na descrição) | Estimativa (média 3 meses, ainda sem relatório) | Custo operacional | Provisão 13º/férias | Imposto | **Saídas** | **Lucro bruto** | Investido | SMS já no relatório | **Lucro líquido** |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| jan/26 | 30.509,85 | — | 0,00 | 796,18 | 2.598,42 | **33.904,45** | **−10.267,39** | 0,00 | — | **−10.267,39** |
+| jan/26 | 38.408,25 | — | 0,00 | 796,18 | 2.598,42 | **41.802,85** | **−18.165,79** | 0,00 | — | **−18.165,79** |
 | fev/26 | 28.209,50 | — | 0,00 | 796,18 | 6.999,10 | **36.004,78** | **18.672,39** | 0,00 | — | **18.672,39** |
-| mar/26 | 88.656,20 | — | 0,00 | 796,18 | 6.869,28 | **96.321,66** | **−42.862,21** | 0,00 | — | **−42.862,21** |
+| mar/26 | 80.757,80 | — | 0,00 | 796,18 | 6.869,28 | **88.423,26** | **−34.963,81** | 0,00 | — | **−34.963,81** |
 | abr/26 | 26.733,55 | — | 0,00 | 796,18 | 617,56 | **28.147,29** | **−22.717,69** | 0,00 | — | **−22.717,69** |
 | mai/26 | 33.095,30 | — | 0,00 | 796,18 | 15.870,89 | **49.762,37** | **64.984,19** | 0,00 | — | **64.984,19** |
 | jun/26 | 30.645,67 | — | 0,00 | 796,18 | 3.827,58 | **35.269,43** | **−3.597,27** | 0,00 | — | **−3.597,27** |
@@ -469,9 +471,9 @@ Os valores abaixo são os do painel. As tabelas de cada unidade somam o total da
 
 | Mês | A receber | Imposto | Saídas | Lucro bruto | Investido | Lucro líquido | Produção (mensalidades vendidas) | Reserva de marketing (15%) |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
-| jan/26 | 74.283,07 | 7.817,87 | 78.604,65 | −4.321,58 | 4.907,06 | −6.858,69 | 33.329,87 | 4.999,48 |
+| jan/26 | 74.283,07 | 7.817,87 | 86.503,05 | −12.219,98 | 4.907,06 | −14.757,09 | 33.329,87 | 4.999,48 |
 | fev/26 | 118.692,21 | 13.145,60 | 65.414,36 | 53.277,85 | 10.202,34 | 43.075,51 | 56.868,80 | 8.530,32 |
-| mar/26 | 82.541,17 | 9.404,10 | 132.732,21 | −50.191,04 | 12.139,44 | −62.330,48 | 49.451,80 | 7.417,77 |
+| mar/26 | 82.541,17 | 9.404,10 | 124.833,81 | −42.292,64 | 12.139,44 | −54.432,08 | 49.451,80 | 7.417,77 |
 | abr/26 | 23.231,73 | 2.335,59 | 81.795,69 | −58.563,96 | 8.018,16 | −66.582,12 | 71.196,09 | 10.679,41 |
 | mai/26 | 145.947,37 | 19.450,48 | 101.786,83 | 44.160,54 | 5.613,44 | 38.547,10 | 71.186,04 | 10.677,90 |
 | jun/26 | 61.297,35 | 6.692,37 | 85.954,85 | −24.657,50 | 7.186,38 | −31.843,88 | 47.382,46 | 7.107,37 |

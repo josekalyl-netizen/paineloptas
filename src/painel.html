@@ -564,6 +564,7 @@ function mesDevido(c) {
     for (var i = 0; i < 12 && !mm; i++) { x = d.match(new RegExp('\\b' + MESES_N[i] + '\\b(?:\\s*(?:DE\\s*)?(20\\d\\d))?')); if (x) { mm = i + 1; aa = x[1] ? +x[1] : 0; } }
     if (!mm && (x = d.match(/\b(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\b(?!\/?\d)/))) mm = +x[2];
     if (!mm && t === 'L' && +c.mes.slice(5, 7) <= 2) { mm = 12; aa = +c.mes.slice(0, 4) - 1; }
+    if (!mm && t === 'A') { mm = +c.mes.slice(5, 7) - 1; aa = +c.mes.slice(0, 4); if (!mm) { mm = 12; aa--; } }   // salário sem mês escrito = mês anterior ao relatório (decisão de 26/11/2026)
     if (mm) {
       var ay = +c.mes.slice(0, 4), am = +c.mes.slice(5, 7);
       if (!aa) aa = mm > am ? ay - 1 : ay;   // sem ano: o mês mais recente até o do desconto
