@@ -697,3 +697,4 @@ Base: apostila "Aula Completa — Cálculo de ROI" (receita não é lucro; inves
 - A partir de dezembro/2026, a mesma contribuição é calculada venda a venda, por campanha.
 
 Mogi 2026 (jan–out): investido R$ 87.926,48 · 1ª parcela R$ 172.406,43 · imposto R$ 25.860,97 · comissão R$ 111.101,88 · contribuição R$ 35.443,58 · **ROI do ano −59,7%** (antes: 224%).
+- **Decisão (26/11/2026):** o ROI fica sobre a **1ª parcela gerada** ("é o que gera"). As parcelas seguintes não entram e não há ROI projetado ao lado.
