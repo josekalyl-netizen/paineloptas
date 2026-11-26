@@ -482,8 +482,10 @@ var REGRAS = {
     { nome: 'Projeto Hapvida', operadora: 'Hapvida', ag: 1.00, parc: [1.00], vit: 0 }   // 100% em parcela única, sem vitalício (PF e PME)
   ],
   vitalicio: { regra: 'depois da última parcela de agenciamento', confirmado: true },
-  imposto: 0.085,                                              // 8. imposto pago pela Optas sobre o a receber (agenciamento e vitalício) — corrigido em 26/11/2026 (era 15%)
-  descontoW3G: 0.085,                                          //    a W3G já desconta 8,5% no recebimento (decisão de 26/11/2026)
+  // 8. Imposto sobre o a receber (agenciamento e vitalício) — decisão de 26/11/2026:
+  //    linha do relatório SEM desconto da W3G → a Optas paga 15%;
+  //    linha COM desconto da W3G (8,5%, já sai no recebimento) → a Optas paga mais 8,5%.
+  imposto: 0.15, impostoComW3G: 0.085, descontoW3G: 0.085,
   // Projeto Hapvida · pagamento ao vendedor: 15% da mensalidade + valor por vida a partir de 25 vidas no mês (abaixo de 25 não paga)
   projetoVendedor: { pct: 0.15, porVida: [{ de: 25, valor: 20 }, { de: 35, valor: 25 }, { de: 50, valor: 35 }] },
   roiPorCampanhaDesde: '2026-12',                              // antes: ROI geral (investido × todas as vendas); a partir daqui: venda a venda por campanha (decisão de 25/11/2026)
@@ -666,10 +668,24 @@ function normEstado(e) {
 var fmtBRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 function brl(n) { return n == null || isNaN(n) ? '—' : fmtBRL.format(n); }
 function brl0(n) { return n == null || isNaN(n) ? '—' : 'R$ ' + Math.round(n).toLocaleString('pt-BR'); }
-// Sobre o a receber saem dois descontos de 8,5% (decisão de 26/11/2026): o da W3G (já sai no recebimento) e o imposto que a Optas paga.
-function descW3G(x) { return r2((x || 0) * REGRAS.descontoW3G); }
-function impPago(x) { return r2((x || 0) * REGRAS.imposto); }
-function impostoDe(x) { return r2(descW3G(x) + impPago(x)); }
+// Imposto (decisão de 26/11/2026): a parte do a receber que vem com desconto da W3G paga 8,5% (W3G) + 8,5% (Optas);
+// a parte que vem sem desconto paga 15%. A parte "com desconto" = proporção do bruto das linhas dos relatórios do mês e da
+// unidade que vieram com despesa administrativa. Sem relatório no mês: proporção de todos os relatórios da unidade.
+function fracW3G(mes, u) {
+  var _c = fracW3G.cache = fracW3G.cache || {}, k = (mes || '') + '|' + (u || ''); if (k in _c) return _c[k];
+  if (!extratosOn()) return (_c[k] = 0);
+  var conta = function (f) { var b = 0, w = 0; EXTRATOS.linhas.forEach(function (l) { if (!f(l) || !l.bruto) return; b += l.bruto; if (l.desp_adm) w += l.bruto; }); return b ? w / b : null; };
+  var doU = function (l) { return !u || unidadeCanon(l.unidade) === u; };
+  var f = mes ? conta(function (l) { return l.mes === mes && doU(l); }) : null;
+  if (f == null) f = conta(doU); if (f == null) f = 0;
+  return (_c[k] = f);
+}
+function impostoPartes(x, mes, u) {
+  x = r2(x || 0); var com = r2(x * fracW3G(mes, u)), sem = r2(x - com);
+  var o = { com: com, sem: sem, w3g: r2(com * REGRAS.descontoW3G), impCom: r2(com * REGRAS.impostoComW3G), impSem: r2(sem * REGRAS.imposto) };
+  o.total = r2(o.w3g + o.impCom + o.impSem); return o;
+}
+function impostoDe(x, mes, u) { return impostoPartes(x, mes, u).total; }
 function pct(n, d) { return n == null || isNaN(n) || !isFinite(n) ? '—' : (n * 100).toLocaleString('pt-BR', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }) + '%'; }
 // Arredondamento contábil em centavos (meio para cima), aplicado em cada etapa do cálculo
 function r2(n) { if (n == null || isNaN(n)) return n; var sg = n < 0 ? -1 : 1; return sg * Math.round(Math.abs(n) * 100 + 1e-7) / 100; }
@@ -928,7 +944,7 @@ function calcular() {
     R.alertas.push({ sev: 'wa', cod: 'CAMPO_' + f, titulo: ids.length + ' contrato(s) sem o campo "' + f + '"', texto: 'Registros: ' + ids.slice(0, 12).join(', ') + (ids.length > 12 ? '…' : ''), impacto: impactoCampo(f), acao: 'Corrigir no painel gerencial / CRM.', registros: ids.length });
   });
   Object.keys(semDoc).forEach(function (k) { var ids = semDoc[k]; R.alertas.push({ sev: 'er', cod: 'DOC_' + k, titulo: ids.length + ' proposta(s): ' + k, texto: 'Propostas: ' + ids.slice(0, 12).join(', ') + (ids.length > 12 ? '…' : ''), impacto: 'Identificação da proposta (PF = nome e CPF do titular · PME = nome e CNPJ da empresa)', acao: 'Corrigir no CRM/planilha.', registros: ids.length }); });
-  ag.imposto = impostoDe(ag.valor); ag.impostoVit = impostoDe(ag.vit);
+  ag.imposto = impostoDe(ag.valor, R.mes); ag.impostoVit = impostoDe(ag.vit, R.mes);
   R.ag = ag;
   R.caixaAnt = parcelasAnteriores(R.mes);
 
@@ -985,7 +1001,7 @@ function calcular() {
     U.investido = R.invUnidade[u];
     // folha do extrato já inclui as comissões dos vendedores: no resultado, comissão à parte = 0
     U.comissaoResultado = U.custos.fonteCustos !== 'estrutura' ? 0 : U.comissao;   // folha real ou média dos relatórios já inclui as comissões
-    U.res = resultado(U.recebidas, U.comissaoResultado, U.custos.fixo, U.custos.provisao, U.producao, null, U.investido);
+    U.res = resultado(U.recebidas, U.comissaoResultado, U.custos.fixo, U.custos.provisao, U.producao, U.recebidas != null ? impostoDe(U.recebidas, R.mes, u) : null, U.investido);
     prodTot = r2(prodTot + U.producao); comTot = r2(comTot + U.comissao);
   });
   R.producao = prodTot; R.comissoes = comTot; R.comissoesResultado = soma2(REGRAS.unidades, function (u) { return R.unidades[u].comissaoResultado; });
@@ -1154,7 +1170,7 @@ function aplicarBaseMeses() {
     REGRAS.unidades.forEach(function (u) {
       var c = custosUnidade(u, mes), iv = soma2(inv.filter(function (i) { return unidadeCanon(i.unidade) === u; }), function (i) { return +i.valor || 0; }), e = ex.porUnidade[u];
       // os relatórios de pagamento (extratos) já mostram as comissões pagas aos vendedores: comissões do mês = 0 à parte, com ou sem folha no extrato
-      un[u] = compor({ producao: ex.n ? e.producao : null, recebidas: ex.n ? e.recebidas : null, comissoes: 0, fonteCustos: c.fonteCustos, fixo: c.fixo, provisao: c.provisao, investido: iv, contratado: ex.n ? e.contratado : null, primeira: e.primeira, anteriores: e.anteriores, vitalicio: e.vitalicio, outrasReceitas: e.outrasReceitas, vidas: e.vidas, propostas: e.n });
+      un[u] = compor({ producao: ex.n ? e.producao : null, recebidas: ex.n ? e.recebidas : null, imposto: ex.n ? impostoDe(e.recebidas, mes, u) : null, comissoes: 0, fonteCustos: c.fonteCustos, fixo: c.fixo, provisao: c.provisao, investido: iv, contratado: ex.n ? e.contratado : null, primeira: e.primeira, anteriores: e.anteriores, vitalicio: e.vitalicio, outrasReceitas: e.outrasReceitas, vidas: e.vidas, propostas: e.n });
       t.fixo = r2(t.fixo + c.fixo); t.provisao = r2(t.provisao + c.provisao);
     });
     if (ex.n) ['producao', 'recebidas', 'contratado', 'primeira', 'anteriores', 'vitalicio', 'outrasReceitas'].forEach(function (k) { t[k] = soma2(REGRAS.unidades, function (u) { return un[u][k] || 0; }); });
@@ -1188,7 +1204,7 @@ function vGeral() {
   var ro = R.roi, res = R.res;
   // Resultado financeiro do mês (definição do usuário, v1.5):
   // a receber − imposto − (comissões dos vendedores + custo fixo + provisão) − reserva de marketing
-  // descontos = 8,5% W3G + 8,5% imposto sobre o a receber · reserva = 15% × produção mensal
+  // imposto = 15% na parte sem desconto W3G · 8,5% W3G + 8,5% na parte com desconto · reserva = 15% × produção mensal
   var x = R.res, sub = function (t, c) { return '<div class="plan ' + (c || '') + '">' + t + '</div>'; };
   // [título, valor, '', '', classe de cor, linha pequena]
   var q = [
@@ -1197,7 +1213,7 @@ function vGeral() {
     ['Vitalício recebido', R.vit.recebido != null ? brl(R.vit.recebido) : '—', '', '', R.vit.recebido != null ? 'in' : 'mu', R.vit.mensalRec ? sub(pct(R.vit.recebido / R.vit.mensalRec, 2) + ' das mensalidades', 'ok') : ''],
     ['Comissões dos vendedores', brl(R.comissoes), '', '', 'out'],
     ['Custo da operação', brl(r2(R.custoFixo + R.provisao)), '', '', 'out'],
-    ['Desconto W3G 8,5% + imposto 8,5%', x ? brl(x.imposto) : '—', '', '', x ? 'out' : 'mu'],
+    ['Imposto e desconto W3G', x ? brl(x.imposto) : '—', '', '', x ? 'out' : 'mu'],
     ['Custo de operação total', x ? brl(x.custoOpTotal) : '—', '', '', x ? 'out' : 'mu'],
     ['Lucro bruto', x ? brl(x.operacional) : '—', '', '', x ? (x.operacional >= 0 ? 'in' : 'out') : 'mu', x ? sub('margem ' + pct(x.mBruta, 1), x.mBruta >= 0 ? 'ok' : 'no') : ''],
     ['Reserva de marketing', brl(R.reservaMkt), '', '', 'inv', R.reservaAnterior ? sub('+ saldo dos meses anteriores ' + brl(R.reservaAnterior)) : ''],
@@ -1223,20 +1239,21 @@ function vGeral() {
   document.getElementById('v-geral').innerHTML = h;
 }
 
-// Mínimos do valor a receber no mês (receita bruta, antes do desconto W3G de 8,5% e do imposto de 8,5%)
-// empate:      R − 8,5%R (W3G) − 8,5%R (imposto) − comissões − estrutura = 0
-// sustentável: além disso, cobre a reserva de marketing (15% da produção) → R = (comissões + estrutura + reserva) ÷ 0,83
-function minimos(comissoes, estrutura, reserva) {
-  var i = REGRAS.imposto + REGRAS.descontoW3G, m = REGRAS.reservaMarketing;
+// Mínimos do valor a receber no mês (receita bruta, antes do imposto e do desconto da W3G)
+// empate:      R − imposto(R) − comissões − estrutura = 0
+// sustentável: além disso, cobre a reserva de marketing (15% da produção)
+function minimos(comissoes, estrutura, reserva, mes, u) {
+  var tx = function (x) { return impostoDe(x, mes || R.mes, u); };
+  var i = tx(100000) / 100000, m = REGRAS.reservaMarketing;
   // menor valor em centavos que, depois dos descontos arredondados (W3G + imposto), cobre o necessário
-  var minimo = function (precisa) { precisa = r2(precisa); var x = Math.ceil(precisa / (1 - i) * 100 - 1e-6) / 100; while (r2(x - impostoDe(x)) < precisa) x = r2(x + 0.01); while (x > 0 && r2((x - 0.01) - impostoDe(r2(x - 0.01))) >= precisa) x = r2(x - 0.01); return x; };
+  var minimo = function (precisa) { precisa = r2(precisa); var x = Math.ceil(precisa / (1 - i) * 100 - 1e-6) / 100; while (r2(x - tx(x)) < precisa) x = r2(x + 0.01); while (x > 0 && r2((x - 0.01) - tx(r2(x - 0.01))) >= precisa) x = r2(x - 0.01); return x; };
   return { empate: minimo(comissoes + estrutura), sustentavel: minimo(comissoes + estrutura + (reserva || 0)) };
 }
 function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, producao, investido, primeira, anteriores, vitalicio, outras) {
   var reserva = res ? res.reserva : r2((producao || 0) * REGRAS.reservaMarketing);
   var custoExt = /^Unidade /.test(titulo) ? (R.unidades[titulo.replace('Unidade ', '')].custos.extrato.custos || 0) : soma2(REGRAS.unidades, function (u) { return R.unidades[u].custos.extrato.custos || 0; });
   investido = res ? res.investido : r2(investido || 0);
-  var mn = minimos(comissoes, r2(fixo + prov), reserva), tem = recebidas != null;
+  var uRes = /^Unidade /.test(titulo) ? titulo.replace('Unidade ', '') : undefined, mn = minimos(comissoes, r2(fixo + prov), reserva, R.mes, uRes), tem = recebidas != null;
   var imp = res ? res.imposto : null, custos = res ? res.custos : null;
   var st = res ? (res.operacional >= 0 ? 'lucro' : 'prej') : 'nd', stL = res ? (res.financeiro >= 0 ? 'lucro' : 'prej') : 'nd';
   var h = '<div class="box res ' + st + '"><div class="split"><div class="lbl">' + titulo + ' <em>' + mesLabel(R.mes) + '</em></div></div>';
@@ -1263,7 +1280,7 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
   var metaLinha = function (nome, alvo, extra) {
     var p = tem && alvo > 0 ? p1 / alvo : 0, ok = tem && p1 >= alvo;
     return '<div class="mg"><div class="mgh"><span>' + nome + '</span><b>' + brl(alvo) + '</b></div>'
-      + '<div class="mgd">operação e comissões ' + brl(base) + ' + desconto W3G e imposto sobre o a receber ' + brl(impostoDe(alvo)) + (extra ? ' + reserva de marketing ' + brl(extra) : '') + '</div>'
+      + '<div class="mgd">operação e comissões ' + brl(base) + ' + desconto W3G e imposto sobre o a receber ' + brl(impostoDe(alvo, R.mes, uRes)) + (extra ? ' + reserva de marketing ' + brl(extra) : '') + '</div>'
       + '<div class="mgt"><i class="' + (ok ? 'ok' : 'no') + '" style="width:' + Math.min(100, p * 100) + '%"></i></div>'
       + '<div class="mgf">' + (tem ? '<span class="mga">a receber hoje <b>' + brl(p1) + '</b></span><span class="pill ' + (ok ? 'ok' : 'er') + '">' + (ok ? 'acima em ' : 'faltam ') + brl(Math.abs(p1 - alvo)) + '</span>' : '') + '</div></div>';
   };
@@ -1275,7 +1292,7 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
   var base = tem && recebidas > 0 ? recebidas : 1;
   var linha = function (nome, v, cls, barCls) { return '<div class="fl ' + (cls || '') + '"><span>' + nome + '</span><div class="fb"><i class="' + (barCls || 'out') + '" style="width:' + (v != null && tem ? Math.min(100, Math.abs(v) / base * 100) : 0) + '%"></i></div><b>' + (v != null ? brl(v) : '—') + '</b><em>' + (v != null && tem ? pct(v / recebidas, 1) : '') + '</em></div>'; };
   h += '<div class="flow"><div class="metat">Para onde vai o dinheiro</div>'
-    + linha('Custos fixos', fixo) + linha('Provisão 13º e férias', prov) + linha('Desconto W3G 8,5% + imposto 8,5%', imp)
+    + linha('Custos fixos', fixo) + linha('Provisão 13º e férias', prov) + linha('Imposto e desconto W3G', imp)
     + '<div class="fl sub-tot"><span>Custo de operação total</span><div></div><b class="rd">' + (res ? brl(res.custoOpTotal) : '—') + '</b><em>' + (res ? pct(res.custoOpTotal / recebidas, 1) : '') + '</em></div>'
     + linha('Comissões dos vendedores', comissoes)
     + '<div class="fl tot ' + st + '"><span>Lucro bruto</span><div></div><b>' + (res ? brl(res.operacional) : '—') + '</b><em>' + (res ? pct(res.mBruta, 1) : '') + '</em></div>'
@@ -1323,7 +1340,7 @@ function compor(p) {
 }
 function fotoMes() {
   var un = {};
-  REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; un[u] = compor({ producao: U.producao, recebidas: U.recebidas, comissoes: U.comissaoResultado, fixo: U.custos.fixo, provisao: U.custos.provisao, investido: U.investido, imposto: U.res ? U.res.imposto : null, contratado: U.contratado, primeira: U.primeira }); });
+  REGRAS.unidades.forEach(function (u) { var U = R.unidades[u]; un[u] = compor({ producao: U.producao, recebidas: U.recebidas, imposto: U.res ? U.res.imposto : null, comissoes: U.comissaoResultado, fixo: U.custos.fixo, provisao: U.custos.provisao, investido: U.investido, imposto: U.res ? U.res.imposto : null, contratado: U.contratado, primeira: U.primeira }); });
   return Object.assign(compor({ producao: R.producao, recebidas: R.recebidas, comissoes: R.comissoesResultado, fixo: R.custoFixo, provisao: R.provisao, investido: R.investido, imposto: R.res ? R.res.imposto : null, aReceber: R.ag.base ? r2(R.ag.valor) : null, contratado: R.ag.base ? R.ag.contratado : null, primeira: R.primeira }),
     { mes: R.mes, unidades: un, versao: REGRAS.versao, fechado: false, vendedores: R.vendedores.map(function (v) { return { nome: v.nome, unidade: v.unidade, prodHap: v.prodHap, prodFora: v.prodFora, vidas: v.vidasProjeto, comissao: v.comissao }; }) });
 }
@@ -1378,7 +1395,10 @@ function custoDetalhe(mes) {
     var x = d.unidades[u] || {}, c = custosUnidade(u, mes), L = [], fora = [];
     var add = function (grupo, nome, valor, obs, cat) { L.push({ grupo: grupo, nome: nome, valor: r2(valor), obs: obs || '', cat: cat || grupo }); };
     var orig = function (i) { return i.t[1] + ' · extrato ' + i.c.extrato + ' · pago em ' + mesLabel(i.c.mes); };
-    if (x.imposto != null) { var w3 = descW3G(x.recebidas); add('Desconto W3G', '8,5% sobre o a receber de ' + brl(x.recebidas) + ' (já sai no recebimento)', w3, '', 'imw'); add('Imposto', '8,5% sobre o a receber de ' + brl(x.recebidas), r2(x.imposto - w3), '', 'imp'); }
+    if (x.imposto != null) { var ip = impostoPartes(x.recebidas, mes, u), resto = r2(x.imposto - ip.w3g - ip.impCom);
+      add('Desconto W3G', '8,5% sobre ' + brl(ip.com) + ' (parte que vem com desconto da W3G)', ip.w3g, '', 'imw');
+      add('Imposto', '8,5% sobre ' + brl(ip.com) + ' (parte com desconto da W3G)', ip.impCom, '', 'imp');
+      add('Imposto', '15% sobre ' + brl(ip.sem) + ' (parte sem desconto da W3G)', resto, '', 'imq'); }
     add('Comissões dos vendedores', x.comissoes ? 'Comissões à parte' : 'Já descontadas nos relatórios de pagamento (nada à parte)', x.comissoes || 0, '', 'com');
     if (c.fonteCustos !== 'estrutura') {
       c.extrato.itens.forEach(function (i) { if (i.a === 'folha') add('Folha (relatórios de pagamento)', i.c.descricao, -i.c.liquido, orig(i), 'S' + i.t[0]); });
@@ -1450,7 +1470,7 @@ function blocoReceberDetalhe(mes) {
 }
 // Entradas e saídas do mês: categorias × unidades (mesmas linhas do a receber detalhado e do detalhe dos custos)
 var FLUXO_ENT = [['ag1', 'Agenciamento · 1ª parcela'], ['agN', 'Agenciamento · parcelas seguintes'], ['vit', 'Vitalício'], ['EE', 'Campanhas de operadora'], ['EP', 'Premiações de operadora'], ['ET', 'Depto. de Seguros'], ['EF', 'Acertos'], ['EN|EO', 'Desconto da 1ª parcela devolvido'], ['EJ', 'Estornos devolvidos'], ['E*', 'Outros créditos']];
-var FLUXO_SAI = [['imw', 'Desconto W3G 8,5% (já sai no recebimento)'], ['imp', 'Imposto 8,5%'], ['com', 'Comissões de vendedores'], ['SA', 'Salários'], ['SC', 'Benefícios'], ['SM', 'Férias'], ['SL', '13º salário'], ['SK', 'Rescisões'], ['SG', 'Vales'], ['est', 'Estrutura informada'], ['prov', 'Provisão 13º e férias'], ['SH|SI|SS', 'Adiantamentos de comissão'], ['SJ', 'Estornos de comissão'], ['SD', 'Boletos de clientes'], ['SB', 'Comissão Valdecir 40%'], ['SR', 'Premiação de vendedor'], ['SU', 'Taxa de implantação'], ['SE|SP|SF|SN|SO|ST', 'Campanhas e créditos estornados'], ['S*', 'Outros débitos']];
+var FLUXO_SAI = [['imw', 'Desconto W3G 8,5% (já sai no recebimento)'], ['imp', 'Imposto 8,5% · parte com desconto W3G'], ['imq', 'Imposto 15% · parte sem desconto W3G'], ['com', 'Comissões de vendedores'], ['SA', 'Salários'], ['SC', 'Benefícios'], ['SM', 'Férias'], ['SL', '13º salário'], ['SK', 'Rescisões'], ['SG', 'Vales'], ['est', 'Estrutura informada'], ['prov', 'Provisão 13º e férias'], ['SH|SI|SS', 'Adiantamentos de comissão'], ['SJ', 'Estornos de comissão'], ['SD', 'Boletos de clientes'], ['SB', 'Comissão Valdecir 40%'], ['SR', 'Premiação de vendedor'], ['SU', 'Taxa de implantação'], ['SE|SP|SF|SN|SO|ST', 'Campanhas e créditos estornados'], ['S*', 'Outros débitos']];
 function fluxoCat(lista, cat) {
   var i; cat = cat || '';
   for (i = 0; i < lista.length; i++) if (lista[i][0].split('|').indexOf(cat) >= 0) return i;
@@ -1609,7 +1629,7 @@ function calcVitalicio(mes) {
   rec.forEach(function (x) { var uc = unidadeCanon(x.unidade); if (uc) o.recebidoPorUnidade[uc] = r2((o.recebidoPorUnidade[uc] || 0) + (+x.valor || 0)); else o.recebidoSemUnidade = r2(o.recebidoSemUnidade + (+x.valor || 0)); });
   rec.forEach(function (x) { var g = o.porOp[x.operadora] = o.porOp[x.operadora] || { qtd: 0, valor: 0, pct: null, previsto: 0, semRegra: 0 }; g.recebido = r2((g.recebido || 0) + (+x.valor || 0)); g.linhas = (g.linhas || 0) + 1; if (x.mensal != null) { g.mensalRec = r2((g.mensalRec || 0) + x.mensal); g.liqRec = r2((g.liqRec || 0) + (+x.liquido || 0)); } });
   o.linhas = rec.length; o.mensalRec = soma2(rec.filter(function (x) { return x.mensal != null; }), function (x) { return x.mensal; }); o.liqRec = soma2(rec.filter(function (x) { return x.mensal != null; }), function (x) { return +x.liquido || 0; });
-  o.imposto = impostoDe(o.total); o.liquido = r2(o.total - o.imposto);
+  o.imposto = impostoDe(o.total, mes); o.liquido = r2(o.total - o.imposto);
   return o;
 }
 // ---------- Recebimentos: extratos de comissão × propostas do ERP ----------
@@ -1823,7 +1843,7 @@ function responder(txt) {
   if (/liquid/.test(t)) return chip('Lucro líquido · ' + nome, brl(x.financeiro), sinal(x.financeiro)) + chip('Margem líquida', pct(x.mLiquida, 1), sinal(x.mLiquida));
   if (/margem/.test(t)) return chip('Margem bruta · ' + nome, pct(x.mBruta, 1), sinal(x.mBruta)) + chip('Margem líquida', pct(x.mLiquida, 1), sinal(x.mLiquida)) + chip('Investido em mkt', pct(x.mMkt, 1), 'inv');
   if (/(vermelho|minimo|mínimo|empat|precis|falta|meta)/.test(t)) {
-    var c = U ? U.custos : { fixo: R.custoFixo, provisao: R.provisao }, mn = minimos(U ? U.comissaoResultado : R.comissoesResultado, r2(c.fixo + c.provisao), x ? x.reserva : R.reservaMkt), rec = x ? x.recebidas : null;
+    var c = U ? U.custos : { fixo: R.custoFixo, provisao: R.provisao }, mn = minimos(U ? U.comissaoResultado : R.comissoesResultado, r2(c.fixo + c.provisao), x ? x.reserva : R.reservaMkt, R.mes, U ? U.custos.unidade : undefined), rec = x ? x.recebidas : null;
     var st = function (alvo) { return rec == null ? '' : (rec >= alvo ? ' · acima em ' + brl(rec - alvo) : ' · faltam ' + brl(alvo - rec)); };
     return chip('A receber no mês', rec != null ? brl(rec) : '—', 'in') + chip('Não fechar no vermelho · ' + nome, brl(mn.empate) + st(mn.empate), rec != null && rec >= mn.empate ? 'in' : 'out') + chip('Não fechar no vermelho e investir', brl(mn.sustentavel) + st(mn.sustentavel), rec != null && rec >= mn.sustentavel ? 'in' : 'out');
   }
@@ -1853,7 +1873,7 @@ function vFin() {
     var x = '<div class="box mt"><div class="lbl">' + titulo + tag + '</div><div class="tw"><table class="dre"><thead><tr><th></th>' + REGRAS.unidades.map(function (u) { return '<th class="r">' + u + '</th>'; }).join('') + '<th class="r">Consolidado</th></tr></thead><tbody>';
     function row(l, f, cls) { x += '<tr class="' + (cls || '') + '"><td>' + l + '</td>' + cols.map(function (c) { return '<td class="r">' + (c ? f(c) : '—') + '</td>'; }).join('') + '<td class="r">' + (res ? f(res) : '—') + '</td></tr>'; }
     row('A receber das operadoras', function (c) { return brl(c.recebidas); }, 'h');
-    row('(−) Desconto W3G 8,5% + imposto 8,5%', function (c) { return brl(-c.imposto); }, 'ded');
+    row('(−) Imposto e desconto W3G', function (c) { return brl(-c.imposto); }, 'ded');
     row('(−) Comissões dos vendedores', function (c) { return brl(-c.comissoes); }, 'ded');
     row('(−) Custos fixos e operacionais', function (c) { return brl(-c.fixo); }, 'ded');
     row('(−) Provisão 13º e férias', function (c) { return brl(-c.provisao); }, 'ded');
@@ -2237,17 +2257,17 @@ function vReg() {
   h += '<div class="note">Adesão: a 1ª parcela é a taxa de angariação cobrada do cliente' + (REGRAS.adesaoTaxaParaOptas ? '.' : ' e não entra no a receber da Optas.') + '</div>';
   h += '</div></div>';
 
-  h += '<div class="grid g3 mt">' + card('Desconto W3G + imposto', '8,5% + 8,5%', 'Sobre agenciamento e vitalício, todas as operadoras. A W3G já desconta 8,5% no recebimento; a Optas paga mais 8,5% de imposto. Não é descontado do vendedor.', { box: 'dk' })
+  h += '<div class="grid g3 mt">' + card('Imposto', '15% ou 8,5% + 8,5%', 'Sobre agenciamento e vitalício. Parte que vem sem desconto da W3G: 15%. Parte que vem com desconto da W3G (8,5%, já sai no recebimento): mais 8,5%. A parte de cada um sai dos relatórios do mês. Não é descontado do vendedor.', { box: 'dk' })
     + card('Reserva de marketing', '15%', 'Sobre a produção mensal (soma das mensalidades dos contratos efetivos). Destinação do resultado, não despesa.', { box: 'dk' })
     + card('Vitalício', 'depois da última parcela', 'Começa no mês seguinte à última parcela de agenciamento e segue enquanto o contrato estiver ativo, com o % da grade.', { box: 'dk' }) + '</div>';
   h += '<div class="sec">Fórmulas do sistema <small>cada regra nova entra aqui</small></div><div class="grid g2">'
     + regra('Vendedor no Projeto Hapvida', 'Comissão = 15% da mensalidade das vendas do projeto + valor por vida: 25 a 34 vidas R$ 20 · 35 a 49 R$ 25 · 50 ou mais R$ 35 (sobre todas as vidas IMPLANTADAS no mês; abaixo de 25 não paga)', 'Vendas fora do projeto seguem a faixa da unidade. A faixa é atingida com a produção total do vendedor (projeto + fora) e o percentual incide sobre as vendas fora do projeto.')
     + regra('Custo da operação', 'Custo da operação = custos fixos (salários, VR, VT, operação) + provisão 13º/férias', '')
-    + regra('Custo de operação total', 'Custo de operação total = custo da operação + desconto W3G (8,5%) + imposto (8,5%) do a receber', '')
+    + regra('Custo de operação total', 'Custo de operação total = custo da operação + imposto (15% na parte sem desconto da W3G · 8,5% W3G + 8,5% na parte com desconto)', '')
     + regra('Lucro bruto', 'Lucro bruto = a receber das operadoras − comissões dos vendedores − custo de operação total', 'Positivo = LUCRO BRUTO; negativo = PREJUÍZO. Margem bruta = lucro bruto ÷ a receber.')
     + regra('Lucro líquido', 'Lucro líquido = lucro bruto − investimento real em marketing', 'Margem líquida = lucro líquido ÷ a receber. A reserva de marketing (15% da produção) é o planejado; o que entra na conta é o que foi realmente investido.')
     + regra('Investimento por unidade', 'Investimento lançado com a unidade (Mogi/Consolação) fica nela · o restante é rateado pela produção de cada unidade', 'Investido em marketing (%) = investido ÷ a receber.')
-    + regra('Mínimo para não fechar no vermelho', 'Menor a receber em que o lucro bruto fica ≥ 0 (com o desconto W3G de 8,5% e o imposto de 8,5% arredondados)', '')
+    + regra('Mínimo para não fechar no vermelho', 'Menor a receber em que o lucro bruto fica ≥ 0 (com o imposto e o desconto da W3G arredondados)', '')
     + regra('Mínimo para não fechar no vermelho e investir', 'Menor a receber em que o lucro bruto cobre a reserva de marketing', '')
     + regra('ROI por campanha · a partir de dezembro/2026', 'ROI = (retorno − investido) ÷ investido · retorno = a receber das vendas ligadas a cada campanha', 'A venda é ligada à campanha pelo nome da campanha/origem vindo do CRM, planilha ou sistemas. Venda sem campanha de marketing não entra no ROI.')
     + regra('Se a operação se pagou', 'Mês se pagou quando o lucro bruto ≥ 0 · acumulado do ano = saldo do ano anterior + lucro líquido dos meses', '')

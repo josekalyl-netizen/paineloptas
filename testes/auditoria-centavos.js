@@ -62,11 +62,17 @@ const path = require('path');
       U.forEach(u => ok(u.custos.unidade + ' comissão no resultado (0 com folha do extrato ou média)', u.res ? u.res.comissoes : 0, u.res ? (u.custos.fonteCustos !== 'estrutura' ? 0 : u.comissao) : 0));
       ok('reserva = Σ unidades', R.reservaMkt, U.reduce((t, u) => t + u.reservaMkt, 0));
       // mínimos: menor 1ª parcela que zera o lucro bruto / cobre a reserva
-      const lb = (rec, x) => r2(rec - r2(r2(rec * 0.085) + r2(rec * 0.085)) - x.comissoes - x.custoOp);   // W3G 8,5% + imposto 8,5%
-      [['consolidado', R.res]].concat(U.map(u => [u.custos.unidade, u.res])).forEach(([n, x]) => { if (!x) return;
-        const m = minimos(x.comissoes, x.custoOp, x.reserva);
-        if (lb(m.empate, x) < 0 || lb(r2(m.empate - 0.01), x) >= 0) falhas.push(n + ' mínimo para não fechar no vermelho');
-        if (lb(m.sustentavel, x) < x.reserva || lb(r2(m.sustentavel - 0.01), x) >= x.reserva) falhas.push(n + ' mínimo com reserva'); });
+      // imposto (26/11/2026): parte com desconto W3G (proporção do bruto das linhas com despesa adm. no mês/unidade) = 8,5% W3G + 8,5%; resto = 15%
+      const frac = (mes, u) => { const f = g => { let b = 0, w = 0; (extratosOn() ? EXTRATOS.linhas : []).forEach(l => { if (!g(l) || !l.bruto) return; b += l.bruto; if (l.desp_adm) w += l.bruto; }); return b ? w / b : null; };
+        const du = l => !u || unidadeCanon(l.unidade) === u; let x = f(l => l.mes === mes && du(l)); if (x == null) x = f(du); return x == null ? 0 : x; };
+      const imp = (rec, mes, u) => { const com = r2(rec * frac(mes, u)), sem = r2(rec - com); return r2(r2(com * 0.085) + r2(com * 0.085) + r2(sem * 0.15)); };
+      U.forEach(u => { if (u.res) ok(u.custos.unidade + ' imposto (15% sem desconto W3G · 8,5% + 8,5% com desconto)', u.res.imposto, imp(u.recebidas, R.mes, u.custos.unidade)); });
+      Object.keys(ESTADO.fechamentos).forEach(k => { const f = ESTADO.fechamentos[k]; if (!f.base) return; REGRAS.unidades.forEach(u => { const x = f.unidades[u]; if (x && x.recebidas != null) ok(k + ' ' + u + ' imposto', x.imposto, imp(x.recebidas, k, u)); }); if (f.recebidas != null) ok(k + ' imposto = Σ unidades', f.imposto, REGRAS.unidades.reduce((t, u) => t + (f.unidades[u].imposto || 0), 0)); });
+      [['consolidado', R.res, undefined]].concat(U.map(u => [u.custos.unidade, u.res, u.custos.unidade])).forEach(([n, x, un]) => { if (!x) return;
+        const lb = rec => r2(rec - imp(rec, R.mes, un) - x.comissoes - x.custoOp);
+        const m = minimos(x.comissoes, x.custoOp, x.reserva, R.mes, un);
+        if (lb(m.empate) < 0 || lb(r2(m.empate - 0.01)) >= 0) falhas.push(n + ' mínimo para não fechar no vermelho');
+        if (lb(m.sustentavel) < x.reserva || lb(r2(m.sustentavel - 0.01)) >= x.reserva) falhas.push(n + ' mínimo com reserva'); });
       // ERP: cada mês base = 1ª parcela das cadastradas + anteriores + vitalício, por unidade e consolidado
       if (!DEMO && ERP.length) Object.keys(ESTADO.fechamentos).filter(k => ESTADO.fechamentos[k].fonte === 'ERP').forEach(k => { const f = ESTADO.fechamentos[k];
         REGRAS.unidades.forEach(u => { const x = f.unidades[u]; ok(k + ' ' + u + ' a receber ERP', x.recebidas, x.primeira + x.anteriores + x.vitalicio + (x.outrasReceitas || 0)); ok(k + ' ' + u + ' outras receitas', x.outrasReceitas || 0, lancExtratos(k, u).receitas);

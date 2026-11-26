@@ -656,3 +656,9 @@ Distribuição de lucros entre W3G e sócias; média de comissões para provisio
   - Desconto W3G 8,5%: já sai no recebimento.
   - Imposto 8,5%: pago pela Optas.
 - Vale para o sistema inteiro: resultado do mês, ano, unidades, mínimo para não fechar no vermelho, vitalício e entradas/saídas (duas linhas separadas).
+- **Atualização 26/11/2026 (substitui o item acima):** o imposto depende de a linha do relatório vir com ou sem desconto da W3G.
+  - Linha sem desconto da W3G → 15% (a conta de antes).
+  - Linha com desconto da W3G (8,5%, já sai no recebimento) → mais 8,5% de imposto.
+  - A parte "com desconto" do a receber = proporção do bruto das linhas dos relatórios do mês e da unidade que vieram com despesa administrativa. Sem relatório no mês: proporção de todos os relatórios da unidade.
+  - Em 2026: Consolação 50,8% com desconto, Mogi 60,5%.
+  - Nas saídas: três linhas (Desconto W3G 8,5% · Imposto 8,5% parte com desconto · Imposto 15% parte sem desconto).
