@@ -39,6 +39,7 @@ button,input,select,textarea{resize:vertical;font:inherit;color:inherit}
 .view{display:none}.view.on{display:block}
 /* layout */
 .grid{display:grid;gap:14px}
+.g1{grid-template-columns:minmax(0,1fr)}
 .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -266,6 +267,11 @@ td.inv,.r.inv{color:var(--inv)}td.gr{color:var(--green)}td.rd{color:var(--red)}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;transition:transform .3s,opacity .3s;z-index:9;opacity:0;pointer-events:none}
 .toast.on{transform:translateX(-50%) translateY(0);opacity:1}
 details.rules{margin-top:10px}
+details.fold>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin:0}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::before{content:'▸';color:var(--or-d);font-size:12px}
+details.fold[open]>summary::before{content:'▾'}
+details.fold[open]>summary{margin-bottom:10px}
 details.rules summary{cursor:pointer;font-weight:600;color:var(--or-d)}
 .kpirow{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}
 .kpirow div{font-size:12px;color:var(--mute)}
@@ -1231,11 +1237,10 @@ function vGeral() {
   });
   h += '</div>';
   h += faixaAno();
-  var q8 = q;
+  // Só os indicadores que não aparecem no bloco de resultado acima (a receber, custos, imposto, lucros já estão lá)
+  var q8 = q.filter(function (x) { return /^(Produção do mês|Vitalício recebido|Comissões dos vendedores|Reserva de marketing|Investimento em marketing|ROI)$/.test(x[0]); });
   var cardQ = function (x) { return '<div class="box q k-' + (x[4] || 'n') + '"><div class="qn">' + x[0] + '</div><div class="v ' + x[4] + '">' + x[1] + '</div>' + (x[5] || '') + '</div>'; };
-  h += '<div class="sec">Indicadores do mês</div><div class="grid g4">' + q8.slice(0, 4).map(cardQ).join('') + '</div>';
-  h += '<div class="grid g4 mt">' + q8.slice(4, 8).map(cardQ).join('') + '</div>';
-  h += '<div class="grid g4 mt">' + q8.slice(8).map(cardQ).join('') + '</div>';
+  h += '<div class="sec">Outros indicadores do mês</div><div class="grid g3">' + q8.map(cardQ).join('') + '</div>';
   document.getElementById('v-geral').innerHTML = h;
 }
 
@@ -1269,7 +1274,7 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
     + '<div class="eqc res-' + st + '"><div class="eqk">' + (res && res.operacional < 0 ? 'Prejuízo' : 'Lucro bruto') + '</div><div class="eqv big2">' + (res ? brl(res.operacional) : '—') + '</div><div class="eqd">' + (res ? 'margem bruta ' + pct(res.mBruta, 1) : (aviso || '')) + '</div></div>'
     + '</div>';
   // margens
-  if (res) h += '<div class="mgrow">'
+  if (false) h += '<div class="mgrow">'
     + '<div class="mgc ' + (res.mBruta >= 0 ? 'c-in' : 'c-out') + '"><span>Margem bruta</span><b>' + pct(res.mBruta, 1) + '</b></div>'
     + '<div class="mgc ' + (res.mLiquida >= 0 ? 'c-in' : 'c-out') + '"><span>Margem líquida</span><b>' + pct(res.mLiquida, 1) + '</b></div>'
     + '<div class="mgc c-inv"><span>Investido em marketing</span><b>' + pct(res.mMkt, 1) + '</b></div></div>';
@@ -1305,12 +1310,10 @@ function blocoResultado(titulo, res, recebidas, comissoes, fixo, prov, aviso, pr
 function vUnidade(u) {
   var U = R.unidades[u], c = U.custos;
   var h = blocoResultado('Unidade ' + u, U.res, U.recebidas, U.comissaoResultado, c.fixo, c.provisao, null, U.producao, U.investido, U.primeira || 0, U.anteriores || 0, U.vitalicio || 0, U.outrasReceitas || 0);
-  h += '<div class="grid g4 mt">'
+  h += '<div class="grid g2 mt">'
     + card('Produção', brl(U.producao), 'Hapvida ' + brl(U.prodHap) + ' · fora ' + brl(U.prodFora), { tag: T.real })
-    + card('Comissões dos vendedores', brl(U.comissao), U.vendedores + ' vendedores', { tag: T.real })
-    + card('Custo fixo', brl(c.fixo), c.cltPessoas + ' CLT + sócia PJ')
-    + card('Provisão 13º e férias', brl(c.provisao), 'base CLT ' + brl(c.clt)) + '</div>';
-  h += '<div class="grid g2 mt"><div class="box dk"><div class="lbl">Custo mensal</div><div class="tw"><table><tbody>'
+    + card('Comissões dos vendedores', brl(U.comissao), U.vendedores + ' vendedores', { tag: T.real }) + '</div>';
+  h += '<div class="grid g2 mt"><div class="box dk"><div class="lbl">Custo mensal <em>' + c.cltPessoas + ' CLT + sócia PJ</em></div><div class="tw"><table><tbody>'
     + '<tr><td>Salários brutos (CLT + PJ)</td><td class="r">' + brl(c.salariosBrutos) + '</td></tr>'
     + '<tr class="sub"><td>   dos quais PJ sócia</td><td class="r">' + brl(c.pj) + '</td></tr>'
     + '<tr class="sub"><td>   dos quais CLT</td><td class="r">' + brl(c.clt) + '</td></tr>'
@@ -1573,7 +1576,7 @@ function vAno() {
       + (fechadoAno || m.exemplo || m.base ? '' : (m.fechado ? '<button class="btn gh sm" data-a="reabrirMes" data-p="' + m.mes + '">Reabrir</button>' : '<button class="btn sm" data-a="fecharMes" data-p="' + m.mes + '">Fechar mês</button>')) + '</td></tr>';
   });
   h += '<tr class="tot"><td>Total do ano</td><td class="r gr">' + brl(t.recebidas) + '</td><td class="r">' + brl(soma2(t.meses, function (m) { return recebidoMes(m.mes) || 0; })) + '</td><td class="r rd">' + brl(t.saiu) + '</td><td class="r ' + (ok ? 'pos' : 'neg') + '">' + brl(t.resultado) + '<i class="pc">' + pRec(t.resultado, t.recebidas) + '</i></td><td class="r inv">' + brl(t.reserva) + '<i class="pc">' + pRec(t.reserva, t.recebidas) + '</i></td><td class="r inv">' + brl(t.investidoTotal) + '<i class="pc">' + pRec(t.investidoTotal, t.recebidas) + '</i></td><td class="r">' + roiMes({ investido: t.investidoTotal, contratado: t.meses.every(function (m) { return !m.investido || m.contratado != null; }) ? soma2(t.meses, function (m) { return m.contratado || 0; }) : null }) + '</td><td class="r ' + (t.depois >= 0 ? 'pos' : 'neg') + '">' + brl(t.depois) + '<i class="pc">' + pRec(t.depois, t.recebidas) + '</i></td><td class="r ' + (t.acumulado >= 0 ? 'pos' : 'neg') + '">' + brl(t.acumulado) + '</td><td></td><td></td></tr></tbody></table></div>'
-    + (t.melhor ? '<div class="kpirow"><div>Melhor mês<b>' + mesLabel(t.melhor.mes) + ' · ' + brl(t.melhor.resultado) + '</b></div><div>Pior mês<b>' + mesLabel(t.pior.mes) + ' · ' + brl(t.pior.resultado) + '</b></div><div>Meses que se pagaram<b>' + t.mesesLucro + ' de ' + t.nRec + '</b></div></div>' : '') + '</div>';
+    + (t.melhor ? '<div class="kpirow"><div>Melhor mês<b>' + mesLabel(t.melhor.mes) + ' · ' + brl(t.melhor.resultado) + '</b></div><div>Pior mês<b>' + mesLabel(t.pior.mes) + ' · ' + brl(t.pior.resultado) + '</b></div></div>' : '') + '</div>';
   // Unidades
   h += '<div class="grid g2 mt">';
   REGRAS.unidades.forEach(function (u) { var x = t.unidades[u], o2 = x.depois >= 0; h += '<div class="box ' + (x.n ? (o2 ? 'bgr' : 'brd') : '') + '"><div class="split"><div class="lbl">' + u + ' em ' + ano + '</div>' + (x.n ? '<span class="st ' + (o2 ? 'lucro' : 'prej') + '">' + (o2 ? 'SE SUSTENTANDO' : 'NÃO SE SUSTENTANDO') + '</span>' : '') + '</div><table class="dre"><tr><td class="op"></td><td>A receber</td><td class="r gr">' + brl(x.recebidas) + '</td></tr><tr><td class="op">−</td><td>Custos</td><td class="r rd">' + brl(x.saiu) + '</td></tr><tr class="sub"><td class="op">=</td><td>Lucro bruto</td><td class="r ' + (x.resultado >= 0 ? 'gr' : 'rd') + '">' + brl(x.resultado) + '<i class="pc">' + pRec(x.resultado, x.recebidas) + '</i></td></tr><tr><td class="op">−</td><td>Investimento em marketing</td><td class="r inv">' + brl(x.investido) + '<i class="pc">' + pRec(x.investido, x.recebidas) + '</i></td></tr><tr class="sub"><td class="op">=</td><td>Lucro líquido</td><td class="r ' + (o2 ? 'gr' : 'rd') + '">' + brl(x.depois) + '<i class="pc">' + pRec(x.depois, x.recebidas) + '</i></td></tr></table></div>'; });
@@ -1770,18 +1773,21 @@ function vRec() {
   // Fora do ERP (vendas antigas e vitalício da carteira)
   var fora = X.linhas.filter(function (l) { return !l.erp; }), porAno = {};
   fora.forEach(function (l) { var k = (l.cadastro || '????').slice(0, 4) + '|' + l.tipo; porAno[k] = porAno[k] || { n: 0, v: 0 }; porAno[k].n++; porAno[k].v = r2(porAno[k].v + l.liquido); });
-  h += '<div class="box mt"><div class="lbl">Recebido de propostas que não estão no SisWeb <em>vendas anteriores e vitalício da carteira</em></div><div class="tw"><table><thead><tr><th>Ano do cadastro</th><th>Tipo</th><th class="r">Linhas</th><th class="r">Líquido</th></tr></thead><tbody>'
-    + Object.keys(porAno).sort().map(function (k) { var p = k.split('|'); return '<tr><td>' + p[0] + '</td><td>' + (p[1] === 'vitalicio' ? 'Vitalício' : 'Agenciamento') + '</td><td class="r">' + porAno[k].n + '</td><td class="r gr">' + brl(porAno[k].v) + '</td></tr>'; }).join('')
-    + '</tbody></table></div></div>';
+  var anos = Object.keys(porAno).map(function (k) { return k.split('|')[0]; }).filter(function (a, i, v) { return v.indexOf(a) === i; }).sort();
+  var celFA = function (k) { var x = porAno[k]; return x ? '<td class="r">' + x.n + '</td><td class="r gr">' + brl(x.v) + '</td>' : '<td class="r mu">—</td><td class="r mu">—</td>'; };
+  var totFA = function (t) { var ks = Object.keys(porAno).filter(function (k) { return k.split('|')[1] === t; }); return '<td class="r">' + sum(ks, function (k) { return porAno[k].n; }) + '</td><td class="r">' + brl(soma2(ks, function (k) { return porAno[k].v; })) + '</td>'; };
+  h += '<div class="box mt"><div class="lbl">Recebido de propostas que não estão no SisWeb <em>vendas anteriores e vitalício da carteira</em></div><div class="tw"><table><thead><tr><th>Ano do cadastro</th><th class="r">Agenciamento · linhas</th><th class="r">Líquido</th><th class="r">Vitalício · linhas</th><th class="r">Líquido</th></tr></thead><tbody>'
+    + anos.map(function (a) { return '<tr><td>' + a + '</td>' + celFA(a + '|agenciamento') + celFA(a + '|vitalicio') + '</tr>'; }).join('')
+    + '<tr class="tot"><td>Total</td>' + totFA('agenciamento') + totFA('vitalicio') + '</tr></tbody></table></div></div>';
   // Tipos de crédito/débito e o que o painel faz com cada um
   var porTipo = {}; X.creditos_debitos.forEach(function (c) { var t = tipoCD(c.descricao), k = t[0]; porTipo[k] = porTipo[k] || { t: t, n: 0, v: 0 }; porTipo[k].n++; porTipo[k].v = r2(porTipo[k].v + c.liquido); });
-  h += '<div class="box mt"><div class="lbl">Créditos e débitos por tipo</div><div class="tw"><table><thead><tr><th></th><th>Tipo</th><th>Como entra</th><th class="r">Lançamentos</th><th class="r">Total</th></tr></thead><tbody>'
-    + Object.keys(porTipo).sort().map(function (k) { var x = porTipo[k]; return '<tr><td><b>' + k + '</b></td><td>' + x.t[1] + '</td><td>' + (/receita|custo/.test(x.t[3]) ? 'pelo sinal: com "-" é custo, sem sinal soma no a receber' : CD_ACAO[x.t[3]]) + '</td><td class="r">' + x.n + '</td><td class="r ' + (x.v < 0 ? 'rd' : 'gr') + '">' + brl(x.v) + '</td></tr>'; }).join('')
+  h += '<div class="box mt"><div class="lbl">Créditos e débitos por tipo <em>"pelo sinal": com "−" é custo, sem sinal soma no a receber</em></div><div class="tw"><table><thead><tr><th></th><th>Tipo</th><th>Como entra</th><th class="r">Lançamentos</th><th class="r">Total</th></tr></thead><tbody>'
+    + Object.keys(porTipo).sort().map(function (k) { var x = porTipo[k]; return '<tr><td><b>' + k + '</b></td><td>' + x.t[1] + '</td><td>' + (/receita|custo/.test(x.t[3]) ? 'pelo sinal' : CD_ACAO[x.t[3]]) + '</td><td class="r">' + x.n + '</td><td class="r ' + (x.v < 0 ? 'rd' : 'gr') + '">' + brl(x.v) + '</td></tr>'; }).join('')
     + '</tbody></table></div></div>';
   // Créditos e débitos
-  h += '<div class="box mt"><div class="lbl">Créditos e débitos dos extratos</div><div class="tw rol"><table><thead><tr><th>Pagamento</th><th>Unidade</th><th>Descrição</th><th class="r">Valor</th></tr></thead><tbody>'
+  h += '<details class="box mt fold"><summary class="lbl">Créditos e débitos dos extratos <em>' + X.creditos_debitos.length + ' lançamentos · clique para abrir</em></summary><div class="tw rol"><table><thead><tr><th>Pagamento</th><th>Unidade</th><th>Descrição</th><th class="r">Valor</th></tr></thead><tbody>'
     + X.creditos_debitos.slice().sort(function (a, b) { return a.mes < b.mes ? 1 : -1; }).map(function (c) { return '<tr><td>' + mesLabel(c.mes) + (mesDevido(c) !== c.mes ? '<br><small class="mu">conta em ' + mesLabel(mesDevido(c)) + '</small>' : '') + '</td><td>' + c.unidade + '</td><td style="white-space:normal">' + esc(c.descricao) + '</td><td class="r ' + (c.liquido < 0 ? 'rd' : 'gr') + '">' + brl(c.liquido) + '</td></tr>'; }).join('')
-    + '</tbody></table></div></div>';
+    + '</tbody></table></div></details>';
   el.innerHTML = h;
 }
 // Carteira de vitalício por unidade (auditoria de 26/11/2026): cada contrato conta uma vez no mês (mensalidade da última
@@ -1831,11 +1837,10 @@ function blocoPagamentos() {
 function vVit() {
   // Só o recebido (relatórios de pagamento): % de vitalício = recebido ÷ mensalidade das parcelas pagas. Sem previsão (decisão de 25/11/2026).
   var v = R.vit, ano = +R.mes.slice(0, 4), pc = function (rec, men) { return men ? pct(rec / men, 2) : '—'; };
-  var h = '<div class="grid g4">'
-    + card('Recebido no mês', v.recebido != null ? brl(v.recebido) : '—', v.recebido != null ? v.linhas + ' parcelas de vitalício · bruto' : 'nenhum relatório de pagamento no mês', { cls: 'in', box: 'bgr' })
+  var h = '<div class="grid g3">'
+    + card('Recebido no mês', v.recebido != null ? brl(v.recebido) : '—', v.recebido != null ? v.linhas + ' parcelas · bruto · fonte: relatórios de pagamento' : 'nenhum relatório de pagamento no mês', { cls: 'in', box: 'bgr' })
     + card('Líquido recebido', v.mensalRec ? brl(v.liqRec) : '—', v.mensalRec ? 'depois do desconto administrativo' : '')
     + card('% de vitalício recebido', pc(v.recebido, v.mensalRec), v.mensalRec ? 'sobre ' + brl(v.mensalRec) + ' de mensalidades' : '')
-    + card('Fonte', 'Relatórios', 'de pagamento · só o que entrou, sem previsão')
     + '</div>';
   var ks = Object.keys(v.porOp).filter(function (k) { return v.porOp[k].recebido != null; }).sort(function (a, b) { return v.porOp[b].recebido - v.porOp[a].recebido; });
   h += '<div class="box mt"><div class="lbl">Por operadora · ' + mesLabel(R.mes) + ' <em>recebido nos relatórios de pagamento</em></div>';
@@ -2017,7 +2022,7 @@ function mediasUnidades() {
 }
 function blocoMedias() {
   if (DEMO || !ERP.length) return '';
-  var md = mediasUnidades(), h = '<div class="sec">Médias de vendas por mês</div><div class="grid g2">';
+  var md = mediasUnidades(), h = '<div class="sec">Médias de vendas por mês</div><div class="grid g1">';
   REGRAS.unidades.forEach(function (u) {
     var rows = md.t[u], com = rows.filter(function (x) { return x.n; }), n = com.length || 1;
     var med = { n: sum(com, function (x) { return x.n; }) / n, vidas: sum(com, function (x) { return x.vidas; }) / n, producao: r2(sum(com, function (x) { return x.producao; }) / n), primeira: r2(sum(com, function (x) { return x.primeira; }) / n) };
@@ -2065,19 +2070,20 @@ function vCom() {
     h += '<tr class="tot"><td colspan="5">Total · ' + ps.length + ' propostas</td><td class="r">' + sum(ps, function (p) { return +p.c.vidas || 0; }) + '</td><td colspan="2"></td><td class="r">' + brl(soma2(ps, function (p) { return p.valor; })) + '</td><td></td><td class="r gr">' + brl(ta) + '</td><td class="r gr">' + brl(tf) + '</td><td class="r">' + brl(tt) + '</td></tr></tbody></table></div></div>';
   }
   // Operadoras
-  h += '<div class="grid g2 mt"><div class="box"><div class="lbl">Produção por operadora</div><div class="tw"><table><thead><tr><th>Operadora</th><th class="r">Vendas</th><th class="r">Mensalidades</th><th class="r">Agenciamento</th><th class="r">Vitalício/mês</th></tr></thead><tbody>';
-  Object.keys(R.ag.porOperadora).forEach(function (k) { var o = R.ag.porOperadora[k]; h += '<tr><td>' + esc(k) + '</td><td class="r">' + (o.qtd || '—') + '</td><td class="r">' + brl(o.valor) + '</td><td class="r">' + (o.ag != null ? brl(o.ag) : '<span class="tag pend">sem regra</span>') + '</td><td class="r">' + (o.vit != null ? brl(o.vit) : '—') + '</td></tr>'; });
-  h += '</tbody></table></div></div><div class="box"><div class="lbl">PF × PME × Adesão</div>';
-  if (R.ag.pf || R.ag.pme || R.ag.adesao) h += '<div class="grid g4 mt">' + mini('PF', brl(R.ag.pf)) + mini('PME', brl(R.ag.pme)) + mini('Adesão', brl(R.ag.adesao || 0)) + mini('Sem modalidade', brl(R.ag.semMod)) + '</div>';
-  else h += '<div class="empty">A integração atual não informa a modalidade PF/PME de nenhuma venda (' + brl(R.ag.semMod) + ' sem modalidade).</div>';
-  h += '</div></div>';
+  var temMod = R.ag.pf || R.ag.pme || R.ag.adesao;
+  h += '<div class="grid ' + (temMod ? 'g2' : 'g1') + ' mt"><div class="box"><div class="lbl">Produção por operadora</div><div class="tw"><table><thead><tr><th>Operadora</th><th class="r">Vendas</th><th class="r">Mensalidades</th><th class="r">Vidas</th><th class="r">Agenciamento</th><th class="r">Vitalício/mês</th></tr></thead><tbody>';
+  Object.keys(R.ag.porOperadora).forEach(function (k) { var o = R.ag.porOperadora[k]; h += '<tr><td>' + esc(k) + '</td><td class="r">' + (o.qtd || '—') + '</td><td class="r">' + (porVidas[k] != null ? porVidas[k] : '—') + '</td><td class="r">' + brl(o.valor) + '</td><td class="r">' + (o.ag != null ? brl(o.ag) : '<span class="tag pend">sem regra</span>') + '</td><td class="r">' + (o.vit != null ? brl(o.vit) : '—') + '</td></tr>'; });
+  // Sem modalidade informada, PF × PME × Adesão vira uma nota sob a tabela (em vez de um quadro vazio ao lado)
+  if (temMod) h += '</tbody></table></div></div><div class="box"><div class="lbl">PF × PME × Adesão</div><div class="grid g4 mt">' + mini('PF', brl(R.ag.pf)) + mini('PME', brl(R.ag.pme)) + mini('Adesão', brl(R.ag.adesao || 0)) + mini('Sem modalidade', brl(R.ag.semMod)) + '</div></div></div>';
+  else h += '</tbody></table></div><div class="m mt">PF × PME × Adesão: a integração atual não informa a modalidade de nenhuma venda (' + brl(R.ag.semMod) + ' sem modalidade).</div></div></div>';
   // Funil
   if (FONTE && FONTE.equipes) {
     h += '<div class="box mt"><div class="lbl">Funil Projeto Hapvida <em>dados do painel gerencial</em></div><div class="tw"><table><thead><tr><th>Unidade</th><th class="r">Leads</th><th class="r">Propostas</th><th class="r">Vidas</th><th class="r">Implantados</th><th class="r">Conversão (vidas ÷ leads)</th><th class="r">Abordagens ativas</th></tr></thead><tbody>';
     FONTE.equipes.forEach(function (e) { h += '<tr><td>' + esc(e.nome) + '</td><td class="r">' + (e.hap.leads || 0).toLocaleString('pt-BR') + '</td><td class="r">' + e.hap.qtd + '</td><td class="r">' + e.hap.vidas + '</td><td class="r">' + (e.hap.imp != null ? e.hap.imp : '—') + '</td><td class="r">' + pct(e.hap.leads ? (e.hap.vidImp || 0) / e.hap.leads : 0, 1) + '</td><td class="r">' + (e.fora.rec || 0) + '</td></tr>'; });
     h += '</tbody></table></div></div>';
   }
-  h += '<div class="sec">Operadoras que mais venderam</div><div class="grid g2">' + pizza('Por valor vendido', porValor, brl, 'pzv') + pizza('Por vidas', porVidas, function (n) { return n.toLocaleString('pt-BR') + ' vidas'; }, 'pzd') + '</div>';
+  // Com uma operadora só, os gráficos repetiriam a tabela "Produção por operadora"
+  if (Object.keys(porValor).length > 1 || Object.keys(porVidas).length > 1) h += '<div class="sec">Operadoras que mais venderam</div><div class="grid g2">' + pizza('Por valor vendido', porValor, brl, 'pzv') + pizza('Por vidas', porVidas, function (n) { return n.toLocaleString('pt-BR') + ' vidas'; }, 'pzd') + '</div>';
   h += blocoMedias();
   document.getElementById('v-com').innerHTML = h;
 }
