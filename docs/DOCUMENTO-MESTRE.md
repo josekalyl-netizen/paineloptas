@@ -742,4 +742,9 @@ Mogi 2026 (jan–out): investido R$ 87.926,48 · 1ª parcela R$ 172.406,43 · im
 
 **Efeito final no ano de 2026 (jan–nov):** a receber R$ 1.160.386,49 (+ R$ 11.004,58 de Select e Biovida pela grade); a receber R$ 1.156.868,43 depois de tirar as linhas com líquido zero; custos R$ 1.019.936,08 (com a provisão de R$ 1.623,15 × 11); lucro bruto R$ 136.932,35; lucro líquido R$ 49.005,87.
 
+**Conferência linha a linha (26/11/2026):** PDF = CSV campo a campo nas 3.816 linhas e nos 231 créditos/débitos; a conta de cada linha (parcela × % = bruto; bruto − Desp. Adm. = líquido) bate em todas, menos nas 7 com líquido R$ 0,00 (não contam).
+- Adiantamento devolvido (AD nª PARC / AD COMISSÃO): a Optas já recebeu antes; não é custo, a comissão conta pela linha (R$ 29.922,90 em 2026). O "10% sobre parcela" continua custo.
+- "ACERTO FOLHA" (+R$ 33.342,54, Consolação, fev/2026): a Optas pagou o saldo que devia à W3G; não é receita.
+- Resultado 2026 (jan–nov): a receber R$ 1.123.525,89; custos R$ 985.011,79; lucro bruto R$ 138.514,10; lucro líquido R$ 50.587,62.
+
 **Levantamento dos relatórios (26/11/2026):** 23 relatórios (PDF = CSV ao centavo: 3.816 linhas, 231 créditos/débitos); toda linha e todo crédito/débito entra no painel. Faltam o relatório de Consolação com previsão em outubro/2026 e o de Mogi de novembro/2026.
