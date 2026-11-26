@@ -675,14 +675,9 @@ Vale linha a linha, pela coluna **"% Adm."** do relatório de comissões da W3G:
 - **Situação dos pagamentos:** último relatório de cada unidade, com saldo acumulado e a observação (nota fiscal não recebida / transferido).
 - A oscilação mensal vem de: unidades com relatórios em meses diferentes (outubro só Mogi, novembro só Consolação), Consolação aparecendo de fato só a partir de março, e parcelas acumuladas (março 168, novembro 139).
 
-## Visual mais limpo, sem tirar informação (26/11/2026)
+## Visual mais limpo — desfeito (26/11/2026)
 
-- **Visão geral:** saiu a faixa repetida "Margem bruta / Margem líquida / Investido" (as três já aparecem no Lucro bruto e em "Para onde vai o dinheiro"). "Indicadores do mês" virou "Outros indicadores do mês" e mostra só o que não está no bloco de cima: produção, vitalício recebido, comissões dos vendedores, reserva de marketing, investimento em marketing, ROI.
-- **Consolação e Mogi:** os cartões "Custo fixo" e "Provisão 13º e férias" saíram porque os mesmos valores estão na tabela "Custo mensal"; o "X CLT + sócia PJ" foi para o título dessa tabela.
-- **Ano:** "Meses que se pagaram" aparece só uma vez (no quadro de sustentação).
-- **Vitalício:** o cartão "Fonte" virou legenda do "Recebido no mês".
-- **Recebimentos:** a tabela "não estão no SisWeb" ficou um ano por linha, com agenciamento e vitalício lado a lado e total. Em "Créditos e débitos por tipo", a frase longa do "pelo sinal" fica uma vez no título. A lista de lançamentos dos extratos fica recolhida (clique para abrir).
-- **Comercial:** a coluna Vidas entrou em "Produção por operadora"; os gráficos de pizza só aparecem quando há mais de uma operadora; sem modalidade informada, PF × PME × Adesão vira nota sob a tabela; as médias por unidade ficam uma embaixo da outra (sem cortar o ticket médio).
+- A limpeza visual foi desfeita a pedido do usuário: tirou informação importante. As telas voltaram a ser como antes. Rever a visualização mais tarde, com o sistema mais maduro.
 
 ## ROI — regra definitiva (26/11/2026)
 
