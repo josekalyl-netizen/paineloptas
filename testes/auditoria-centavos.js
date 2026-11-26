@@ -113,11 +113,18 @@ const path = require('path');
         Object.keys(tot).forEach(m => { ok('SMS ' + m, ESTADO.investimentos.filter(i => i.data.slice(0, 7) === m).reduce((t, i) => t + i.valor, 0), tot[m]); const f = ESTADO.fechamentos[m]; if (f) ok('Ano ' + m + ' investido', f.investido, tot[m]); }); }
       // ROI
       const ro = R.roi;
-      if (ro.modo === 'geral') { ok('ROI geral investido = investido do mês', ro.invAtrib, R.investido);
-        const rts = REGRAS.unidades.map(u => R.unidades[u].primeira); if (rts.some(x => x != null)) ok('ROI geral retorno = Σ 1ª parcela das unidades', ro.retorno, rts.reduce((t, x) => t + (x || 0), 0));
-        if (R.ag.base) ok('ROI geral retorno = 1ª parcela de todas as vendas (projeto + fora do SisWeb)', ro.retorno, R.ag.valor + REGRAS.unidades.reduce((t, u) => t + (R.unidades[u].foraERP ? R.unidades[u].foraERP.primeira : 0), 0));
-        if (ro.invAtrib > 0 && ro.retorno != null && Math.abs(ro.roi - (ro.retorno - ro.invAtrib) / ro.invAtrib) > 1e-12) falhas.push('ROI geral');
-        REGRAS.unidades.forEach(u => { const x = ro.porUnidade[u]; ok(u + ' ROI investido', x.investido, R.invUnidade[u]); }); }
+      if (ro.modo === 'geral') {
+        // ROI (26/11/2026): contribuição = 1ª parcela fora do projeto − 15% − comissão do vendedor; só unidade com investimento; geral = média
+        const chk = (meses, nome) => { const ur = {}; REGRAS.unidades.forEach(u => { let inv = 0, ctb = 0; meses.forEach(k => { const f = ESTADO.fechamentos[k], x = f && f.unidades ? f.unidades[u] : null, at = k === R.mes;
+              const iv = at ? (R.invUnidade[u] || 0) : ((x && x.investido) || 0), e = at ? R.unidades[u].foraERP : x; if (!(iv > 0) || !e || e.primeira == null) return;
+              const tv = taxaVendedorFora(u, k), pr = at ? e.producao : (x.producao || 0); const c1 = r2(e.primeira - r2(e.primeira * 0.15) - (tv.taxa != null ? r2(pr * tv.taxa) : 0)); inv = r2(inv + iv); ctb = r2(ctb + c1); });
+            if (inv > 0) ur[u] = (ctb - inv) / inv; });
+          const vs = Object.values(ur), g = roiJunta(meses), esp = vs.length ? vs.reduce((t, x) => t + x, 0) / vs.length : null;
+          if ((g.roi == null) !== (esp == null) || (esp != null && Math.abs(g.roi - esp) > 1e-12)) falhas.push(nome + ': ' + g.roi + ' ≠ ' + esp);
+          if (ur['Consolação'] != null && !(ESTADO.fechamentos && meses.some(k => (k === R.mes ? R.invUnidade['Consolação'] : ((ESTADO.fechamentos[k] || {}).unidades || {})['Consolação'] && ESTADO.fechamentos[k].unidades['Consolação'].investido) > 0))) falhas.push(nome + ': Consolação sem investimento com ROI'); };
+        chk([R.mes], 'ROI do mês'); mesesDoAno(+R.mes.slice(0, 4)).forEach(k => chk([k], 'ROI ' + k)); chk(mesesDoAno(+R.mes.slice(0, 4)), 'ROI do ano');
+        if (ro.roi != null && Math.abs(ro.roi - roiJunta([R.mes]).roi) > 1e-12) falhas.push('ROI geral do mês');
+        if (ro.geralDet && ro.geralDet.unidades) ok('ROI contribuição = 1ª parcela − imposto − comissão', ro.geralDet.contribuicao, ro.geralDet.primeira - ro.geralDet.imposto - ro.geralDet.comissao); }
       else if (ro.invAtrib > 0) { if (Math.abs(ro.roi - (ro.retorno - ro.invAtrib) / ro.invAtrib) > 1e-12) falhas.push('ROI'); ok('retorno = Σ campanhas', ro.retorno, Object.values(ro.porCamp).reduce((t, g) => t + g.retorno, 0)); }
       // vitalício
       ok('vitalício = Σ contratos', R.vit.total, R.vit.contratos.reduce((t, x) => t + x.vit, 0));

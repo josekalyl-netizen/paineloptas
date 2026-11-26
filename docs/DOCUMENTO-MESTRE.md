@@ -683,3 +683,17 @@ Vale linha a linha, pela coluna **"% Adm."** do relatório de comissões da W3G:
 - **Vitalício:** o cartão "Fonte" virou legenda do "Recebido no mês".
 - **Recebimentos:** a tabela "não estão no SisWeb" ficou um ano por linha, com agenciamento e vitalício lado a lado e total. Em "Créditos e débitos por tipo", a frase longa do "pelo sinal" fica uma vez no título. A lista de lançamentos dos extratos fica recolhida (clique para abrir).
 - **Comercial:** a coluna Vidas entrou em "Produção por operadora"; os gráficos de pizza só aparecem quando há mais de uma operadora; sem modalidade informada, PF × PME × Adesão vira nota sob a tabela; as médias por unidade ficam uma embaixo da outra (sem cortar o ticket médio).
+
+## ROI — regra definitiva (26/11/2026)
+
+Base: apostila "Aula Completa — Cálculo de ROI" (receita não é lucro; investimento entra uma vez só; não atribuir venda que não veio da iniciativa).
+
+- **ROI = (contribuição − investido) ÷ investido.**
+- **Contribuição** = 1ª parcela gerada pelas vendas **fora do Projeto Hapvida** (valor da proposta no SisWeb, não o a receber) − **imposto 15%** (a 1ª parcela vem com % Adm. 0,00% no relatório da W3G) − **comissão do vendedor** sobre essas vendas (faixa da unidade × produção fora do projeto).
+- **Vendas do Projeto Hapvida não entram no ROI.**
+- Cada unidade é medida só com o **próprio investimento**. Unidade sem investimento não tem ROI (hoje Consolação).
+- **ROI geral** = média do ROI das unidades com investimento. Hoje é só Mogi; quando Consolação tiver investimento, vira a média das duas.
+- Comissão do vendedor: mês com vendedores registrados usa o % real do mês; mês sem registro (até outubro/2026) usa o % médio dos meses registrados da unidade (Mogi 37,59%), marcado como "% estimado".
+- A partir de dezembro/2026, a mesma contribuição é calculada venda a venda, por campanha.
+
+Mogi 2026 (jan–out): investido R$ 87.926,48 · 1ª parcela R$ 172.406,43 · imposto R$ 25.860,97 · comissão R$ 111.101,88 · contribuição R$ 35.443,58 · **ROI do ano −59,7%** (antes: 224%).
