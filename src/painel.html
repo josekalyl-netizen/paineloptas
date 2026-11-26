@@ -807,7 +807,8 @@ function custosUnidade(u, mes) {
            folhaRel: real ? r2(lx.folha + media) : null,
            // 26/11/2026: folha = relatório (ou média dos últimos 3 relatórios); o operacional (aluguel, água, luz, internet de Mogi) não vem no relatório e soma sempre
            extrato: lx, fixo: real ? r2(r2(lx.folha + media + lx.custos) + c.operacional) : r2(fixo + lx.custos),   // + custos lançados nos extratos do mês (custo da unidade e de operação)
-           prov13: real ? 0 : p13, provFerias: real ? 0 : pFer, provEncargos: real ? 0 : pEnc, provisao: real ? 0 : p13 + pFer + pEnc, cltPessoas: c.clt };
+           // 26/11/2026 (pedido do usuário): a provisão de 13º e férias vale todo mês, sobre os salários CLT informados, com ou sem relatório
+           prov13: p13, provFerias: pFer, provEncargos: pEnc, provisao: r2(p13 + pFer + pEnc), cltPessoas: c.clt };
 }
 
 function faixaComissao(unidade, producao) {
@@ -1501,17 +1502,17 @@ function custoDetalhe(mes) {
       add('Estrutura informada', 'Vale-refeição · ' + c.diasUteis + ' dias úteis', c.vr, '', 'est');
       add('Estrutura informada', 'Vale-transporte · ' + c.diasUteis + ' dias úteis', c.vt, '', 'est');
       if (c.operacional) add('Estrutura informada', 'Custo operacional', c.operacional, '', 'est');
-      add('Provisão', '13º salário (1/12 da folha CLT)', c.prov13, '', 'prov');
-      add('Provisão', 'Férias + 1/3 (1/36 da folha CLT)', c.provFerias, '', 'prov');
-      add('Provisão', 'Encargos sobre 13º e férias', c.provEncargos, '', 'prov');
     }
+    add('Provisão', '13º salário (1/12 da folha CLT)', c.prov13, '', 'prov');
+    add('Provisão', 'Férias + 1/3 (1/36 da folha CLT)', c.provFerias, '', 'prov');
+    add('Provisão', 'Encargos sobre 13º e férias', c.provEncargos, '', 'prov');
     c.extrato.itens.forEach(function (i) {
       if (i.a === 'custo' || i.a === 'custoOp') add('Lançado nos relatórios de pagamento', i.c.descricao, -i.c.liquido, orig(i), 'S' + i.t[0]);
       else if (i.a !== 'folha') fora.push({ nome: i.c.descricao, valor: i.c.liquido, como: i.a === 'receita' ? 'sem sinal: soma no a receber' : 'não entra (' + i.t[1] + ')' });
     });
     var tot = soma2(L, function (l) { return l.valor; });
     out.unidades[u] = { linhas: L, fora: fora, total: tot, guardado: x.saiu != null ? x.saiu : null, fonte: c.fonteCustos,
-      real: c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido) + custo operacional' : c.fonteCustos === 'media' ? 'Sem salário no relatório deste mês: média dos últimos 3 relatórios (troca pelo real quando chegar o relatório do dia 5) + custo operacional' : 'Sem relatório: vale a estrutura informada + provisão' };
+      real: c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido) + custo operacional + provisão 13º e férias (salários CLT informados)' : c.fonteCustos === 'media' ? 'Sem salário no relatório deste mês: média dos últimos 3 relatórios (troca pelo real quando chegar o relatório do dia 5) + custo operacional + provisão 13º e férias (salários CLT informados)' : 'Sem relatório: vale a estrutura informada + provisão' };
     out.total = r2(out.total + tot);
   });
   return out;

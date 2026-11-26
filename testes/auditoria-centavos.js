@@ -102,7 +102,8 @@ const path = require('path');
             for (let i = 1; i <= 36 && ms.length < 3; i++) { const d = new Date(+m.slice(0, 4), +m.slice(5, 7) - 1 + i, 1), k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), v = lancExtratos(k, u).salario; if (v) ms.push(v); }
             ok(m + ' ' + u + ' salário = média de 3 meses registrados', cu.mediaSalario.valor, r2(ms.reduce((t, v) => t + v, 0) / ms.length));
             if (lx.salario) falhas.push(m + ' ' + u + ' média usada com salário registrado'); }
-          if (real && cu.provisao !== 0) falhas.push(m + ' ' + u + ' provisão deveria ser zero com folha real'); }));
+          const clt = r2(REGRAS.custos[u].salariosBrutos - REGRAS.custos[u].pjSocia), p13 = r2(clt / 12), pf = r2(clt / 3 / 12), enc = Object.values(REGRAS.encargos).reduce((t, v) => t + v, 0);
+          ok(m + ' ' + u + ' provisão 13º e férias todo mês (salários CLT informados)', cu.provisao, r2(p13 + pf + r2((p13 + pf) * enc))); }));   // 26/11/2026
         const semTipo = EXTRATOS.creditos_debitos.filter(c => tipoCD(c.descricao)[0] === '?'); if (semTipo.length) falhas.push(semTipo.length + ' crédito(s)/débito(s) sem classificação'); }
       // reserva: saldo dos meses anteriores e limite
       { const an = Object.keys(ESTADO.fechamentos).filter(k => k.slice(0, 4) === R.mes.slice(0, 4) && k < R.mes && ESTADO.fechamentos[k].producao != null);
