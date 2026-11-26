@@ -698,3 +698,4 @@ Base: apostila "Aula Completa — Cálculo de ROI" (receita não é lucro; inves
 
 Mogi 2026 (jan–out): investido R$ 87.926,48 · 1ª parcela R$ 172.406,43 · imposto R$ 25.860,97 · comissão R$ 111.101,88 · contribuição R$ 35.443,58 · **ROI do ano −59,7%** (antes: 224%).
 - **Decisão (26/11/2026):** o ROI fica sobre a **1ª parcela gerada** ("é o que gera"). As parcelas seguintes não entram e não há ROI projetado ao lado.
+- **Correção (26/11/2026): o ROI é sobre a 1ª parcela gerada, não sobre o que sobra.** ROI = (1ª parcela gerada pelas vendas fora do Projeto Hapvida − investido) ÷ investido. Imposto 15%, comissão dos vendedores e "o que sobra" continuam aparecendo na aba ROI só como informação. Mogi jan–out/2026: (172.406,43 − 87.926,48) ÷ 87.926,48 = **96,1%**.

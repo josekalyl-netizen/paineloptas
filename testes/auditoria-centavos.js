@@ -114,10 +114,10 @@ const path = require('path');
       // ROI
       const ro = R.roi;
       if (ro.modo === 'geral') {
-        // ROI (26/11/2026): contribuição = 1ª parcela fora do projeto − 15% − comissão do vendedor; só unidade com investimento; geral = média
+        // ROI (26/11/2026): (1ª parcela gerada fora do projeto − investido) ÷ investido; só unidade com investimento; geral = média
         const chk = (meses, nome) => { const ur = {}; REGRAS.unidades.forEach(u => { let inv = 0, ctb = 0; meses.forEach(k => { const f = ESTADO.fechamentos[k], x = f && f.unidades ? f.unidades[u] : null, at = k === R.mes;
               const iv = at ? (R.invUnidade[u] || 0) : ((x && x.investido) || 0), e = at ? R.unidades[u].foraERP : x; if (!(iv > 0) || !e || e.primeira == null) return;
-              const tv = taxaVendedorFora(u, k), pr = at ? e.producao : (x.producao || 0); const c1 = r2(e.primeira - r2(e.primeira * 0.15) - (tv.taxa != null ? r2(pr * tv.taxa) : 0)); inv = r2(inv + iv); ctb = r2(ctb + c1); });
+              const tv = taxaVendedorFora(u, k), pr = at ? e.producao : (x.producao || 0); const c1 = r2(e.primeira); /* ROI sobre a 1ª parcela gerada (26/11/2026) */ inv = r2(inv + iv); ctb = r2(ctb + c1); });
             if (inv > 0) ur[u] = (ctb - inv) / inv; });
           const vs = Object.values(ur), g = roiJunta(meses), esp = vs.length ? vs.reduce((t, x) => t + x, 0) / vs.length : null;
           if ((g.roi == null) !== (esp == null) || (esp != null && Math.abs(g.roi - esp) > 1e-12)) falhas.push(nome + ': ' + g.roi + ' ≠ ' + esp);

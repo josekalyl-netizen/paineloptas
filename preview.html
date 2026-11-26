@@ -1108,7 +1108,8 @@ function campanhaDe(nomeVenda, campanhas) {
 // Benefício (contribuição) = 1ª parcela gerada pelas vendas FORA do Projeto Hapvida (valor da proposta no SisWeb, não o a receber)
 //   − imposto da 1ª parcela (15%: a 1ª parcela vem com % Adm. 0,00% no relatório da W3G)
 //   − comissão do vendedor sobre essas vendas (faixa da unidade × produção fora do projeto).
-// ROI = (contribuição − investido) ÷ investido. O investimento entra uma vez só (não é deduzido também na contribuição).
+// ROI = (1ª parcela gerada − investido) ÷ investido (decisão de 26/11/2026: "é o que gera").
+// Imposto, comissão e "o que sobra" (contribuição) ficam só como informação ao lado; não entram no ROI.
 // Vendas do Projeto Hapvida não entram. Unidade sem investimento no mês não tem ROI.
 // ROI geral = média do ROI das unidades com investimento (hoje só Mogi).
 // R em construção (dentro de calcularROI) ou o R já pronto
@@ -1135,7 +1136,7 @@ function roiUnidadeMes(mes, u) {
   o.imposto = r2(o.primeira * REGRAS.imposto);
   o.comissao = tv.taxa != null ? r2(o.producao * tv.taxa) : 0; o.estimada = tv.estimada; o.taxaVendedor = tv.taxa;
   o.contribuicao = r2(o.primeira - o.imposto - o.comissao);
-  if (inv > 0) o.roi = (o.contribuicao - inv) / inv;
+  if (inv > 0) o.roi = (o.primeira - inv) / inv;
   return o;
 }
 // Junta meses: soma por unidade e faz a média do ROI entre as unidades com investimento
@@ -1144,7 +1145,7 @@ function roiJunta(meses) {
   REGRAS.unidades.forEach(function (u) {
     var t = { unidade: u, investido: 0, primeira: 0, imposto: 0, comissao: 0, contribuicao: 0, estimada: false, meses: 0 };
     meses.forEach(function (k) { var r = roiUnidadeMes(k, u); if (r.roi == null) return; t.meses++; t.investido = r2(t.investido + r.investido); t.primeira = r2(t.primeira + r.primeira); t.imposto = r2(t.imposto + r.imposto); t.comissao = r2(t.comissao + r.comissao); t.contribuicao = r2(t.contribuicao + r.contribuicao); t.estimada = t.estimada || r.estimada; });
-    t.roi = t.investido > 0 ? (t.contribuicao - t.investido) / t.investido : null; un[u] = t; if (t.roi != null) us.push(t);
+    t.roi = t.investido > 0 ? (t.primeira - t.investido) / t.investido : null; un[u] = t; if (t.roi != null) us.push(t);
   });
   var g = { porUnidade: un, unidades: us.length, roi: us.length ? us.reduce(function (s, t) { return s + t.roi; }, 0) / us.length : null,
     investido: soma2(us, function (t) { return t.investido; }), contribuicao: soma2(us, function (t) { return t.contribuicao; }), primeira: soma2(us, function (t) { return t.primeira; }),
@@ -1165,7 +1166,8 @@ function calcularROI_(R) {
   var porCamp = {}, nomes = [];
   inv.forEach(function (i) { var nm = i.campanha || 'Sem nome', k = norm(nm); if (!porCamp[k]) { porCamp[k] = { nome: nm, investido: 0, propostas: [], mensalidades: 0, vidas: 0, retorno: 0 }; nomes.push(nm); } porCamp[k].investido = r2(porCamp[k].investido + (+i.valor || 0)); });
   var organico = { propostas: 0, mensalidades: 0, retorno: 0 };
-  var contribP = function (p) { var v = R.vendedores.filter(function (x) { return norm(x.nome) === norm(p.c.vendedor); })[0], tx = v ? v.pct : taxaVendedorFora(p.unidade, R.mes).taxa || 0; return r2((p.aReceber || 0) * (1 - REGRAS.imposto) - p.valor * tx); };
+  var contribP = function (p) { return r2(p.aReceber || 0); };   // retorno = 1ª parcela gerada pela proposta
+  var contribLiq = function (p) { var v = R.vendedores.filter(function (x) { return norm(x.nome) === norm(p.c.vendedor); })[0], tx = v ? v.pct : taxaVendedorFora(p.unidade, R.mes).taxa || 0; return r2((p.aReceber || 0) * (1 - REGRAS.imposto) - p.valor * tx); };
   (R.ag.propostas || []).forEach(function (p) {
     if (projeto(p.c.projeto)) return;   // Projeto Hapvida não entra no ROI
     var c = campanhaDe(p.c.campanha || p.c.origem || '', nomes);
@@ -1180,7 +1182,7 @@ function calcularROI_(R) {
   var geral = mes < REGRAS.roiPorCampanhaDesde, porUnidade = {}, gj = null;
   if (geral) {
     gj = roiJunta([mes]); porUnidade = gj.porUnidade;
-    invAtrib = gj.investido; retorno = gj.unidades ? gj.contribuicao : null;
+    invAtrib = gj.investido; retorno = gj.unidades ? gj.primeira : null;
   }
   return { mes: mes, modo: geral ? 'geral' : 'campanha', porUnidade: porUnidade, dias: dias, diaRef: diaRef, diasRest: Math.max(0, dias - diaRef), inv: inv, total: total, media: diaRef ? total / diaRef : 0, porCat: porCat, porCamp: porCamp, organico: organico,
     reserva: reserva, saldo: r2(reserva - total), consumo: reserva ? total / reserva : null,
@@ -2191,11 +2193,9 @@ function vRoi() {
   h += '<div class="box res ' + st2 + '"><div class="lbl">' + (geral ? 'ROI geral' : 'ROI por campanha') + ' <em>' + mesLabel(R.mes) + (geral ? ' · vendas fora do Projeto Hapvida × investido da unidade' : '') + '</em></div>'
     + '<div class="bigv ' + st2 + '" style="margin-top:12px">' + (rv != null ? pct(rv) : '—') + '</div>'
     + '<div class="mins"><div class="mrow"><span>' + (geral ? 'Investido no mês' : 'Investido em campanhas com venda') + '</span><b class="inv">' + brl(o.invAtrib) + '</b></div>'
-    + (geral && o.geralDet && o.geralDet.unidades ? '<div class="mrow"><span>1ª parcela das vendas fora do projeto</span><b>' + brl(o.geralDet.primeira) + '</b></div>'
-      + '<div class="mrow"><span>− Imposto 15% da 1ª parcela</span><b class="rd">' + brl(-o.geralDet.imposto) + '</b></div>'
-      + '<div class="mrow"><span>− Comissão dos vendedores' + (o.geralDet.estimada ? ' <span class="tag pend">% estimado</span>' : '') + '</span><b class="rd">' + brl(-o.geralDet.comissao) + '</b></div>' : '')
-    + '<div class="mrow"><span>' + (geral ? 'Contribuição (o que sobra das vendas)' : 'Contribuição das vendas das campanhas') + '</span><b class="gr">' + brl(o.retorno) + '</b></div>'
+    + '<div class="mrow"><span>' + (geral ? '1ª parcela gerada · vendas fora do projeto' : '1ª parcela gerada · vendas das campanhas') + '</span><b class="gr">' + brl(o.retorno) + '</b></div>'
     + '<div class="mrow"><span>Retorno para cada R$ 1,00 investido</span><b>' + (o.retornoPorReal != null ? brl(o.retornoPorReal) : '—') + '</b></div>'
+    + (geral && o.geralDet && o.geralDet.unidades ? '<div class="mrow m"><span>Informativo (não entra no ROI): − imposto 15% ' + brl(o.geralDet.imposto) + ' · − comissão dos vendedores ' + brl(o.geralDet.comissao) + (o.geralDet.estimada ? ' (% estimado)' : '') + '</span><b>sobra ' + brl(o.geralDet.contribuicao) + '</b></div>' : '')
     + (geral ? REGRAS.unidades.map(function (u) { var x = o.porUnidade[u]; return '<div class="mrow"><span>' + u + (x.roi != null ? ' · investido ' + brl(x.investido) + ' · contribuição ' + brl(x.contribuicao) : ' · sem investimento, sem ROI') + '</span><b class="' + (x.roi == null ? '' : (x.roi >= 0 ? 'gr' : 'rd')) + '">' + (x.roi != null ? pct(x.roi) : '—') + '</b></div>'; }).join('') : '')
     + '</div></div>';
   h += '</div>';
@@ -2374,11 +2374,11 @@ function vReg() {
     + regra('Investimento por unidade', 'Investimento lançado com a unidade (Mogi/Consolação) fica nela · o restante é rateado pela produção de cada unidade', 'Investido em marketing (%) = investido ÷ a receber.')
     + regra('Mínimo para não fechar no vermelho', 'Menor a receber em que o lucro bruto fica ≥ 0 (com o imposto e o desconto da W3G arredondados)', '')
     + regra('Mínimo para não fechar no vermelho e investir', 'Menor a receber em que o lucro bruto cobre a reserva de marketing', '')
-    + regra('ROI por campanha · a partir de dezembro/2026', 'ROI = (contribuição − investido) ÷ investido · contribuição = 1ª parcela − imposto 15% − comissão do vendedor das vendas ligadas a cada campanha (fora do Projeto Hapvida)', 'A venda é ligada à campanha pelo nome da campanha/origem vindo do CRM, planilha ou sistemas. Venda sem campanha de marketing não entra no ROI.')
+    + regra('ROI por campanha · a partir de dezembro/2026', 'ROI = (1ª parcela gerada − investido) ÷ investido · 1ª parcela das vendas ligadas a cada campanha (fora do Projeto Hapvida)', 'A venda é ligada à campanha pelo nome da campanha/origem vindo do CRM, planilha ou sistemas. Venda sem campanha de marketing não entra no ROI.')
     + regra('Se a operação se pagou', 'Mês se pagou quando o lucro bruto ≥ 0 · acumulado do ano = saldo do ano anterior + lucro líquido dos meses', '')
     + regra('Cores', 'Verde = dinheiro que entra · vermelho = dinheiro que sai · amarelo = investimento', '')
     + regra('Qual comissão se aplica a cada venda', '1º tabela gravada na data da venda → 2º regra do projeto (Projeto Hapvida) → 3º tabela da operadora', 'Hapvida fora do projeto usa 350% + 2%. Mudanças futuras de tabela não alteram vendas antigas.')
-    + regra('ROI geral · até novembro/2026', 'ROI = (contribuição − investido) ÷ investido · contribuição = 1ª parcela das vendas fora do Projeto Hapvida (valor da proposta no SisWeb) − imposto 15% − comissão do vendedor', 'Vendas do Projeto Hapvida não entram. Cada unidade é medida com o próprio investimento; unidade sem investimento não tem ROI. ROI geral = média das unidades com investimento (hoje só Mogi). Mês sem vendedores registrados usa o % médio de comissão dos meses registrados (estimado). A partir de dezembro/2026: por campanha.')
+    + regra('ROI geral · até novembro/2026', 'ROI = (1ª parcela gerada − investido) ÷ investido · 1ª parcela das vendas fora do Projeto Hapvida (valor da proposta no SisWeb)', 'Vendas do Projeto Hapvida não entram. Cada unidade é medida com o próprio investimento; unidade sem investimento não tem ROI. ROI geral = média das unidades com investimento (hoje só Mogi). Imposto e comissão aparecem só como informação. A partir de dezembro/2026: por campanha.')
     + regra('Limite de investimento', 'Limite = 15% × produção do mês + saldo dos meses anteriores do ano (reserva − investido) · Dentro se investido ≤ limite', 'A reserva não usada passa para o mês seguinte; o que passou do limite reduz o saldo.')
     + regra('Provisão de 13º e férias no ano', 'Obrigação do ano = R$ 1.623,15 × 12 · Coberta se o resultado do ano ≥ 0', 'A provisão já é descontada todo mês no resultado.')
     + regra('Balanço anual e virada de ano', 'Em dezembro: fechar o ano grava o balanço geral e o saldo (lucro líquido do ano) passa para o ano seguinte', 'Acumulado = saldo do ano anterior + lucro líquido do ano atual.')
