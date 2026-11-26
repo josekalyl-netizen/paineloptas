@@ -517,6 +517,10 @@ var INV_BASE = [{"id":"sms1444984","data":"2026-01-22","valor":2369.95,"valorExa
 var ERP = [];
 // Extratos de comissão (SisWeb W3G → Optas): linhas pagas por proposta, créditos/débitos e de-para com o ERP
 var EXTRATOS = null;
+// Vendas que vieram do SMS (Kolmeya), enviadas por Mogi venda a venda. Enquanto for null, o ROI aparece como "—"
+// (decisão de 26/11/2026: sem saber quais vendas vieram do SMS, o ROI não é real e não é mostrado).
+var VENDAS_SMS = null;
+function roiReal() { return !!(VENDAS_SMS && VENDAS_SMS.length); }
 // Créditos e débitos dos extratos: tipo (letra) e o que fazer com cada um (decisões de 25/11/2026)
 var CD_TIPOS = [
   ['B', 'Comissão Valdecir 40% (custo de operação de Mogi; encerrada em julho/2026)', /VALDECIR OPTAS 40/, 'custoOp'],
@@ -1136,7 +1140,7 @@ function roiUnidadeMes(mes, u) {
   o.imposto = r2(o.primeira * REGRAS.imposto);
   o.comissao = tv.taxa != null ? r2(o.producao * tv.taxa) : 0; o.estimada = tv.estimada; o.taxaVendedor = tv.taxa;
   o.contribuicao = r2(o.primeira - o.imposto - o.comissao);
-  if (inv > 0) o.roi = (o.primeira - inv) / inv;
+  if (inv > 0 && roiReal()) o.roi = (o.primeira - inv) / inv;
   return o;
 }
 // Junta meses: soma por unidade e faz a média do ROI entre as unidades com investimento
@@ -1145,7 +1149,7 @@ function roiJunta(meses) {
   REGRAS.unidades.forEach(function (u) {
     var t = { unidade: u, investido: 0, primeira: 0, imposto: 0, comissao: 0, contribuicao: 0, estimada: false, meses: 0 };
     meses.forEach(function (k) { var r = roiUnidadeMes(k, u); if (r.roi == null) return; t.meses++; t.investido = r2(t.investido + r.investido); t.primeira = r2(t.primeira + r.primeira); t.imposto = r2(t.imposto + r.imposto); t.comissao = r2(t.comissao + r.comissao); t.contribuicao = r2(t.contribuicao + r.contribuicao); t.estimada = t.estimada || r.estimada; });
-    t.roi = t.investido > 0 ? (t.primeira - t.investido) / t.investido : null; un[u] = t; if (t.roi != null) us.push(t);
+    t.roi = t.investido > 0 && roiReal() ? (t.primeira - t.investido) / t.investido : null; un[u] = t; if (t.roi != null) us.push(t);
   });
   var g = { porUnidade: un, unidades: us.length, roi: us.length ? us.reduce(function (s, t) { return s + t.roi; }, 0) / us.length : null,
     investido: soma2(us, function (t) { return t.investido; }), contribuicao: soma2(us, function (t) { return t.contribuicao; }), primeira: soma2(us, function (t) { return t.primeira; }),
@@ -1182,7 +1186,7 @@ function calcularROI_(R) {
   var geral = mes < REGRAS.roiPorCampanhaDesde, porUnidade = {}, gj = null;
   if (geral) {
     gj = roiJunta([mes]); porUnidade = gj.porUnidade;
-    invAtrib = gj.investido; retorno = gj.unidades ? gj.primeira : null;
+    invAtrib = roiReal() ? gj.investido : total; retorno = gj.unidades ? gj.primeira : null;
   }
   return { mes: mes, modo: geral ? 'geral' : 'campanha', porUnidade: porUnidade, dias: dias, diaRef: diaRef, diasRest: Math.max(0, dias - diaRef), inv: inv, total: total, media: diaRef ? total / diaRef : 0, porCat: porCat, porCamp: porCamp, organico: organico,
     reserva: reserva, saldo: r2(reserva - total), consumo: reserva ? total / reserva : null,
@@ -2190,13 +2194,14 @@ function vRoi() {
   // ROI = retorno sobre o investimento
   var rv = o.roi, st2 = rv == null ? 'nd' : (rv >= 0 ? 'lucro' : 'prej');
   var geral = o.modo === 'geral';
-  h += '<div class="box res ' + st2 + '"><div class="lbl">' + (geral ? 'ROI geral' : 'ROI por campanha') + ' <em>' + mesLabel(R.mes) + (geral ? ' · vendas fora do Projeto Hapvida × investido da unidade' : '') + '</em></div>'
+  h += '<div class="box res ' + st2 + '"><div class="lbl">' + (geral ? 'ROI geral' : 'ROI por campanha') + ' <em>' + mesLabel(R.mes) + (geral ? (roiReal() ? ' · vendas do SMS × investido da unidade' : ' · aguardando a lista das vendas que vieram do SMS (Mogi)') : '') + '</em></div>'
     + '<div class="bigv ' + st2 + '" style="margin-top:12px">' + (rv != null ? pct(rv) : '—') + '</div>'
     + '<div class="mins"><div class="mrow"><span>' + (geral ? 'Investido no mês' : 'Investido em campanhas com venda') + '</span><b class="inv">' + brl(o.invAtrib) + '</b></div>'
-    + '<div class="mrow"><span>' + (geral ? '1ª parcela gerada · vendas fora do projeto' : '1ª parcela gerada · vendas das campanhas') + '</span><b class="gr">' + brl(o.retorno) + '</b></div>'
+    + (geral && !roiReal() ? '<div class="mrow m"><span>ROI só aparece quando chegar a lista das vendas que vieram do SMS. Sem ela, o número não é real.</span><b>—</b></div>' : '')
+    + (geral && !roiReal() ? '' : '<div class="mrow"><span>' + (geral ? '1ª parcela gerada · vendas do SMS' : '1ª parcela gerada · vendas das campanhas') + '</span><b class="gr">' + brl(o.retorno) + '</b></div>')
     + '<div class="mrow"><span>Retorno para cada R$ 1,00 investido</span><b>' + (o.retornoPorReal != null ? brl(o.retornoPorReal) : '—') + '</b></div>'
-    + (geral && o.geralDet && o.geralDet.unidades ? '<div class="mrow m"><span>Informativo (não entra no ROI): − imposto 15% ' + brl(o.geralDet.imposto) + ' · − comissão dos vendedores ' + brl(o.geralDet.comissao) + (o.geralDet.estimada ? ' (% estimado)' : '') + '</span><b>sobra ' + brl(o.geralDet.contribuicao) + '</b></div>' : '')
-    + (geral ? REGRAS.unidades.map(function (u) { var x = o.porUnidade[u]; return '<div class="mrow"><span>' + u + (x.roi != null ? ' · investido ' + brl(x.investido) + ' · contribuição ' + brl(x.contribuicao) : ' · sem investimento, sem ROI') + '</span><b class="' + (x.roi == null ? '' : (x.roi >= 0 ? 'gr' : 'rd')) + '">' + (x.roi != null ? pct(x.roi) : '—') + '</b></div>'; }).join('') : '')
+    + (geral && roiReal() && o.geralDet && o.geralDet.unidades ? '<div class="mrow m"><span>Informativo (não entra no ROI): − imposto 15% ' + brl(o.geralDet.imposto) + ' · − comissão dos vendedores ' + brl(o.geralDet.comissao) + (o.geralDet.estimada ? ' (% estimado)' : '') + '</span><b>sobra ' + brl(o.geralDet.contribuicao) + '</b></div>' : '')
+    + (geral && roiReal() ? REGRAS.unidades.map(function (u) { var x = o.porUnidade[u]; return '<div class="mrow"><span>' + u + (x.roi != null ? ' · investido ' + brl(x.investido) + ' · contribuição ' + brl(x.contribuicao) : ' · sem investimento, sem ROI') + '</span><b class="' + (x.roi == null ? '' : (x.roi >= 0 ? 'gr' : 'rd')) + '">' + (x.roi != null ? pct(x.roi) : '—') + '</b></div>'; }).join('') : '')
     + '</div></div>';
   h += '</div>';
 
@@ -2325,6 +2330,7 @@ function copiarAlertas() {
 
 var PENDENCIAS = [
   ['7', 'Validação contábil dos encargos', 'FPAS/terceiros, RAT, incidências efetivas e encargos já incluídos nos R$ 39.185,43.', 'Provisão de R$ 1.623,15 é estimativa gerencial.'],
+  ['10', 'Vendas que vieram do SMS (Mogi)', 'Mogi envia a lista das vendas que vieram do SMS do Kolmeya (proposta/cliente, data, campanha). Alternativa: exportação dos envios do Kolmeya (celular, data, campanha) + celular do cliente nas propostas, para cruzar pelo número.', 'ROI aparece como "—" até essa lista chegar.'],
   ['9', 'Vínculo com planilha e CRM', 'Link da planilha e campos do CRM (PipeRun) com venda a venda: projeto, operadora, modalidade, valor, vendedor, unidade, data, origem/campanha.', 'Painel usa os totais por vendedor do painel atual.'],
 ];
 function vPen() {

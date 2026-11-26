@@ -122,8 +122,10 @@ const path = require('path');
           const vs = Object.values(ur), g = roiJunta(meses), esp = vs.length ? vs.reduce((t, x) => t + x, 0) / vs.length : null;
           if ((g.roi == null) !== (esp == null) || (esp != null && Math.abs(g.roi - esp) > 1e-12)) falhas.push(nome + ': ' + g.roi + ' ≠ ' + esp);
           if (ur['Consolação'] != null && !(ESTADO.fechamentos && meses.some(k => (k === R.mes ? R.invUnidade['Consolação'] : ((ESTADO.fechamentos[k] || {}).unidades || {})['Consolação'] && ESTADO.fechamentos[k].unidades['Consolação'].investido) > 0))) falhas.push(nome + ': Consolação sem investimento com ROI'); };
+        if (!roiReal()) { mesesDoAno(+R.mes.slice(0, 4)).concat(['ano']).forEach(k => { const g = roiJunta(k === 'ano' ? mesesDoAno(+R.mes.slice(0, 4)) : [k]); if (g.roi != null) falhas.push('ROI mostrado sem a lista do SMS: ' + k); }); if (ro.roi != null) falhas.push('ROI do mês mostrado sem a lista do SMS'); }
+        else {
         chk([R.mes], 'ROI do mês'); mesesDoAno(+R.mes.slice(0, 4)).forEach(k => chk([k], 'ROI ' + k)); chk(mesesDoAno(+R.mes.slice(0, 4)), 'ROI do ano');
-        if (ro.roi != null && Math.abs(ro.roi - roiJunta([R.mes]).roi) > 1e-12) falhas.push('ROI geral do mês');
+        if (ro.roi != null && Math.abs(ro.roi - roiJunta([R.mes]).roi) > 1e-12) falhas.push('ROI geral do mês'); }
         if (ro.geralDet && ro.geralDet.unidades) ok('ROI contribuição = 1ª parcela − imposto − comissão', ro.geralDet.contribuicao, ro.geralDet.primeira - ro.geralDet.imposto - ro.geralDet.comissao); }
       else if (ro.invAtrib > 0) { if (Math.abs(ro.roi - (ro.retorno - ro.invAtrib) / ro.invAtrib) > 1e-12) falhas.push('ROI'); ok('retorno = Σ campanhas', ro.retorno, Object.values(ro.porCamp).reduce((t, g) => t + g.retorno, 0)); }
       // vitalício

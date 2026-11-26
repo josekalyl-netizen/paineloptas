@@ -699,3 +699,17 @@ Base: apostila "Aula Completa — Cálculo de ROI" (receita não é lucro; inves
 Mogi 2026 (jan–out): investido R$ 87.926,48 · 1ª parcela R$ 172.406,43 · imposto R$ 25.860,97 · comissão R$ 111.101,88 · contribuição R$ 35.443,58 · **ROI do ano −59,7%** (antes: 224%).
 - **Decisão (26/11/2026):** o ROI fica sobre a **1ª parcela gerada** ("é o que gera"). As parcelas seguintes não entram e não há ROI projetado ao lado.
 - **Correção (26/11/2026): o ROI é sobre a 1ª parcela gerada, não sobre o que sobra.** ROI = (1ª parcela gerada pelas vendas fora do Projeto Hapvida − investido) ÷ investido. Imposto 15%, comissão dos vendedores e "o que sobra" continuam aparecendo na aba ROI só como informação. Mogi jan–out/2026: (172.406,43 − 87.926,48) ÷ 87.926,48 = **96,1%**.
+
+## ROI fica "—" até chegar a lista das vendas do SMS (26/11/2026)
+
+- Sem saber quais vendas vieram do SMS, o ROI **não é real** e o painel mostra **"—"** (Visão geral, aba Ano, aba ROI). A conta já está pronta e liga sozinha quando a lista entrar (`VENDAS_SMS` no código).
+- **Próximo passo:** Mogi envia a lista das vendas que vieram do SMS do Kolmeya (proposta ou cliente, data e campanha). Com ela: ROI = (1ª parcela gerada pelas vendas do SMS − investido) ÷ investido, por mês e no ano.
+- **Alternativa combinada (quando houver os dados):** cruzar pelo celular.
+  - Kolmeya: exportação dos envios (celular, data do envio, campanha; se tiver, respostas/cliques).
+  - SisWeb ou PipeRun: propostas com o celular do cliente.
+  - Números padronizados em DDD + 9 dígitos (sem +55, espaços ou traços).
+  - Venda conta como "veio do SMS" se o celular recebeu SMS **antes** da venda, numa janela de até 90 dias (ajustável). Vários envios: vale a última campanha antes da venda.
+  - Por campanha: números disparados, clientes que fecharam, conversão (vendas ÷ envios), custo por venda e ROI.
+  - Telefones ficam fora do GitHub (pasta `data/erp/`); o painel mostra só totais.
+- Referência dos números anteriores (não são reais, só para comparação): todas as vendas fora do projeto de Mogi davam ROI de 96,1% em jan–out/2026; com Consolação e Projeto Hapvida juntos, 224%.
+- Pendência 10 criada: "Vendas que vieram do SMS (Mogi)".
