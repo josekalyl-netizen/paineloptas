@@ -1085,7 +1085,7 @@ function parcelasAnteriores(mes) {
   });
   return o;
 }
-function agForaSisweb(mes) { if (!extratosOn()) return []; return EXTRATOS.linhas.filter(function (l) { return l.mes === mes && l.tipo === 'agenciamento' && !l.erp && l.bruto; }); }
+function agForaSisweb(mes) { if (!extratosOn()) return []; return EXTRATOS.linhas.filter(function (l) { return l.mes === mes && l.tipo === 'agenciamento' && !l.erp && l.bruto && l.liquido; }); }   // líquido R$ 0,00 no relatório = nada veio para a Optas (26/11/2026)
 // O que já está garantido para os próximos meses (vendas já feitas até o mês, sem novas vendas)
 function aReceberFuturo(mes, n) {
   var out = [], todas = vendasConhecidas().filter(function (c) { return String(c.data_venda || c.data_inicio || '').slice(0, 7) <= mes; });
@@ -1756,7 +1756,7 @@ function livroReceber() {
   var prev = {}, pago = {};
   if (extratosOn()) {
     EXTRATOS.extratos.forEach(function (x) { prev[x.codigo] = x.previsao; });
-    EXTRATOS.linhas.forEach(function (l) { if (!l.erp) return; var k = l.erp + '|' + l.parc, g = pago[k] = pago[k] || { bruto: 0, liquido: 0, data: '', extratos: [] }; g.bruto = r2(g.bruto + l.bruto); g.liquido = r2(g.liquido + l.liquido); var d = prev[l.extrato] || (l.mes + '-01'); if (d > g.data) g.data = d; g.extratos.push(l.extrato); });
+    EXTRATOS.linhas.forEach(function (l) { if (!l.erp) return; var k = l.erp + '|' + l.parc, g = pago[k] = pago[k] || { bruto: 0, liquido: 0, data: '', extratos: [] }; g.bruto = r2(g.bruto + (l.liquido ? l.bruto : 0)); g.liquido = r2(g.liquido + l.liquido); var d = prev[l.extrato] || (l.mes + '-01'); if (d > g.data) g.data = d; g.extratos.push(l.extrato); });
   }
   ERP.forEach(function (c) {
     if (statusProposta(c) === 'cancelada') return;

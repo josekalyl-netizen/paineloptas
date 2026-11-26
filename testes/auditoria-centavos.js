@@ -82,7 +82,7 @@ const path = require('path');
       // livro do a receber: cada parcela recebida = Σ linhas do extrato; perdida = mais de 90 dias depois da prevista; previstas encadeadas de 30 em 30 dias
       if (!DEMO && ERP.length && extratosOn()) { const Lv = livroReceber(), hoje = hojeISO();
         Lv.itens.forEach(it => { const id = it.c.id + '|' + it.parcela;
-          if (it.situacao === 'recebida') ok('livro ' + id + ' recebido', it.valor, EXTRATOS.linhas.filter(l => l.erp === it.c.id && l.parc === it.parcela).reduce((t, l) => t + l.bruto, 0));
+          if (it.situacao === 'recebida') ok('livro ' + id + ' recebido', it.valor, EXTRATOS.linhas.filter(l => l.erp === it.c.id && l.parc === it.parcela).reduce((t, l) => t + (l.liquido ? l.bruto : 0), 0));   // líquido R$ 0,00 = nada veio (26/11/2026)
           else { if (it.c.tabela.venc && it.c.tabela.venc[it.parcela - 1] && it.prevista !== it.c.tabela.venc[it.parcela - 1]) falhas.push('livro ' + id + ' prevista ≠ vencimento SisWeb'); const d = diasEntre(it.prevista, hoje); if ((d <= 0 ? 'em dia' : d < 90 ? 'atrasada' : 'perdida') !== it.situacao) falhas.push('livro ' + id + ' situação'); } });
         const dp = deParaERP(), tudo = Lv.itens.reduce((t, it) => t + it.valor, 0); ok('livro = recebidas + em dia + atrasadas + perdidas', tudo, dp.vPagas + dp.vEmDia + dp.vAtrasadas + dp.vPerdidas);
         const ar = itensAReceber(); ok('aba A receber = em dia + atrasadas (+ projeto)', ar.reduce((t, x) => t + x.valor, 0), dp.vEmDia + dp.vAtrasadas + ar.filter(x => x.tipo === 'projeto').reduce((t, x) => t + x.valor, 0)); }

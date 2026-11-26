@@ -737,6 +737,9 @@ Mogi 2026 (jan–out): investido R$ 87.926,48 · 1ª parcela R$ 172.406,43 · im
 - Proposta do SisWeb sem comissão da Optas e operadora na grade → usa a grade (Select PME, Biovida PME). Select PME com 1 vida usa a faixa mais próxima da grade (2 a 29 vidas; o produto é "01 a 29 vidas"). "Biovida Saúde" = Biovida.
 - Operadora fora da grade (Onmed ×2, Unimed Santos) → fica sem comissão e aparece como "sem comissão" (aviso informativo e linha com R$ 0,00 no detalhe do a receber).
 - Feriados: o 25/1 (aniversário de São Paulo) vale nas duas unidades; Mogi tem também o 1/9. A padroeira de Mogi não é feriado.
+- Linha do relatório com líquido R$ 0,00 (1ª parcela de adesão retida) não conta como recebida: 7 linhas, R$ 4.896,81 (R$ 3.518,06 em 2026).
 - Provisão de 13º e férias vale todo mês, sobre os salários CLT informados (Consolação R$ 796,18 · Mogi R$ 826,97 · total R$ 1.623,15), mesmo nos meses com folha do relatório.
 
-**Efeito final no ano de 2026 (jan–nov):** a receber R$ 1.160.386,49 (+ R$ 11.004,58 de Select e Biovida pela grade); custos R$ 1.020.463,79 (com a provisão de R$ 1.623,15 × 11 = R$ 17.854,65); lucro bruto R$ 139.922,70; lucro líquido R$ 51.996,22.
+**Efeito final no ano de 2026 (jan–nov):** a receber R$ 1.160.386,49 (+ R$ 11.004,58 de Select e Biovida pela grade); a receber R$ 1.156.868,43 depois de tirar as linhas com líquido zero; custos R$ 1.019.936,08 (com a provisão de R$ 1.623,15 × 11); lucro bruto R$ 136.932,35; lucro líquido R$ 49.005,87.
+
+**Levantamento dos relatórios (26/11/2026):** 23 relatórios (PDF = CSV ao centavo: 3.816 linhas, 231 créditos/débitos); toda linha e todo crédito/débito entra no painel. Faltam o relatório de Consolação com previsão em outubro/2026 e o de Mogi de novembro/2026.
