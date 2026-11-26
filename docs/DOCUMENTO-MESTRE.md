@@ -662,3 +662,8 @@ Distribuição de lucros entre W3G e sócias; média de comissões para provisio
   - A parte "com desconto" do a receber = proporção do bruto das linhas dos relatórios do mês e da unidade que vieram com despesa administrativa. Sem relatório no mês: proporção de todos os relatórios da unidade.
   - Em 2026: Consolação 50,8% com desconto, Mogi 60,5%.
   - Nas saídas: três linhas (Desconto W3G 8,5% · Imposto 8,5% parte com desconto · Imposto 15% parte sem desconto).
+- **Atualização 26/11/2026 (2) — vale esta:** o desconto da W3G é o valor exato que os relatórios do mês mostram (despesa administrativa das linhas).
+  - Sobre o bruto dessas linhas: mais 8,5% de imposto.
+  - Sobre o resto do a receber: 15%.
+  - Mês sem relatório: 15% sobre tudo.
+  - Se o bruto com desconto passar do a receber do mês, conta só até o a receber, e o desconto da W3G entra na mesma proporção.

@@ -63,10 +63,9 @@ const path = require('path');
       ok('reserva = Σ unidades', R.reservaMkt, U.reduce((t, u) => t + u.reservaMkt, 0));
       // mínimos: menor 1ª parcela que zera o lucro bruto / cobre a reserva
       // imposto (26/11/2026): parte com desconto W3G (proporção do bruto das linhas com despesa adm. no mês/unidade) = 8,5% W3G + 8,5%; resto = 15%
-      const frac = (mes, u) => { const f = g => { let b = 0, w = 0; (extratosOn() ? EXTRATOS.linhas : []).forEach(l => { if (!g(l) || !l.bruto) return; b += l.bruto; if (l.desp_adm) w += l.bruto; }); return b ? w / b : null; };
-        const du = l => !u || unidadeCanon(l.unidade) === u; let x = f(l => l.mes === mes && du(l)); if (x == null) x = f(du); return x == null ? 0 : x; };
-      const imp = (rec, mes, u) => { const com = r2(rec * frac(mes, u)), sem = r2(rec - com); return r2(r2(com * 0.085) + r2(com * 0.085) + r2(sem * 0.15)); };
-      U.forEach(u => { if (u.res) ok(u.custos.unidade + ' imposto (15% sem desconto W3G · 8,5% + 8,5% com desconto)', u.res.imposto, imp(u.recebidas, R.mes, u.custos.unidade)); });
+      const imp = (rec, mes, u) => { let b = 0, d = 0; (extratosOn() ? EXTRATOS.linhas : []).forEach(l => { if (l.mes !== mes || !l.desp_adm || (u && unidadeCanon(l.unidade) !== u)) return; b += l.bruto; d -= l.desp_adm; });
+        b = r2(b); d = r2(d); const com = Math.min(b, Math.max(rec, 0)), sem = r2(rec - com); return r2((b ? r2(d * com / b) : 0) + r2(com * 0.085) + r2(sem * 0.15)); };
+      U.forEach(u => { if (u.res) ok(u.custos.unidade + ' imposto (desconto W3G do relatório + 8,5% sobre o bruto com desconto + 15% no resto)', u.res.imposto, imp(u.recebidas, R.mes, u.custos.unidade)); });
       Object.keys(ESTADO.fechamentos).forEach(k => { const f = ESTADO.fechamentos[k]; if (!f.base) return; REGRAS.unidades.forEach(u => { const x = f.unidades[u]; if (x && x.recebidas != null) ok(k + ' ' + u + ' imposto', x.imposto, imp(x.recebidas, k, u)); }); if (f.recebidas != null) ok(k + ' imposto = Σ unidades', f.imposto, REGRAS.unidades.reduce((t, u) => t + (f.unidades[u].imposto || 0), 0)); });
       [['consolidado', R.res, undefined]].concat(U.map(u => [u.custos.unidade, u.res, u.custos.unidade])).forEach(([n, x, un]) => { if (!x) return;
         const lb = rec => r2(rec - imp(rec, R.mes, un) - x.comissoes - x.custoOp);
