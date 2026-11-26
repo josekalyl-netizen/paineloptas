@@ -17,12 +17,14 @@ const path = require('path');
         if (u.foraERP) ok(n + ' 1ª parcela = projeto + fora do ERP', u.primeira, (u.primeiraProjeto || 0) + u.foraERP.primeira);
         ok(n + ' comissões = Σ vendedores', u.comissao, vs.reduce((t, v) => t + v.comissao, 0));
         vs.forEach(v => {
-          // fora do projeto: faixa da unidade sobre a produção total, aplicada à produção fora · projeto: 15% + valor por vida a partir de 25 vidas
+          // fora do projeto: faixa da unidade sobre a produção total, aplicada à produção fora · projeto: só 15%
           const f = faixaComissao(v.unidade, r2(v.prodHap + v.prodFora)); ok(v.nome + ' faixa', v.pct, f.pct); ok(v.nome + ' comissão fora', v.comFora, r2(v.prodFora * f.pct));
           ok(v.nome + ' 15% projeto', v.comProjeto, r2(v.prodHap * 0.15));
           if (v.vidasProjeto != null) { const vid = v.vidasFonte != null && !R.ag.propostas.length ? v.vidasFonte : R.ag.propostas.filter(p => projeto(p.c.projeto) && p.c.vendedor === v.nome).reduce((t, p) => t + (+p.c.vidas || 0), 0); ok(v.nome + ' vidas projeto', v.vidasProjeto, vid);
-            const val = vid >= 50 ? 35 : vid >= 35 ? 25 : vid >= 25 ? 20 : 0; ok(v.nome + ' valor por vida', v.bonusVidas, vid * val); }
-          ok(v.nome + ' comissão total', v.comissao, v.comFora + v.comProjeto + (v.bonusVidas || 0)); }); });
+          }
+          // Projeto Hapvida: vendedor recebe só 15% (premiação por vida vem do relatório W3G como custo)
+          ok(v.nome + ' sem valor por vida na comissão', v.bonusVidas == null ? 0 : 1, 0);
+          ok(v.nome + ' comissão total', v.comissao, v.comFora + v.comProjeto); }); });
       ok('produção = Σ unidades', R.producao, U.reduce((t, u) => t + u.producao, 0));
       ok('comissões = Σ unidades', R.comissoes, U.reduce((t, u) => t + u.comissao, 0));
       // propostas

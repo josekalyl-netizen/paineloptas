@@ -486,8 +486,9 @@ var REGRAS = {
   //    linha do relatório SEM desconto da W3G → a Optas paga 15%;
   //    linha COM desconto da W3G (8,5%, já sai no recebimento) → a Optas paga mais 8,5%.
   imposto: 0.15, impostoComW3G: 0.085, descontoW3G: 0.085,
-  // Projeto Hapvida · pagamento ao vendedor: 15% da mensalidade + valor por vida a partir de 25 vidas no mês (abaixo de 25 não paga)
-  projetoVendedor: { pct: 0.15, porVida: [{ de: 25, valor: 20 }, { de: 35, valor: 25 }, { de: 50, valor: 35 }] },
+  // Projeto Hapvida · pagamento ao vendedor: só 15% da mensalidade (26/11/2026).
+  // A premiação por vida NÃO entra na comissão: já vem como débito "POR VIDA" no relatório da W3G (tipo R, custo).
+  projetoVendedor: { pct: 0.15 },
   roiPorCampanhaDesde: '2026-12',                              // antes: ROI geral (investido × todas as vendas); a partir daqui: venda a venda por campanha (decisão de 25/11/2026)
   reservaMarketing: 0.15,                                      // 15% da produção mensal (decisão v1.6)
   reservaAcumula: null,                                        // Pendência 3 (null = não decidido)
@@ -863,27 +864,19 @@ function calcular() {
   var vidasPj = null;
   if (usarContratos) { vidasPj = {}; contratosMes.forEach(function (c) { if (projeto(c.projeto)) vidasPj[norm(c.vendedor)] = (vidasPj[norm(c.vendedor)] || 0) + (+c.vidas || 0); }); }
   else if (Object.keys(vend).some(function (k) { return vend[k].vidasFonte != null; })) { vidasPj = {}; Object.keys(vend).forEach(function (k) { if (vend[k].vidasFonte != null) vidasPj[norm(vend[k].nome)] = vend[k].vidasFonte; }); }
-  var semVidas = [];
   Object.keys(vend).forEach(function (k) {
     var v = vend[k]; v.producao = r2(v.prodHap + v.prodFora);
     // Fora do projeto: faixa da unidade sobre a produção TOTAL (projeto + fora), aplicada às vendas fora do projeto
     var f = faixaComissao(v.unidade, v.producao);
     v.pct = f.pct; v.faixa = f; v.comFora = r2(v.prodFora * f.pct);
-    // Projeto Hapvida: 15% da mensalidade + valor por vida (a partir de 25 vidas no mês)
+    // Projeto Hapvida: só 15% da mensalidade (premiação por vida vem do relatório como custo)
     var pv = REGRAS.projetoVendedor;
     v.comProjeto = r2(v.prodHap * pv.pct);
     v.vidasProjeto = !vidasPj ? null : (usarContratos ? (vidasPj[norm(v.nome)] || 0) : (vidasPj[norm(v.nome)] != null ? vidasPj[norm(v.nome)] : (v.prodHap ? null : 0)));
-    var fx = v.vidasProjeto != null ? pv.porVida.filter(function (x) { return v.vidasProjeto >= x.de; }).pop() : null;
-    v.valorVida = fx ? fx.valor : 0;
-    v.bonusVidas = v.vidasProjeto != null ? r2(v.vidasProjeto * v.valorVida) : null;
-    if (v.prodHap > 0 && v.vidasProjeto == null) semVidas.push(v.nome);
-    v.comissao = r2(v.comFora + v.comProjeto + (v.bonusVidas || 0));
+    v.comissao = r2(v.comFora + v.comProjeto);
     v.faltaProx = f.prox ? r2(f.prox.de - v.producao) : 0;
-    var proxV = v.vidasProjeto != null ? pv.porVida.filter(function (x) { return x.de > v.vidasProjeto; })[0] : null;
-    v.faltaVidas = proxV ? proxV.de - v.vidasProjeto : 0; v.proxVida = proxV;
     R.vendedores.push(v);
   });
-  if (semVidas.length) R.alertas.push({ sev: 'wa', cod: 'VIDAS_PJ', titulo: semVidas.length + ' vendedor(es) sem vidas do Projeto Hapvida por proposta', texto: 'Vendedores: ' + semVidas.join(', ') + '.', impacto: 'Valor por vida do Projeto Hapvida (a partir de 25 vidas) não calculado; comissão mostra só os 15%.', acao: 'Enviar as vendas linha a linha com o número de vidas.' });
   R.vendedores.sort(function (a, b) { return b.producao - a.producao; });
 
   // ---------- Agenciamento / vitalício a receber (contratos efetivos) ----------
@@ -1979,10 +1972,10 @@ function linhasComissao() {
   R.vendedores.forEach(function (v) {
     var ps = R.ag.propostas.filter(function (p) { return norm(p.c.vendedor) === norm(v.nome); });
     var pj = ps.filter(function (p) { return projeto(p.c.projeto); }), fo = ps.filter(function (p) { return !projeto(p.c.projeto); });
-    ratear(pj, r2(v.comProjeto + (v.bonusVidas || 0)), function (p) { return p.valor * REGRAS.projetoVendedor.pct + (+p.c.vidas || 0) * (v.valorVida || 0); }, 'comVend');
+    ratear(pj, v.comProjeto, function (p) { return p.valor * REGRAS.projetoVendedor.pct; }, 'comVend');
     ratear(fo, v.comFora, function (p) { return p.valor * v.pct; }, 'comVend');
-    res.push({ 'Vendedor(a)': v.nome, 'Unidade': v.unidade, 'Projeto Hapvida (R$)': v.prodHap, '15% Projeto (R$)': v.comProjeto, 'Vidas Projeto': v.vidasProjeto, 'Valor por vida (R$)': v.bonusVidas, 'Fora do projeto (R$)': v.prodFora, 'Faixa': v.pct, 'Comissão fora (R$)': v.comFora, 'Comissão a pagar (R$)': v.comissao, 'Propostas': ps.length, '1ª parcela (R$)': soma2(ps, function (p) { return p.aReceber || 0; }), 'Total contratado (R$)': soma2(ps, function (p) { return p.agTotal || 0; }) });
-    ps.forEach(function (p) { props.push({ 'Vendedor(a)': v.nome, 'Unidade': v.unidade, 'Data': (p.c.data_venda || '').split('-').reverse().join('/'), 'Cliente (titular / empresa)': p.c.cliente || '', 'CPF / CNPJ': docFmt(p.c.documento), 'Nº contrato': p.c.contrato || p.c.id_venda || '', 'Operadora / projeto': p.grupo, 'Modalidade': p.c.modalidade || '', 'Vidas': +p.c.vidas || '', 'Mensalidade (R$)': p.valor, '% operadora': p.pct, '1ª parcela (R$)': p.aReceber, 'Total contratado (R$)': p.agTotal, 'Regra do vendedor': projeto(p.c.projeto) ? '15% + vidas' : pct(v.pct), 'Comissão do vendedor (R$)': p.comVend }); });
+    res.push({ 'Vendedor(a)': v.nome, 'Unidade': v.unidade, 'Projeto Hapvida (R$)': v.prodHap, '15% Projeto (R$)': v.comProjeto, 'Vidas Projeto': v.vidasProjeto, 'Fora do projeto (R$)': v.prodFora, 'Faixa': v.pct, 'Comissão fora (R$)': v.comFora, 'Comissão a pagar (R$)': v.comissao, 'Propostas': ps.length, '1ª parcela (R$)': soma2(ps, function (p) { return p.aReceber || 0; }), 'Total contratado (R$)': soma2(ps, function (p) { return p.agTotal || 0; }) });
+    ps.forEach(function (p) { props.push({ 'Vendedor(a)': v.nome, 'Unidade': v.unidade, 'Data': (p.c.data_venda || '').split('-').reverse().join('/'), 'Cliente (titular / empresa)': p.c.cliente || '', 'CPF / CNPJ': docFmt(p.c.documento), 'Nº contrato': p.c.contrato || p.c.id_venda || '', 'Operadora / projeto': p.grupo, 'Modalidade': p.c.modalidade || '', 'Vidas': +p.c.vidas || '', 'Mensalidade (R$)': p.valor, '% operadora': p.pct, '1ª parcela (R$)': p.aReceber, 'Total contratado (R$)': p.agTotal, 'Regra do vendedor': projeto(p.c.projeto) ? '15%' : pct(v.pct), 'Comissão do vendedor (R$)': p.comVend }); });
   });
   return { resumo: res, propostas: props };
 }
@@ -1996,8 +1989,8 @@ function exportarComissoes() {
       for (var r = 1; r <= rows.length; r++) cols.forEach(function (c, i) { var cell = ws[XLSX.utils.encode_cell({ r: r, c: i })]; if (!cell) return; if (moedas.indexOf(c) >= 0) cell.z = '"R$" #,##0.00'; if (pcts.indexOf(c) >= 0) cell.z = '0.0%'; });
       XLSX.utils.book_append_sheet(wb, ws, aba);
     };
-    var tot = { 'Vendedor(a)': 'TOTAL', 'Unidade': '', 'Projeto Hapvida (R$)': soma2(R.vendedores, function (v) { return v.prodHap; }), '15% Projeto (R$)': soma2(R.vendedores, function (v) { return v.comProjeto; }), 'Vidas Projeto': '', 'Valor por vida (R$)': soma2(R.vendedores, function (v) { return v.bonusVidas || 0; }), 'Fora do projeto (R$)': soma2(R.vendedores, function (v) { return v.prodFora; }), 'Faixa': '', 'Comissão fora (R$)': soma2(R.vendedores, function (v) { return v.comFora; }), 'Comissão a pagar (R$)': R.comissoes, 'Propostas': d.propostas.length, '1ª parcela (R$)': soma2(d.resumo, function (x) { return x['1ª parcela (R$)']; }), 'Total contratado (R$)': soma2(d.resumo, function (x) { return x['Total contratado (R$)']; }) };
-    add(d.resumo.concat([tot]), 'Comissões ' + R.mes, ['Projeto Hapvida (R$)', '15% Projeto (R$)', 'Valor por vida (R$)', 'Fora do projeto (R$)', 'Comissão fora (R$)', 'Comissão a pagar (R$)', '1ª parcela (R$)', 'Total contratado (R$)'], ['Faixa']);
+    var tot = { 'Vendedor(a)': 'TOTAL', 'Unidade': '', 'Projeto Hapvida (R$)': soma2(R.vendedores, function (v) { return v.prodHap; }), '15% Projeto (R$)': soma2(R.vendedores, function (v) { return v.comProjeto; }), 'Vidas Projeto': '', 'Fora do projeto (R$)': soma2(R.vendedores, function (v) { return v.prodFora; }), 'Faixa': '', 'Comissão fora (R$)': soma2(R.vendedores, function (v) { return v.comFora; }), 'Comissão a pagar (R$)': R.comissoes, 'Propostas': d.propostas.length, '1ª parcela (R$)': soma2(d.resumo, function (x) { return x['1ª parcela (R$)']; }), 'Total contratado (R$)': soma2(d.resumo, function (x) { return x['Total contratado (R$)']; }) };
+    add(d.resumo.concat([tot]), 'Comissões ' + R.mes, ['Projeto Hapvida (R$)', '15% Projeto (R$)', 'Fora do projeto (R$)', 'Comissão fora (R$)', 'Comissão a pagar (R$)', '1ª parcela (R$)', 'Total contratado (R$)'], ['Faixa']);
     if (d.propostas.length) add(d.propostas, 'Propostas', ['Mensalidade (R$)', '1ª parcela (R$)', 'Total contratado (R$)', 'Comissão do vendedor (R$)'], ['% operadora']);
     XLSX.writeFile(wb, nome + '.xlsx');
   } else {
@@ -2046,15 +2039,14 @@ function vCom() {
     + card('Comissões dos vendedores', brl(R.comissoes), pct(R.producao ? R.comissoes / R.producao : 0, 1) + ' da produção', { cls: 'out', box: 'brd' })
     + card('1ª parcela das vendas', R.ag.base ? brl(R.ag.valor) : '—', R.ag.base ? 'total contratado ' + brl(R.ag.contratado) : '', { cls: 'in', box: 'bgr' })
     + '</div>';
-  h += '<div class="box mt"><div class="lbl">Vendedores</div><div class="tw"><table><thead><tr><th>#</th><th>Vendedor(a)</th><th>Unidade</th><th class="r">Projeto Hapvida</th><th class="r">15%</th><th class="r">Vidas</th><th class="r">Por vida</th><th class="r">Fora do projeto</th><th class="r">Faixa</th><th class="r">Comissão fora</th><th class="r">Comissão total</th><th>Próxima faixa</th></tr></thead><tbody>';
+  h += '<div class="box mt"><div class="lbl">Vendedores</div><div class="tw"><table><thead><tr><th>#</th><th>Vendedor(a)</th><th>Unidade</th><th class="r">Projeto Hapvida</th><th class="r">15%</th><th class="r">Vidas</th><th class="r">Fora do projeto</th><th class="r">Faixa</th><th class="r">Comissão fora</th><th class="r">Comissão total</th><th>Próxima faixa</th></tr></thead><tbody>';
   R.vendedores.forEach(function (v, i) {
     var prox = [];
     if (v.faixa.prox) prox.push('faltam <b>' + brl(v.faltaProx) + '</b> p/ ' + pct(v.faixa.prox.pct));
-    if (v.proxVida) prox.push('faltam <b>' + v.faltaVidas + ' vidas</b> p/ R$ ' + v.proxVida.valor + '/vida');
-    h += '<tr><td>' + (i + 1) + '</td><td><b>' + esc(v.nome) + '</b></td><td>' + v.unidade + '</td><td class="r">' + brl(v.prodHap) + '</td><td class="r rd">' + brl(v.comProjeto) + '</td><td class="r">' + (v.vidasProjeto != null ? v.vidasProjeto : '—') + '</td><td class="r rd">' + (v.bonusVidas != null ? brl(v.bonusVidas) + (v.valorVida ? ' <span class="m">(R$ ' + v.valorVida + ')</span>' : '') : '—') + '</td><td class="r">' + brl(v.prodFora) + '</td><td class="r"><span class="tier' + (v.faixa.max ? ' max' : '') + '">' + pct(v.pct) + '</span></td><td class="r rd">' + brl(v.comFora) + '</td><td class="r rd"><b>' + brl(v.comissao) + '</b></td><td style="white-space:normal">' + (prox.join(' · ') || '<span class="gr">faixa máxima</span>') + '</td></tr>';
+    h += '<tr><td>' + (i + 1) + '</td><td><b>' + esc(v.nome) + '</b></td><td>' + v.unidade + '</td><td class="r">' + brl(v.prodHap) + '</td><td class="r rd">' + brl(v.comProjeto) + '</td><td class="r">' + (v.vidasProjeto != null ? v.vidasProjeto : '—') + '</td><td class="r">' + brl(v.prodFora) + '</td><td class="r"><span class="tier' + (v.faixa.max ? ' max' : '') + '">' + pct(v.pct) + '</span></td><td class="r rd">' + brl(v.comFora) + '</td><td class="r rd"><b>' + brl(v.comissao) + '</b></td><td style="white-space:normal">' + (prox.join(' · ') || '<span class="gr">faixa máxima</span>') + '</td></tr>';
   });
   var sv = function (f) { return soma2(R.vendedores, f); };
-  h += '<tr class="tot"><td></td><td>Total</td><td></td><td class="r">' + brl(sv(function (v) { return v.prodHap; })) + '</td><td class="r">' + brl(sv(function (v) { return v.comProjeto; })) + '</td><td class="r">' + (R.vendedores.every(function (v) { return v.vidasProjeto != null; }) ? sum(R.vendedores, function (v) { return v.vidasProjeto; }) : '—') + '</td><td class="r">' + brl(sv(function (v) { return v.bonusVidas || 0; })) + '</td><td class="r">' + brl(sv(function (v) { return v.prodFora; })) + '</td><td></td><td class="r">' + brl(sv(function (v) { return v.comFora; })) + '</td><td class="r">' + brl(R.comissoes) + '</td><td></td></tr></tbody></table></div></div>';
+  h += '<tr class="tot"><td></td><td>Total</td><td></td><td class="r">' + brl(sv(function (v) { return v.prodHap; })) + '</td><td class="r">' + brl(sv(function (v) { return v.comProjeto; })) + '</td><td class="r">' + (R.vendedores.every(function (v) { return v.vidasProjeto != null; }) ? sum(R.vendedores, function (v) { return v.vidasProjeto; }) : '—') + '</td><td class="r">' + brl(sv(function (v) { return v.prodFora; })) + '</td><td></td><td class="r">' + brl(sv(function (v) { return v.comFora; })) + '</td><td class="r">' + brl(R.comissoes) + '</td><td></td></tr></tbody></table></div></div>';
   // Propostas do mês (identificadas por titular/empresa e CPF/CNPJ)
   if (R.ag.propostas.length) {
     var f = vCom.filtro, ps = R.ag.propostas.filter(function (p) { return !f || p.grupo === f; }).sort(function (a, b) { return (b.aReceber || 0) - (a.aReceber || 0); });
@@ -2306,7 +2298,7 @@ function vReg() {
     + card('Reserva de marketing', '15%', 'Sobre a produção mensal (soma das mensalidades dos contratos efetivos). Destinação do resultado, não despesa.', { box: 'dk' })
     + card('Vitalício', 'depois da última parcela', 'Começa no mês seguinte à última parcela de agenciamento e segue enquanto o contrato estiver ativo, com o % da grade.', { box: 'dk' }) + '</div>';
   h += '<div class="sec">Fórmulas do sistema <small>cada regra nova entra aqui</small></div><div class="grid g2">'
-    + regra('Vendedor no Projeto Hapvida', 'Comissão = 15% da mensalidade das vendas do projeto + valor por vida: 25 a 34 vidas R$ 20 · 35 a 49 R$ 25 · 50 ou mais R$ 35 (sobre todas as vidas IMPLANTADAS no mês; abaixo de 25 não paga)', 'Vendas fora do projeto seguem a faixa da unidade. A faixa é atingida com a produção total do vendedor (projeto + fora) e o percentual incide sobre as vendas fora do projeto.')
+    + regra('Vendedor no Projeto Hapvida', 'Comissão = só 15% da mensalidade das vendas do projeto. A premiação por vida não entra aqui: vem no relatório da W3G (débito "POR VIDA") e conta como custo', 'Vendas fora do projeto seguem a faixa da unidade. A faixa é atingida com a produção total do vendedor (projeto + fora) e o percentual incide sobre as vendas fora do projeto.')
     + regra('Custo da operação', 'Custo da operação = custos fixos (salários, VR, VT, operação) + provisão 13º/férias', '')
     + regra('Custo de operação total', 'Custo de operação total = custo da operação + desconto W3G do relatório + imposto (8,5% sobre o que sobrou do desconto W3G · 15% sem desconto)', '')
     + regra('Lucro bruto', 'Lucro bruto = a receber das operadoras − comissões dos vendedores − custo de operação total', 'Positivo = LUCRO BRUTO; negativo = PREJUÍZO. Margem bruta = lucro bruto ÷ a receber.')
