@@ -475,7 +475,7 @@ var REGRAS = {
     {"tipo": "Odonto", "op": "Unimed Odonto", "mod": "PME", "parc": [1], "vit": 0},
     {"tipo": "Pet", "op": "Petlove", "mod": "PET", "parc": [0.5, 0.25, 0.25], "vit": 0}
   ],
-  aliases: { 'porto': 'Porto Saúde', 'porto saude': 'Porto Saúde', 'prevent': 'Prevent Senior', 'qualicorp': 'Qualicorp SP', 'notre dame': 'NotreDame', 'notredame intermedica': 'NotreDame', 'unimed guarulhos': 'Unimed GRU', 'medsenior': 'MedSênior', 'bradesco saude': 'Bradesco', 'sulamerica saude': 'SulAmérica', 'amil saude': 'Amil' },
+  aliases: { 'porto': 'Porto Saúde', 'porto saude': 'Porto Saúde', 'prevent': 'Prevent Senior', 'qualicorp': 'Qualicorp SP', 'notre dame': 'NotreDame', 'notredame intermedica': 'NotreDame', 'unimed guarulhos': 'Unimed GRU', 'medsenior': 'MedSênior', 'bradesco saude': 'Bradesco', 'sulamerica saude': 'SulAmérica', 'amil saude': 'Amil', 'biovida saude': 'Biovida' },
   // Projetos com comissão própria. Venda marcada com o projeto usa ESTA regra, não a da operadora.
   // Venda Hapvida fora do projeto usa a tabela da operadora (350% + 2%).
   projetos: [
@@ -766,7 +766,7 @@ function hojeISO() { var d = new Date(); return d.getFullYear() + '-' + String(d
    4. MOTOR DE CÁLCULO
    ===================================================================== */
 // Feriados nacionais (Lei 662/49, Lei 6.802/80, Lei 14.759/23) + Sexta-feira Santa
-// + estadual (9/7), Corpus Christi, Carnaval (segunda e terça) e o municipal de cada unidade: Consolação 25/1 (São Paulo) · Mogi 1/9 (Mogi das Cruzes) — 26/11/2026
+// + estadual (9/7), Corpus Christi, Carnaval (segunda e terça) e municipais: 25/1 (São Paulo) nas duas unidades + 1/9 (Mogi das Cruzes) em Mogi — 26/11/2026
 function pascoa(a) { var b = a % 19, c = Math.floor(a / 100), d = a % 100, e = Math.floor(c / 4), f = c % 4, g = Math.floor((c + 8) / 25), h = Math.floor((c - g + 1) / 3), i = (19 * b + c - e - h + 15) % 30, k = Math.floor(d / 4), l = d % 4, m = (32 + 2 * f + 2 * k - i - l) % 7, n = Math.floor((b + 11 * i + 22 * m) / 451), mes = Math.floor((i + m - 7 * n + 114) / 31), dia = ((i + m - 7 * n + 114) % 31) + 1; return new Date(a, mes - 1, dia); }
 function feriados(ano, u) {
   var f = {}, add = function (m, d, n) { f[ano + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0')] = n; };
@@ -774,7 +774,8 @@ function feriados(ano, u) {
   add(10, 12, 'Nossa Senhora Aparecida'); add(11, 2, 'Finados'); add(11, 15, 'Proclamação da República'); add(11, 20, 'Consciência Negra'); add(12, 25, 'Natal');
   var sx = pascoa(ano); sx.setDate(sx.getDate() - 2); f[isoDe(sx)] = 'Sexta-feira Santa';
   add(7, 9, 'Revolução Constitucionalista');                                    // estadual (SP)
-  if (u === 'Mogi') add(9, 1, 'Aniversário de Mogi das Cruzes'); else add(1, 25, 'Aniversário de São Paulo');   // municipal de cada unidade
+  add(1, 25, 'Aniversário de São Paulo');                                       // vale nas duas unidades (decisão de 26/11/2026)
+  if (u === 'Mogi') add(9, 1, 'Aniversário de Mogi das Cruzes');                 // Mogi: + aniversário da cidade (padroeira não é feriado)
   var cc = pascoa(ano); cc.setDate(cc.getDate() + 60); f[isoDe(cc)] = 'Corpus Christi';
   [48, 47].forEach(function (n) { var cv = pascoa(ano); cv.setDate(cv.getDate() - n); f[isoDe(cv)] = 'Carnaval'; });   // a Optas não trabalha no Carnaval (decisão de 25/11/2026)
   return f;
@@ -826,7 +827,26 @@ function mesReferencia() {
   return hojeISO().slice(0, 7);
 }
 
+// Proposta do SisWeb sem comissão da Optas cadastrada: usa a grade quando a operadora está nela (decisão de 26/11/2026).
+// Fora da grade (Onmed, Unimed Santos) fica sem comissão e aparece como "sem comissão".
+function gradeNoERP() {
+  if (gradeNoERP.feito || DEMO) return; gradeNoERP.feito = true;
+  ERP.forEach(function (c) {
+    if (!c.tabela || c.tabela.parc.length) return;
+    var t = c.tabela; c.tabela = null; var rg = regraVenda(c);
+    if (rg && rg.foraFaixa) {   // ex.: Select PME com 1 vida (produto "01 a 29 vidas") e a grade começa em 2: usa a faixa mais próxima
+      var fx = REGRAS.grade.filter(function (g) { return g.op === rg.nome && g.mod === rg.modalidade && g.faixa; }).map(function (g) { return g.faixa; });
+      var vd = +c.vidas || 0, alvo = fx.reduce(function (b, f) { var d = vd < f[0] ? f[0] - vd : vd > f[1] ? vd - f[1] : 0, db = vd < b[0] ? b[0] - vd : vd > b[1] ? vd - b[1] : 0; return d < db ? f : b; }, fx[0] || [vd, vd]);
+      var c2 = Object.assign({}, c, { vidas: Math.min(Math.max(vd, alvo[0]), alvo[1]) }); rg = regraVenda(c2);
+    }
+    c.tabela = t;
+    if (!rg || rg.ag == null || !rg.parc) { t.semComissao = true; return; }
+    var v = parcelasReais(r2(+c.valor_mensal || 0), rg);
+    c.tabela = { nome: t.nome, erp: true, daGrade: true, modalidade: rg.modalidade || t.modalidade, parc: rg.parc.slice(), valores: v, vit: rg.vit || 0, vitDe: null, ag: rg.ag, venc: [] };
+  });
+}
 function calcular() {
+  gradeNoERP();
   var R = { mes: mesReferencia(), alertas: [], unidades: {}, vendedores: [] };
   var D = FONTE;
 
@@ -1032,7 +1052,8 @@ function calcular() {
   if (extratosOn()) { var vald = EXTRATOS.creditos_debitos.filter(function (c) { return /VALDECIR OPTAS 40/.test(norm(c.descricao).toUpperCase()) && c.mes > '2026-09'; });
     if (vald.length) R.alertas.push({ sev: 'er', cod: 'VALDECIR', titulo: 'Comissão do Valdecir (40%) descontada depois de julho/2026', texto: vald.map(function (c) { return mesLabel(c.mes) + ' · ' + c.descricao + ' · ' + brl(c.liquido); }).join(' | '), impacto: 'Essa comissão foi encerrada em julho/2026; o valor entrou como custo de operação de Mogi.', acao: 'Conferir com a W3G o desconto.' }); }
   var semComOptas = DEMO ? [] : ERP.filter(function (c) { return !c.tabela || !c.tabela.parc.length; });
-  if (semComOptas.length) R.alertas.push({ sev: 'wa', cod: 'ERP_SEM_COMISSAO', titulo: semComOptas.length + ' proposta(s) do SisWeb sem comissão da Optas cadastrada', texto: semComOptas.map(function (c) { return c.numero + ' · ' + c.operadora; }).join(' | '), impacto: 'Essas propostas não geram a receber no painel.', acao: 'Cadastrar no SisWeb a comissão da corretora (Optas Mogi / Verus Consolação) dessas propostas.' });
+  var daGrade = DEMO ? [] : ERP.filter(function (c) { return c.tabela && c.tabela.daGrade; });
+  if (semComOptas.length) R.alertas.push({ sev: 'in', cod: 'ERP_SEM_COMISSAO', titulo: semComOptas.length + ' proposta(s) sem comissão (operadora fora da grade)', texto: semComOptas.map(function (c) { return c.numero + ' · ' + c.operadora + ' · ' + unidadeCanon(c.unidade); }).join(' | ') + (daGrade.length ? ' — Usando a grade (SisWeb sem comissão): ' + daGrade.map(function (c) { return c.numero + ' · ' + c.operadora; }).join(' | ') : ''), impacto: 'Ficam sem comissão: não geram a receber no painel (decisão de 26/11/2026).', acao: 'Nenhuma. Se a operadora entrar na grade, a comissão passa a contar.' });
   if (!(ESTADO.carteira || []).length && (DEMO || !ERP.length)) R.alertas.push({ sev: 'wa', cod: 'CARTEIRA', titulo: 'Carteira ativa não carregada', texto: 'O vitalício previsto considera só os contratos registrados no painel.', impacto: 'A receber · vitalício', acao: 'Enviar a lista de contratos ativos (aba Carteira ativa da planilha).' });
   if (R.vit.nSemRegra) R.alertas.push({ sev: 'wa', cod: 'VIT_REGRA', titulo: R.vit.nSemRegra + ' contrato(s) da carteira sem % de vitalício', texto: brl(R.vit.semRegra) + ' de mensalidade fora do vitalício previsto.', impacto: 'A receber · vitalício', acao: 'Informar o vitalício da operadora/modalidade (Pendência 1).' });
 
@@ -1506,7 +1527,8 @@ function receberDetalhe(mes) {
     ERP.forEach(function (c) {
       if ((c.data_venda || '').slice(0, 7) !== mes || statusProposta(c) === 'cancelada' || unidadeCanon(c.unidade) !== u) return;
       var pr = parcelasReais(c.valor_mensal, regraVenda(c)).map(function (v, k) { return valorParcelaERP(c, k, v); });
-      add('1ª parcela das vendas do mês', ref(c), pr[0] || 0, 'mensalidade ' + brl(c.valor_mensal), 'ag1');
+      if (c.tabela && c.tabela.semComissao) { L.push({ grupo: '1ª parcela das vendas do mês', nome: ref(c), valor: 0, obs: 'sem comissão (operadora fora da grade) · mensalidade ' + brl(c.valor_mensal), cat: 'ag1' }); return; }
+      add('1ª parcela das vendas do mês', ref(c), pr[0] || 0, 'mensalidade ' + brl(c.valor_mensal) + (c.tabela && c.tabela.daGrade ? ' · comissão pela grade (SisWeb sem comissão)' : ''), 'ag1');
     });
     if (R && mes === R.mes && R.unidades[u].primeiraProjeto) add('1ª parcela das vendas do mês', 'Projeto Hapvida · vendas do mês', R.unidades[u].primeiraProjeto, '100% da 1ª mensalidade · ainda sem relatório de pagamento', 'ag1');
     ant.itens.forEach(function (i) { if (i.unidade === u) add('Parcelas de vendas anteriores', ref(i.c), i.valor, i.parcela + 'ª parcela · venda de ' + mesLabel(String(i.c.data_venda || i.c.data_inicio).slice(0, 7)) + (i.foraSisweb ? ' · fora do SisWeb (pago no relatório)' : ''), 'agN'); });
@@ -2350,7 +2372,7 @@ function vPen() {
   if (!document.getElementById('v-pen')) return;
   var h = '<div class="box brd"><div class="lbl">Pendências para finalizar a modelagem <em>mantidas separadas das regras confirmadas</em></div><div class="tw"><table><thead><tr><th>#</th><th>Pendência</th><th>O que falta</th><th>Como o painel trata hoje</th></tr></thead><tbody>';
   PENDENCIAS.forEach(function (p) { h += '<tr><td><b>' + p[0] + '</b></td><td style="white-space:normal;min-width:160px"><b>' + p[1] + '</b></td><td style="white-space:normal;min-width:280px">' + p[2] + '</td><td style="white-space:normal;min-width:220px" class="m">' + p[3] + '</td></tr>'; });
-  h += '</tbody></table></div><div class="note">Resolvidas: base do ROI (ROI sobre as vendas), categorias de investimento (registro por nome de campanha) origem dos contratos (não é mais necessária para o ROI), acúmulo da reserva (passa para o mês seguinte), feriados (nacionais, estaduais, Carnaval e o municipal de cada unidade), custo (vale o relatório), salário (relatório ou média dos últimos 3 relatórios), custo operacional de Mogi R$ 2.300,00 (aluguel, água, luz, internet; Consolação não tem), agenciamento fora do SisWeb (conta), pagamento (cai na data de previsão, sem nota fiscal), grade de comissões (Trasmontano PF, São Cristóvão, MedSênior PME já estão na grade; sem vitalício informado = não tem), investimentos (100% lançados) e Kolmeya (sem cruzamento: o sistema já sabe de onde veio o cliente).</div></div>';
+  h += '</tbody></table></div><div class="note">Resolvidas: base do ROI (ROI sobre as vendas), categorias de investimento (registro por nome de campanha) origem dos contratos (não é mais necessária para o ROI), acúmulo da reserva (passa para o mês seguinte), feriados (nacionais, estaduais, Carnaval, 25/1 nas duas unidades e 1/9 em Mogi), custo (vale o relatório), salário (relatório ou média dos últimos 3 relatórios), custo operacional de Mogi R$ 2.300,00 (aluguel, água, luz, internet; Consolação não tem), agenciamento fora do SisWeb (conta), pagamento (cai na data de previsão, sem nota fiscal), grade de comissões (Trasmontano PF, São Cristóvão, MedSênior PME já estão na grade; sem vitalício informado = não tem), investimentos (100% lançados) e Kolmeya (sem cruzamento: o sistema já sabe de onde veio o cliente).</div></div>';
   h += '<div class="box mt"><div class="lbl">Fora do escopo desta etapa</div><p class="m">Distribuição de lucros entre W3G e sócias · média de comissões para provisionamento da folha · controle individual de salários fixos · CPL/ROI avançado sem atribuição confiável · conciliação detalhada por pagamento de operadora · estornos, cancelamentos, descontos e recebimentos parciais.</p></div>';
   document.getElementById('v-pen').innerHTML = h;
 }
@@ -2401,7 +2423,7 @@ function vReg() {
     + regra('Limite de investimento', 'Limite = 15% × produção do mês + saldo dos meses anteriores do ano (reserva − investido) · Dentro se investido ≤ limite', 'A reserva não usada passa para o mês seguinte; o que passou do limite reduz o saldo.')
     + regra('Provisão de 13º e férias no ano', 'Obrigação do ano = R$ 1.623,15 × 12 · Coberta se o resultado do ano ≥ 0', 'A provisão já é descontada todo mês no resultado.')
     + regra('Balanço anual e virada de ano', 'Em dezembro: fechar o ano grava o balanço geral e o saldo (lucro líquido do ano) passa para o ano seguinte', 'Acumulado = saldo do ano anterior + lucro líquido do ano atual.')
-    + regra('VR e VT do mês', 'VR do mês = (VR de outubro ÷ 21 dias úteis) × dias úteis do mês · mesma regra para VT', 'Dias úteis = segunda a sexta menos feriados nacionais (inclui Sexta-feira Santa), estaduais (9/7), Corpus Christi, Carnaval (segunda e terça) e o municipal de cada unidade (Consolação 25/1 · Mogi 1/9). Feriado não paga VR nem VT. Por pessoa = valor por dia da unidade ÷ número de CLT (sócios não recebem VR nem VT).')
+    + regra('VR e VT do mês', 'VR do mês = (VR de outubro ÷ 21 dias úteis) × dias úteis do mês · mesma regra para VT', 'Dias úteis = segunda a sexta menos feriados nacionais (inclui Sexta-feira Santa), estaduais (9/7), Corpus Christi, Carnaval (segunda e terça) 25/1 (aniversário de São Paulo, nas duas unidades) e 1/9 (aniversário de Mogi, só Mogi). Feriado não paga VR nem VT. Por pessoa = valor por dia da unidade ÷ número de CLT (sócios não recebem VR nem VT).')
     + regra('Arredondamento em centavos', 'Cada valor é arredondado em centavos (meio centavo para cima) no momento do cálculo · total = soma exata das linhas', 'Comissão por vendedor; a receber por proposta; imposto = 15% do a receber da unidade, rateado entre as propostas centavo a centavo; consolidado = soma das unidades.')
     + regra('A receber · vitalício', 'Vitalício do mês = Σ (valor mensal × % de vitalício) dos contratos ativos depois da última parcela de agenciamento', 'Parcela = meses desde o início do contrato + 1. Cancelados saem a partir do mês do cancelamento. Comparado com o recebido dos relatórios das operadoras.')
     + regra('Comissão do vendedor', 'Faixa = pela produção total do mês (projeto + fora) · Comissão fora = produção fora do projeto × percentual da faixa', 'Sem médias históricas.')

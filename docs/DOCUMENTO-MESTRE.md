@@ -733,4 +733,9 @@ Mogi 2026 (jan–out): investido R$ 87.926,48 · 1ª parcela R$ 172.406,43 · im
 
 **Efeito no ano de 2026 (jan–nov):** a receber R$ 934.356,82 → R$ 1.149.381,91 (+ agenciamento fora do SisWeb); custos R$ 942.971,42 → R$ 1.000.958,46 (+ operacional de Mogi e imposto sobre o a receber maior); lucro bruto −R$ 8.614,60 → R$ 148.423,45; lucro líquido −R$ 96.541,08 → R$ 60.496,97.
 
-**Ainda em aberto:** 5 propostas do SisWeb sem comissão da Optas cadastrada (Onmed ×2 e Unimed Santos não estão na grade; Select PME e Biovida PME estão na grade, mas o SisWeb veio sem comissão).
+**Decisões complementares (26/11/2026):**
+- Proposta do SisWeb sem comissão da Optas e operadora na grade → usa a grade (Select PME, Biovida PME). Select PME com 1 vida usa a faixa mais próxima da grade (2 a 29 vidas; o produto é "01 a 29 vidas"). "Biovida Saúde" = Biovida.
+- Operadora fora da grade (Onmed ×2, Unimed Santos) → fica sem comissão e aparece como "sem comissão" (aviso informativo e linha com R$ 0,00 no detalhe do a receber).
+- Feriados: o 25/1 (aniversário de São Paulo) vale nas duas unidades; Mogi tem também o 1/9. A padroeira de Mogi não é feriado.
+
+**Efeito final no ano de 2026 (jan–nov):** a receber R$ 1.160.386,49 (+ R$ 11.004,58 de Select e Biovida pela grade); custos R$ 1.002.609,14; lucro bruto R$ 157.777,35; lucro líquido R$ 69.850,87.
