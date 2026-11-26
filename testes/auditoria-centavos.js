@@ -14,7 +14,7 @@ const path = require('path');
       // vendedores → unidades → consolidado
       U.forEach(u => { const n = u.custos.unidade, vs = R.vendedores.filter(v => v.unidade === n);
         ok(n + ' produção = projeto (Σ vendedores) + fora (ERP no mês atual)', u.producao, vs.reduce((t, v) => t + v.prodHap, 0) + (u.foraERP ? ERP.filter(c => c.data_venda.slice(0, 7) === R.mes && unidadeCanon(c.unidade) === n && statusProposta(c) !== 'cancelada').reduce((t, c) => t + c.valor_mensal, 0) : vs.reduce((t, v) => t + v.prodFora, 0)));
-        if (u.foraERP) ok(n + ' 1ª parcela = projeto + fora do ERP', u.primeira, (u.primeiraProjeto || 0) + u.foraERP.primeira);
+        if (u.foraERP && u.modo === 'estimativa') ok(n + ' 1ª parcela = projeto + fora do ERP', u.primeira, (u.primeiraProjeto || 0) + u.foraERP.primeira);
         ok(n + ' comissões = Σ vendedores', u.comissao, vs.reduce((t, v) => t + v.comissao, 0));
         vs.forEach(v => {
           // fora do projeto: faixa da unidade sobre a produção total, aplicada à produção fora · projeto: 15% + valor por vida a partir de 25 vidas
@@ -35,8 +35,8 @@ const path = require('path');
       let ant = 0; carteiraCompleta().forEach(c => { const ini = String(c.data_venda || c.data_inicio || '').slice(0, 7); if (!ini || ini >= R.mes) return; if (/cancel/i.test(c.situacao || '') && (!c.cancelado_em || String(c.cancelado_em).slice(0, 7) <= R.mes)) return; const rg = regraVenda(c); if (!rg || rg.ag == null) return; const k = (+R.mes.slice(0, 4) - +ini.slice(0, 4)) * 12 + (+R.mes.slice(5, 7) - +ini.slice(5, 7)); if (rg.valores) { ant += rg.valores[k] || 0; return; } if (rg.parc[k] && !(k === 0 && rg.modalidade === 'ADESÃO' && !REGRAS.adesaoTaxaParaOptas)) ant += r2(r2(+c.valor_mensal) * rg.parc[k]); });
       ok('parcelas anteriores', R.caixaAnt.total, ant);
       U.forEach(u => { if (u.recebidas != null) ok(u.custos.unidade + ' a receber = 1ª parcela + anteriores + vitalício + outras receitas', u.recebidas, (u.primeira || 0) + (u.anteriores || 0) + (u.vitalicio || 0) + (u.outrasReceitas || 0)); });
-      if (R.recebidas != null) { ok('a receber = 1ª parcela + anteriores + vitalício + outras receitas', R.recebidas, R.primeira + R.caixaAnt.total + R.vitalicio + U.reduce((t, u) => t + (u.outrasReceitas || 0), 0));
-        { const v = R.vit, us = REGRAS.unidades; const esp = us.reduce((t, u) => t + (v.recebidoPorUnidade[u] || 0), 0) + (v.recebidoSemUnidade || 0);
+      if (R.recebidas != null) { ok('a receber = 1ª parcela + anteriores + vitalício + outras receitas', R.recebidas, R.primeira + U.reduce((t, u) => t + (u.anteriores || 0), 0) + R.vitalicio + U.reduce((t, u) => t + (u.outrasReceitas || 0), 0));
+        { const v = R.vit, us = REGRAS.unidades; const esp = us.reduce((t, u) => t + (R.unidades[u].modo === 'estimativa' ? (v.recebidoPorUnidade[u] || 0) : R.unidades[u].vitalicio), 0) + (v.recebidoSemUnidade || 0);   // mês com relatório: vitalício = líquido do relatório
           ok('vitalício no a receber = só o recebido', R.vitalicio, esp); } } // cada custo no mês a que se refere: "COMISSÃO NOVEMBRO 2025 - VALDECIR" → 2025-11; 13º sem mês pago em janeiro → dezembro anterior
       if (typeof EXTRATOS !== 'undefined' && EXTRATOS && EXTRATOS.creditos_debitos) EXTRATOS.creditos_debitos.forEach(c => { const d = norm(c.descricao).toUpperCase(); let m = null;
         const x = d.match(/VALDECIR/) && d.match(/(JANEIRO|FEVEREIRO|MARCO|ABRIL|MAIO|JUNHO|JULHO|AGOSTO|SETEMBRO|OUTUBRO|NOVEMBRO|DEZEMBRO) (20\d\d)/);
@@ -63,7 +63,7 @@ const path = require('path');
       ok('reserva = Σ unidades', R.reservaMkt, U.reduce((t, u) => t + u.reservaMkt, 0));
       // mínimos: menor 1ª parcela que zera o lucro bruto / cobre a reserva
       // imposto (26/11/2026): parte com desconto W3G (proporção do bruto das linhas com despesa adm. no mês/unidade) = 8,5% W3G + 8,5%; resto = 15%
-      const imp = (rec, mes, u) => { let b = 0, d = 0; (extratosOn() ? EXTRATOS.linhas : []).forEach(l => { if (l.mes !== mes || !(l.pct_adm > 0) || (u && unidadeCanon(l.unidade) !== u)) return; b += l.bruto; d -= l.desp_adm; });
+      const imp = (rec, mes, u) => { let b = 0, d = 0; (extratosOn() ? EXTRATOS.linhas : []).forEach(l => { if (l.mes !== mes || !(l.pct_adm > 0) || !(l.liquido > 0) || (u && unidadeCanon(l.unidade) !== u)) return; b += l.liquido; });   // 26/11/2026: base = Líquido (desconto W3G já saiu)
         b = r2(b); d = r2(d); const com = Math.min(b, Math.max(rec, 0)), sem = r2(rec - com), w = b ? r2(d * com / b) : 0; return r2(w + r2((com - w) * 0.085) + r2(sem * 0.15)); };
       U.forEach(u => { if (u.res) ok(u.custos.unidade + ' imposto (% Adm. 8,5%: desconto W3G + 8,5% sobre o que sobrou · 0%: 15%)', u.res.imposto, imp(u.recebidas, R.mes, u.custos.unidade)); });
       Object.keys(ESTADO.fechamentos).forEach(k => { const f = ESTADO.fechamentos[k]; if (!f.base) return; REGRAS.unidades.forEach(u => { const x = f.unidades[u]; if (x && x.recebidas != null) ok(k + ' ' + u + ' imposto', x.imposto, imp(x.recebidas, k, u)); }); if (f.recebidas != null) ok(k + ' imposto = Σ unidades', f.imposto, REGRAS.unidades.reduce((t, u) => t + (f.unidades[u].imposto || 0), 0)); });
@@ -74,9 +74,20 @@ const path = require('path');
         if (lb(m.sustentavel) < x.reserva || lb(r2(m.sustentavel - 0.01)) >= x.reserva) falhas.push(n + ' mínimo com reserva'); });
       // ERP: cada mês base = 1ª parcela das cadastradas + anteriores + vitalício, por unidade e consolidado
       if (!DEMO && ERP.length) Object.keys(ESTADO.fechamentos).filter(k => ESTADO.fechamentos[k].fonte === 'ERP').forEach(k => { const f = ESTADO.fechamentos[k];
-        REGRAS.unidades.forEach(u => { const x = f.unidades[u]; ok(k + ' ' + u + ' a receber ERP', x.recebidas, x.primeira + x.anteriores + x.vitalicio + (x.outrasReceitas || 0)); ok(k + ' ' + u + ' outras receitas', x.outrasReceitas || 0, lancExtratos(k, u).receitas);
+        REGRAS.unidades.forEach(u => { const x = f.unidades[u]; ok(k + ' ' + u + ' a receber ERP', x.recebidas, x.primeira + x.anteriores + x.vitalicio + (x.outrasReceitas || 0)); const md = modoMes(k, u);
+          if (md === 'relatorio') { // REGRA DO RELATÓRIO, conta independente: positivo = a receber, "-" = custo, pelo Líquido
+            const Ls = EXTRATOS.linhas.filter(l => l.mes === k && unidadeCanon(l.unidade) === u), Cs = EXTRATOS.creditos_debitos.filter(c => c.mes === k && unidadeCanon(c.unidade) === u), pos = a => a.filter(v => v > 0).reduce((t, v) => t + v, 0);
+            ok(k + ' ' + u + ' relatório: 1ª parcela', x.primeira, pos(Ls.filter(l => l.tipo !== 'vitalicio' && l.parc === 1).map(l => l.liquido)));
+            ok(k + ' ' + u + ' relatório: parcelas seguintes', x.anteriores, pos(Ls.filter(l => l.tipo !== 'vitalicio' && l.parc !== 1).map(l => l.liquido)));
+            ok(k + ' ' + u + ' relatório: vitalício', x.vitalicio, pos(Ls.filter(l => l.tipo === 'vitalicio').map(l => l.liquido)));
+            ok(k + ' ' + u + ' relatório: créditos positivos', x.outrasReceitas, pos(Cs.map(c => c.liquido)));
+            ok(k + ' ' + u + ' relatório: a receber = Σ positivos', x.recebidas, pos(Ls.map(l => l.liquido)) + pos(Cs.map(c => c.liquido)));
+            const cu = custosUnidade(u, k); ok(k + ' ' + u + ' relatório: custos = Σ "-" + operacional', cu.fixo, -Ls.filter(l => l.liquido < 0).reduce((t, l) => t + l.liquido, 0) - Cs.filter(c => c.liquido < 0).reduce((t, c) => t + c.liquido, 0) + REGRAS.custos[u].operacional);
+            ok(k + ' ' + u + ' relatório: a receber − custos do relatório = Σ líquido do relatório', x.recebidas - (cu.fixo - REGRAS.custos[u].operacional), EXTRATOS.extratos.filter(e => e.mes === k && unidadeCanon(e.unidade) === u).reduce((t, e) => t + e.comissoes_liquido + e.creditos_debitos, 0));
+          } else if (md === 'lacuna') { ok(k + ' ' + u + ' lacuna: a receber 0', x.recebidas, 0); ok(k + ' ' + u + ' lacuna: custos = operacional', custosUnidade(u, k).fixo, REGRAS.custos[u].operacional); }
+          else ok(k + ' ' + u + ' outras receitas', x.outrasReceitas || 0, lancExtratos(k, u).receitas);
           const cad = ERP.filter(c => c.data_venda.slice(0, 7) === k && unidadeCanon(c.unidade) === u && statusProposta(c) !== 'cancelada');
-          ok(k + ' ' + u + ' produção ERP', x.producao, cad.reduce((t, c) => t + c.valor_mensal, 0)); ok(k + ' ' + u + ' 1ª parcela ERP', x.primeira, cad.reduce((t, c) => t + valorParcelaERP(c, 0, c.tabela.valores[0] || 0), 0)); });
+          ok(k + ' ' + u + ' produção ERP', x.producao, cad.reduce((t, c) => t + c.valor_mensal, 0)); if (md === 'estimativa') ok(k + ' ' + u + ' 1ª parcela ERP', x.primeira, cad.reduce((t, c) => t + valorParcelaERP(c, 0, c.tabela.valores[0] || 0, true), 0)); });
         ok(k + ' a receber ERP = Σ unidades', f.recebidas, REGRAS.unidades.reduce((t, u) => t + f.unidades[u].recebidas, 0)); });
       // extratos: cada extrato fecha (linhas = ato + parcelas; acumulado + comissões + créd/déb = líquido)
       // livro do a receber: cada parcela recebida = Σ linhas do extrato; perdida = mais de 90 dias depois da prevista; previstas encadeadas de 30 em 30 dias
@@ -97,7 +108,7 @@ const path = require('path');
           const cu = custosUnidade(u, m), real = cs.some(c => tipoCD(c.descricao)[0] === 'A');
           ok(m + ' ' + u + ' folha dos extratos', lx.folha, -cs.filter(c => tipoCD(c.descricao)[3] === 'folha').reduce((t, c) => t + c.liquido, 0));
           const med = cu.fonteCustos === 'media';
-          ok(m + ' ' + u + ' custo fixo (' + (real ? 'folha real + extratos + operacional' : med ? 'média 3 meses + extratos + operacional' : 'estrutura + extratos') + ')', cu.fixo, real ? lx.folha + lx.custos + REGRAS.custos[u].operacional : med ? lx.folha + cu.media + lx.custos + REGRAS.custos[u].operacional : cu.fixoEstrutura + lx.custos);   // 26/11/2026: operacional soma junto da folha do relatório
+          if (cu.modo === 'estimativa') ok(m + ' ' + u + ' custo fixo (' + (real ? 'folha real + extratos + operacional' : med ? 'média 3 meses + extratos + operacional' : 'estrutura + extratos') + ')', cu.fixo, real ? lx.folha + lx.custos + REGRAS.custos[u].operacional : med ? lx.folha + cu.media + lx.custos + REGRAS.custos[u].operacional : cu.fixoEstrutura + lx.custos);   // 26/11/2026: operacional soma junto da folha do relatório
           if (med) { const ms = []; for (let i = 1; i <= 36 && ms.length < 3; i++) { const d = new Date(+m.slice(0, 4), +m.slice(5, 7) - 1 - i, 1), k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), v = lancExtratos(k, u).salario; if (v) ms.push(v); }
             for (let i = 1; i <= 36 && ms.length < 3; i++) { const d = new Date(+m.slice(0, 4), +m.slice(5, 7) - 1 + i, 1), k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), v = lancExtratos(k, u).salario; if (v) ms.push(v); }
             ok(m + ' ' + u + ' salário = média de 3 meses registrados', cu.mediaSalario.valor, r2(ms.reduce((t, v) => t + v, 0) / ms.length));

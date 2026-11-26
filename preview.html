@@ -601,6 +601,32 @@ function mediaFolha(u, mes, campo) {
   return (_c[k] = { valor: ms.length ? r2(soma2(ms, function (m) { return m.valor; }) / ms.length) : 0, meses: ms });
 }
 function extratosOn() { return !DEMO && EXTRATOS && EXTRATOS.extratos && EXTRATOS.extratos.length; }
+// REGRA DO RELATÓRIO (decisão do usuário, 26/11/2026): no mês que tem relatório de pagamento vale só o relatório, pelo Líquido
+// (última coluna, à direita), linha por linha: valor positivo = a receber · valor com "-" = custo, seja o que for.
+// Mês de referência = previsão do relatório. Fora do relatório só entram o custo operacional (Mogi), a provisão e o imposto.
+function relatorioMes(mes, u) {
+  var _c = relatorioMes.cache = relatorioMes.cache || {}, k = mes + '|' + u; if (k in _c) return _c[k];
+  if (!extratosOn() || !EXTRATOS.extratos.some(function (x) { return x.mes === mes && unidadeCanon(x.unidade) === u; })) return (_c[k] = null);
+  var o = { primeira: 0, anteriores: 0, vitalicio: 0, outras: 0, entradas: 0, custos: 0, base85: 0, base15: 0, ent: [], sai: [], extratos: [] };
+  EXTRATOS.extratos.forEach(function (x) { if (x.mes === mes && unidadeCanon(x.unidade) === u) o.extratos.push(x.codigo); });
+  EXTRATOS.linhas.forEach(function (l) { if (l.mes !== mes || unidadeCanon(l.unidade) !== u || !l.liquido) return;
+    if (l.liquido < 0) { o.custos = r2(o.custos - l.liquido); o.sai.push({ l: l, valor: r2(-l.liquido), cat: 'Sneg' }); return; }
+    var cat = l.tipo === 'vitalicio' ? 'vit' : l.parc === 1 ? 'ag1' : 'agN';
+    if (cat === 'vit') o.vitalicio = r2(o.vitalicio + l.liquido); else if (cat === 'ag1') o.primeira = r2(o.primeira + l.liquido); else o.anteriores = r2(o.anteriores + l.liquido);
+    if (l.pct_adm > 0) o.base85 = r2(o.base85 + l.liquido); else o.base15 = r2(o.base15 + l.liquido);
+    o.ent.push({ l: l, valor: l.liquido, cat: cat }); });
+  EXTRATOS.creditos_debitos.forEach(function (c) { if (c.mes !== mes || unidadeCanon(c.unidade) !== u || !c.liquido) return; var t = tipoCD(c.descricao);
+    if (c.liquido > 0) { o.outras = r2(o.outras + c.liquido); o.base15 = r2(o.base15 + c.liquido); o.ent.push({ c: c, t: t, valor: c.liquido, cat: 'E' + t[0] }); }
+    else { o.custos = r2(o.custos - c.liquido); o.sai.push({ c: c, t: t, valor: r2(-c.liquido), cat: 'S' + t[0] }); } });
+  o.entradas = r2(r2(r2(o.primeira + o.anteriores) + o.vitalicio) + o.outras);
+  return (_c[k] = o);
+}
+// Situação do mês por unidade: 'relatorio' (tem relatório) · 'lacuna' (sem relatório, mas há relatório depois: o seguinte já traz o que seria dele)
+// · 'estimativa' (depois do último relatório: parcelas ainda não pagas + média da folha, até o relatório chegar)
+function modoMes(mes, u) {
+  if (DEMO || !extratosOn()) return 'estimativa'; if (relatorioMes(mes, u)) return 'relatorio';
+  return EXTRATOS.extratos.some(function (x) { return unidadeCanon(x.unidade) === u && x.mes > mes; }) && mes >= inicioRelatorios(u) ? 'lacuna' : 'estimativa';
+}
 // Vitalício recebido nos extratos (mês do pagamento), por unidade e operadora
 function vitDosExtratos(mes) { if (!extratosOn()) return []; return EXTRATOS.linhas.filter(function (l) { return l.mes === mes && l.tipo === 'vitalicio'; }).map(function (l) { return { mes: mes, operadora: l.operadora, unidade: l.unidade, valor: l.bruto, liquido: l.liquido, mensal: l.vl_parcela, desp: l.desp_adm, origem: 'extrato' }; }); }
 // Situação da proposta (decisão de 25/11/2026):
@@ -683,7 +709,7 @@ function brl0(n) { return n == null || isNaN(n) ? '—' : 'R$ ' + Math.round(n).
 function linhasW3G(mes, u, tipo) {
   var _c = linhasW3G.cache = linhasW3G.cache || {}, k = mes + '|' + (u || '') + '|' + (tipo || ''); if (_c[k]) return _c[k];
   var o = { bruto: 0, desc: 0 };
-  if (extratosOn() && mes) EXTRATOS.linhas.forEach(function (l) { var adm = l.pct_adm != null ? l.pct_adm > 0 : !!l.desp_adm; if (l.mes !== mes || !adm || (u && unidadeCanon(l.unidade) !== u) || (tipo && l.tipo !== tipo)) return; o.bruto = r2(o.bruto + l.bruto); o.desc = r2(o.desc - l.desp_adm); });
+  if (extratosOn() && mes) EXTRATOS.linhas.forEach(function (l) { var adm = l.pct_adm != null ? l.pct_adm > 0 : !!l.desp_adm; if (l.mes !== mes || !adm || !(l.liquido > 0) || (u && unidadeCanon(l.unidade) !== u) || (tipo && l.tipo !== tipo)) return; o.bruto = r2(o.bruto + l.liquido); });   // 26/11/2026: vale o Líquido (o desconto da W3G já saiu)
   return (_c[k] = o);
 }
 function impostoPartes(x, mes, u, tipo) {
@@ -804,12 +830,12 @@ function custosUnidade(u, mes) {
   // sem salário no extrato, vale a estrutura (que já inclui benefícios e provisões) — decisões de 25/11/2026
   var real = lx.salario !== 0, mSal = null, mBen = null;
   if (!real && extratosOn()) { mSal = mediaFolha(u, mes, 'salario'); if (!mSal.meses.length) mSal = null; else { mBen = lx.beneficio ? null : mediaFolha(u, mes, 'beneficio'); real = true; } }
-  var media = mSal ? r2(mSal.valor + (mBen ? mBen.valor : 0)) : 0;
-  return { unidade: u, fonteCustos: mSal ? 'media' : real ? 'extratos' : 'estrutura', mediaSalario: mSal, mediaBeneficio: mBen, media: media, mes: mes, diasUteis: du, vrDia: vrDia, vtDia: vtDia, vrPessoaDia: vrDia / c.clt, vtPessoaDia: vtDia / c.clt,
+  var media = mSal ? r2(mSal.valor + (mBen ? mBen.valor : 0)) : 0, modo = modoMes(mes, u), rel = modo === 'relatorio' ? relatorioMes(mes, u) : null;
+  return { unidade: u, modo: modo, rel: rel, fonteCustos: rel ? 'relatorio' : modo === 'lacuna' ? 'lacuna' : mSal ? 'media' : real ? 'extratos' : 'estrutura', mediaSalario: mSal, mediaBeneficio: mBen, media: media, mes: mes, diasUteis: du, vrDia: vrDia, vtDia: vtDia, vrPessoaDia: vrDia / c.clt, vtPessoaDia: vtDia / c.clt,
            salariosBrutos: c.salariosBrutos, pj: c.pjSocia, clt: clt, vr: vr, vt: vt, operacional: c.operacional, fixoEstrutura: fixo,
-           folhaRel: real ? r2(lx.folha + media) : null,
+           folhaRel: rel || modo === 'lacuna' ? null : real ? r2(lx.folha + media) : null,
            // 26/11/2026: folha = relatório (ou média dos últimos 3 relatórios); o operacional (aluguel, água, luz, internet de Mogi) não vem no relatório e soma sempre
-           extrato: lx, fixo: real ? r2(r2(lx.folha + media + lx.custos) + c.operacional) : r2(fixo + lx.custos),   // + custos lançados nos extratos do mês (custo da unidade e de operação)
+           extrato: lx, fixo: rel ? r2(rel.custos + c.operacional) : modo === 'lacuna' ? c.operacional : real ? r2(r2(lx.folha + media + lx.custos) + c.operacional) : r2(fixo + lx.custos),   // relatório: tudo com "-" + operacional   // + custos lançados nos extratos do mês (custo da unidade e de operação)
            // 26/11/2026 (pedido do usuário): a provisão de 13º e férias vale todo mês, sobre os salários CLT informados, com ou sem relatório
            prov13: p13, provFerias: pFer, provEncargos: pEnc, provisao: r2(p13 + pFer + pEnc), cltPessoas: c.clt };
 }
@@ -1026,6 +1052,9 @@ function calcular() {
     U.vitalicio = R.vitUnidade[u];
     U.outrasReceitas = U.custos.extrato.receitas;   // créditos dos extratos que somam no a receber (campanhas, premiações, acertos, devoluções)
     U.recebidas = R.ag.base || U.anteriores || U.vitalicio || U.outrasReceitas ? r2(r2(r2((U.primeira || 0) + U.anteriores) + U.vitalicio) + U.outrasReceitas) : null;
+    U.modo = modoMes(R.mes, u); var rlU = U.modo === 'relatorio' ? relatorioMes(R.mes, u) : null;   // regra do relatório (26/11/2026)
+    if (rlU) { U.primeira = rlU.primeira; U.anteriores = rlU.anteriores; U.vitalicio = rlU.vitalicio; U.outrasReceitas = rlU.outras; U.recebidas = rlU.entradas; }
+    else if (U.modo === 'lacuna') { U.primeira = 0; U.anteriores = 0; U.vitalicio = 0; U.outrasReceitas = 0; U.recebidas = 0; }
     U.reservaMkt = r2(U.producao * REGRAS.reservaMarketing);
     U.investido = R.invUnidade[u];
     // folha do extrato já inclui as comissões dos vendedores: no resultado, comissão à parte = 0
@@ -1075,8 +1104,9 @@ function parcelasAnteriores(mes) {
     if (/cancel/i.test(c.situacao || '') && (!c.cancelado_em || String(c.cancelado_em).slice(0, 7) <= mes)) return;
     var rg = regraVenda(c); if (!rg || rg.ag == null) return;
     var k = mesesEntre(ini, mes), pr = parcelasReais(r2(+c.valor_mensal || 0), rg), v = pr[k]; if (!v) return;
-    v = valorParcelaERP(c, k, v); if (!v) return;
-    var u = unidadeCanon(c.unidade) || REGRAS.unidades[0], nome = rg.projeto ? rg.nome : rg.nome;
+    var u = unidadeCanon(c.unidade) || REGRAS.unidades[0];
+    v = valorParcelaERP(c, k, v, modoMes(mes, u) === 'estimativa'); if (!v) return;
+    var u, nome = rg.projeto ? rg.nome : rg.nome;
     o.total = r2(o.total + v); o.porUnidade[u] = r2((o.porUnidade[u] || 0) + v); o.porOperadora[nome] = r2((o.porOperadora[nome] || 0) + v);
     o.itens.push({ c: c, parcela: k + 1, valor: v, unidade: u });
   });
@@ -1243,9 +1273,13 @@ function erpMes(mes) {
     if ((c.data_venda || '').slice(0, 7) !== mes || statusProposta(c) === 'cancelada') return;
     var u = o.porUnidade[unidadeCanon(c.unidade)]; if (!u) return;
     var pr = parcelasReais(c.valor_mensal, regraVenda(c)).map(function (v, k) { return valorParcelaERP(c, k, v); });
-    u.n++; o.n++; u.producao = r2(u.producao + c.valor_mensal); u.primeira = r2(u.primeira + (pr[0] || 0)); u.contratado = r2(u.contratado + soma2(pr, function (x) { return x; })); u.vidas += +c.vidas || 0;
+    var p0 = modoMes(mes, unidadeCanon(c.unidade)) === 'estimativa' ? valorParcelaERP(c, 0, parcelasReais(c.valor_mensal, regraVenda(c))[0], true) : pr[0];
+    u.n++; o.n++; u.producao = r2(u.producao + c.valor_mensal); u.primeira = r2(u.primeira + (p0 || 0)); u.contratado = r2(u.contratado + soma2(pr, function (x) { return x; })); u.vidas += +c.vidas || 0;
   });
-  REGRAS.unidades.forEach(function (u) { var x = o.porUnidade[u]; x.outrasReceitas = lancExtratos(mes, u).receitas; x.recebidas = r2(r2(r2(x.primeira + x.anteriores) + x.vitalicio) + x.outrasReceitas); });
+  REGRAS.unidades.forEach(function (u) { var x = o.porUnidade[u]; x.outrasReceitas = lancExtratos(mes, u).receitas; x.recebidas = r2(r2(r2(x.primeira + x.anteriores) + x.vitalicio) + x.outrasReceitas);
+    var md = modoMes(mes, u), rl = md === 'relatorio' ? relatorioMes(mes, u) : null; x.modo = md;   // regra do relatório (26/11/2026)
+    if (rl) { x.primeira = rl.primeira; x.anteriores = rl.anteriores; x.vitalicio = rl.vitalicio; x.outrasReceitas = rl.outras; x.recebidas = rl.entradas; }
+    else if (md === 'lacuna') { x.primeira = 0; x.anteriores = 0; x.vitalicio = 0; x.outrasReceitas = 0; x.recebidas = 0; } });
   if (!o.n) REGRAS.unidades.forEach(function (u) { if (o.porUnidade[u].anteriores || o.porUnidade[u].vitalicio) o.n = -1; });
   return o;
 }
@@ -1494,7 +1528,10 @@ function custoDetalhe(mes) {
       add('Imposto', '8,5% sobre ' + brl(ip.liqCom) + ' (valor que sobrou depois do desconto da W3G)', ip.impCom, '', 'imp');
       add('Imposto', '15% sobre ' + brl(ip.sem) + ' (% Adm. 0,00% ou sem relatório)', resto, '', 'imq'); }
     add('Comissões dos vendedores', x.comissoes ? 'Comissões à parte' : 'Já descontadas nos relatórios de pagamento (nada à parte)', x.comissoes || 0, '', 'com');
-    if (c.fonteCustos !== 'estrutura') {
+    if (c.rel || c.modo === 'lacuna') {   // regra do relatório (26/11/2026): todo valor com "-" no Líquido é custo, seja o que for
+      if (c.rel) c.rel.sai.forEach(function (i) { if (i.c) add('Valores com "-" no relatório', i.c.descricao, i.valor, i.t[1] + ' · relatório ' + i.c.extrato, i.cat); else add('Valores com "-" no relatório', i.l.operadora + ' · ' + i.l.proposta + ' · parcela ' + i.l.parc, i.valor, 'linha de comissão negativa · relatório ' + i.l.extrato, 'Sneg'); });
+      if (c.operacional) add('Custo operacional', 'Aluguel, água, luz e internet', c.operacional, 'não vem no relatório', 'op');
+    } else if (c.fonteCustos !== 'estrutura') {
       c.extrato.itens.forEach(function (i) { if (i.a === 'folha') add('Folha (relatórios de pagamento)', i.c.descricao, -i.c.liquido, orig(i), 'S' + i.t[0]); });
       var mm = function (m) { return m.meses.map(function (x) { return mesLabel(x.mes).slice(0, 3).toLowerCase() + '/' + x.mes.slice(2, 4) + ' ' + brl(x.valor); }).join(' · '); };
       if (c.mediaSalario) add('Folha (média de 3 meses)', 'Salários · média de ' + c.mediaSalario.meses.length + ' meses', c.mediaSalario.valor, mm(c.mediaSalario), 'SA');
@@ -1509,13 +1546,13 @@ function custoDetalhe(mes) {
     add('Provisão', '13º salário (1/12 da folha CLT)', c.prov13, '', 'prov');
     add('Provisão', 'Férias + 1/3 (1/36 da folha CLT)', c.provFerias, '', 'prov');
     add('Provisão', 'Encargos sobre 13º e férias', c.provEncargos, '', 'prov');
-    c.extrato.itens.forEach(function (i) {
+    if (!c.rel && c.modo !== 'lacuna') c.extrato.itens.forEach(function (i) {
       if (i.a === 'custo' || i.a === 'custoOp') add('Lançado nos relatórios de pagamento', i.c.descricao, -i.c.liquido, orig(i), 'S' + i.t[0]);
       else if (i.a !== 'folha') fora.push({ nome: i.c.descricao, valor: i.c.liquido, como: i.a === 'receita' ? 'sem sinal: soma no a receber' : 'não entra (' + i.t[1] + ')' });
     });
     var tot = soma2(L, function (l) { return l.valor; });
     out.unidades[u] = { linhas: L, fora: fora, total: tot, guardado: x.saiu != null ? x.saiu : null, fonte: c.fonteCustos,
-      real: c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido) + custo operacional + provisão 13º e férias (salários CLT informados)' : c.fonteCustos === 'media' ? 'Sem salário no relatório deste mês: média dos últimos 3 relatórios (troca pelo real quando chegar o relatório do dia 5) + custo operacional + provisão 13º e férias (salários CLT informados)' : 'Sem relatório: vale a estrutura informada + provisão' };
+      real: c.rel ? 'Regra do relatório: tudo com "-" no Líquido dos relatórios de ' + mesLabel(mes) + ' (' + c.rel.extratos.join(', ') + ') + custo operacional + provisão 13º e férias + imposto' : c.modo === 'lacuna' ? 'Sem relatório neste mês: o relatório seguinte já traz o que seria dele. Entram só o custo operacional e a provisão.' : c.fonteCustos === 'extratos' ? 'Folha do relatório de pagamento (no mês devido) + custo operacional + provisão 13º e férias (salários CLT informados)' : c.fonteCustos === 'media' ? 'Sem salário no relatório deste mês: média dos últimos 3 relatórios (troca pelo real quando chegar o relatório do dia 5) + custo operacional + provisão 13º e férias (salários CLT informados)' : 'Sem relatório: vale a estrutura informada + provisão' };
     out.total = r2(out.total + tot);
   });
   return out;
@@ -1528,11 +1565,19 @@ function receberDetalhe(mes) {
   var ref = function (c) { return [c.numero || c.contrato || c.id_venda || c.id, c.operadora, c.cliente].filter(Boolean).join(' · '); };
   REGRAS.unidades.forEach(function (u) {
     var L = [], add = function (grupo, nome, valor, obs, cat) { if (valor) L.push({ grupo: grupo, nome: nome, valor: r2(valor), obs: obs || '', cat: cat }); };
+    var md = modoMes(mes, u), rl = md === 'relatorio' ? relatorioMes(mes, u) : null;
+    if (rl || md === 'lacuna') {   // regra do relatório (26/11/2026): todo valor positivo no Líquido é a receber, seja o que for
+      var GN = { ag1: 'Relatório · 1ª parcela', agN: 'Relatório · parcelas seguintes', vit: 'Relatório · vitalício' };
+      if (rl) rl.ent.forEach(function (i) { if (i.c) add('Relatório · créditos (valores positivos)', i.c.descricao, i.valor, i.t[1] + ' · relatório ' + i.c.extrato, i.cat);
+        else add(GN[i.cat], [i.l.operadora, i.l.proposta, i.l.cliente].filter(Boolean).join(' · '), i.valor, i.l.parc + 'ª parcela · líquido do relatório ' + i.l.extrato + (i.l.desp_adm ? ' (bruto ' + brl(i.l.bruto) + ', W3G ' + brl(i.l.desp_adm) + ')' : ''), i.cat); });
+      var x0 = d.unidades[u] || {}, t0 = soma2(L, function (l) { return l.valor; });
+      out.unidades[u] = { linhas: L, total: t0, guardado: x0.recebidas != null ? x0.recebidas : null, modo: md }; out.total = r2(out.total + t0); return;
+    }
     ERP.forEach(function (c) {
       if ((c.data_venda || '').slice(0, 7) !== mes || statusProposta(c) === 'cancelada' || unidadeCanon(c.unidade) !== u) return;
       var pr = parcelasReais(c.valor_mensal, regraVenda(c)).map(function (v, k) { return valorParcelaERP(c, k, v); });
       if (c.tabela && c.tabela.semComissao) { L.push({ grupo: '1ª parcela das vendas do mês', nome: ref(c), valor: 0, obs: 'sem comissão (operadora fora da grade) · mensalidade ' + brl(c.valor_mensal), cat: 'ag1' }); return; }
-      add('1ª parcela das vendas do mês', ref(c), pr[0] || 0, 'mensalidade ' + brl(c.valor_mensal) + (c.tabela && c.tabela.daGrade ? ' · comissão pela grade (SisWeb sem comissão)' : ''), 'ag1');
+      add('1ª parcela das vendas do mês', ref(c), modoMes(mes, u) === 'estimativa' ? valorParcelaERP(c, 0, parcelasReais(c.valor_mensal, regraVenda(c))[0], true) || 0 : pr[0] || 0, 'mensalidade ' + brl(c.valor_mensal) + (c.tabela && c.tabela.daGrade ? ' · comissão pela grade (SisWeb sem comissão)' : ''), 'ag1');
     });
     if (R && mes === R.mes && R.unidades[u].primeiraProjeto) add('1ª parcela das vendas do mês', 'Projeto Hapvida · vendas do mês', R.unidades[u].primeiraProjeto, '100% da 1ª mensalidade · ainda sem relatório de pagamento', 'ag1');
     ant.itens.forEach(function (i) { if (i.unidade === u) add('Parcelas de vendas anteriores', ref(i.c), i.valor, i.parcela + 'ª parcela · venda de ' + mesLabel(String(i.c.data_venda || i.c.data_inicio).slice(0, 7)) + (i.foraSisweb ? ' · fora do SisWeb (pago no relatório)' : ''), 'agN'); });
@@ -1778,7 +1823,8 @@ function livroReceber() {
   return (_livro = o);
 }
 // valor da parcela k (0 = 1ª) de uma proposta do ERP no mês dela: recebido > esperado; não recebida em 90 dias → 0
-function valorParcelaERP(c, k, v) { if (!c || !c.tabela || !c.tabela.erp) return v; var it = livroReceber().porParcela[c.id + '|' + (k + 1)]; if (!it) return v; return it.situacao === 'perdida' || it.situacao === 'cancelada' ? 0 : it.valor; }
+function valorParcelaERP(c, k, v, semRecebida) { if (!c || !c.tabela || !c.tabela.erp) return v; var it = livroReceber().porParcela[c.id + '|' + (k + 1)]; if (!it) return v; if (semRecebida && it.situacao === 'recebida') return 0;   // mês de estimativa: a parcela paga já conta no mês do relatório
+  return it.situacao === 'perdida' || it.situacao === 'cancelada' ? 0 : it.valor; }
 function addMes(m, n) { var d = new Date(+m.slice(0, 4), +m.slice(5, 7) - 1 + n, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
 function recebidoMes(mes) { if (!extratosOn()) return null; var xs = EXTRATOS.extratos.filter(function (x) { return x.mes === mes; }); return xs.length ? soma2(xs, function (x) { return x.comissoes_liquido; }) : null; }
 // Aba A receber: tudo o que falta entrar, proposta a proposta, com a data prevista
@@ -2412,6 +2458,7 @@ function vReg() {
     + card('Vitalício', 'depois da última parcela', 'Começa no mês seguinte à última parcela de agenciamento e segue enquanto o contrato estiver ativo, com o % da grade.', { box: 'dk' }) + '</div>';
   h += '<div class="sec">Fórmulas do sistema <small>cada regra nova entra aqui</small></div><div class="grid g2">'
     + regra('Vendedor no Projeto Hapvida', 'Comissão = 15% da mensalidade das vendas do projeto + valor por vida: 25 a 34 vidas R$ 20 · 35 a 49 R$ 25 · 50 ou mais R$ 35 (sobre todas as vidas IMPLANTADAS no mês; abaixo de 25 não paga)', 'Vendas fora do projeto seguem a faixa da unidade. A faixa é atingida com a produção total do vendedor (projeto + fora) e o percentual incide sobre as vendas fora do projeto.')
+    + regra('Regra do relatório (vale primeiro)', 'Mês com relatório de pagamento: a receber = Σ valores positivos do Líquido (última coluna) · custos = Σ valores com "-" do Líquido + custo operacional + provisão + imposto. Seja o que for.', 'Decisão de 26/11/2026. Mês de referência = previsão do relatório. Imposto: 8,5% sobre o líquido das linhas com % Adm. 8,50%; 15% sobre o resto. Mês sem relatório antes de um relatório (lacuna): só operacional e provisão. Mês depois do último relatório: estimativa (parcelas ainda não pagas + média da folha) até o relatório chegar.')
     + regra('Custo da operação', 'Custo da operação = folha do relatório de pagamento (sem salário no relatório: média dos últimos 3 relatórios) + custo operacional + custos lançados no relatório', 'Decisão de 26/11/2026: vale o relatório; a estrutura informada só é usada sem nenhum relatório. Custo operacional = Mogi R$ 2.300,00 (aluguel, água, luz, internet); Consolação não tem.')
     + regra('Custo de operação total', 'Custo de operação total = custo da operação + desconto W3G do relatório + imposto (8,5% sobre o que sobrou do desconto W3G · 15% sem desconto)', '')
     + regra('Lucro bruto', 'Lucro bruto = a receber das operadoras − comissões dos vendedores − custo de operação total', 'Positivo = LUCRO BRUTO; negativo = PREJUÍZO. Margem bruta = lucro bruto ÷ a receber.')
